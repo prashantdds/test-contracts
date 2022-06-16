@@ -1,0 +1,356 @@
+{
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0xE210F3Fc51718EC2017EBDA70A678E8332Df7d55",
+    "txHash": "0xfb496a7ec121a9f6ff863db9dcfced16933d3c40c96e2660b63e7b7b7d6e5a82"
+  },
+  "proxies": [
+    {
+      "address": "0x031EC2481986feecc10E84617482b9ca324F8Cf7",
+      "txHash": "0xf3c4fa7165828187ff0d7b647670f877f588407d2e7350d85647c20589f1c9c7",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xdcc3bc7c4aE69D063bDf31Bf2417416Ed1b5ABe0",
+      "txHash": "0xfd74a4e153b71f86b1de467ee3b5133f23d9d3a9477b0d80febb28cf003dc658",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "34d5f925da8320736e678948dc5d8612cf42658346fb3ea1f38896504fb1372d": {
+      "address": "0xB67fd885EbCFC05220e9913124D1dDDef6BC77f2",
+      "txHash": "0xe175025d8a9e6e607976fc66b5054767e80d2c00412fc751f50acb5fc7308004",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC165Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:41"
+          },
+          {
+            "label": "_roles",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)34_storage)",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:247"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:102"
+          },
+          {
+            "label": "DarkMatterNFT",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_contract(IERC721Upgradeable)1859",
+            "contract": "Registration",
+            "src": "contracts/Registration.sol:19"
+          },
+          {
+            "label": "requestPriceChange",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_mapping(t_uint256,t_struct(PriceChangeRequest)2793_storage)",
+            "contract": "Registration",
+            "src": "contracts/Registration.sol:49"
+          },
+          {
+            "label": "subnetAttributes",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_mapping(t_uint256,t_struct(SubnetAttributes)2781_storage)",
+            "contract": "Registration",
+            "src": "contracts/Registration.sol:52"
+          },
+          {
+            "label": "subnetLocalDAO",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_mapping(t_uint256,t_address)",
+            "contract": "Registration",
+            "src": "contracts/Registration.sol:53"
+          },
+          {
+            "label": "whiteListedClusters",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_mapping(t_uint256,t_array(t_address)dyn_storage)",
+            "contract": "Registration",
+            "src": "contracts/Registration.sol:54"
+          },
+          {
+            "label": "totalSubnets",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_uint256",
+            "contract": "Registration",
+            "src": "contracts/Registration.sol:55"
+          },
+          {
+            "label": "totalClustersSigned",
+            "offset": 0,
+            "slot": "207",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "Registration",
+            "src": "contracts/Registration.sol:56"
+          },
+          {
+            "label": "subnetClusters",
+            "offset": 0,
+            "slot": "208",
+            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(Cluster)2788_storage))",
+            "contract": "Registration",
+            "src": "contracts/Registration.sol:59"
+          },
+          {
+            "label": "coolDownTimeForPriceChange",
+            "offset": 0,
+            "slot": "209",
+            "type": "t_uint256",
+            "contract": "Registration",
+            "src": "contracts/Registration.sol:61"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IERC721Upgradeable)1859": {
+            "label": "contract IERC721Upgradeable",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)34_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_address)": {
+            "label": "mapping(uint256 => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_array(t_address)dyn_storage)": {
+            "label": "mapping(uint256 => address[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(Cluster)2788_storage))": {
+            "label": "mapping(uint256 => mapping(uint256 => struct Registration.Cluster))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Cluster)2788_storage)": {
+            "label": "mapping(uint256 => struct Registration.Cluster)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(PriceChangeRequest)2793_storage)": {
+            "label": "mapping(uint256 => struct Registration.PriceChangeRequest)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(SubnetAttributes)2781_storage)": {
+            "label": "mapping(uint256 => struct Registration.SubnetAttributes)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Cluster)2788_storage": {
+            "label": "struct Registration.Cluster",
+            "members": [
+              {
+                "label": "ClusterDAO",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "DNSIP",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "listed",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(PriceChangeRequest)2793_storage": {
+            "label": "struct Registration.PriceChangeRequest",
+            "members": [
+              {
+                "label": "timestamp",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "price",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(RoleData)34_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(SubnetAttributes)2781_storage": {
+            "label": "struct Registration.SubnetAttributes",
+            "members": [
+              {
+                "label": "subnetType",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "sovereignStatus",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "cloudProviderType",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "subnetStatusListed",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "price",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "otherAttributes",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "maxClusters",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "6"
+              }
+            ],
+            "numberOfBytes": "224"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    }
+  }
+}
