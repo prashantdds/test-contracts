@@ -20,19 +20,23 @@ contract Registration is
 
     bytes32 public constant CLUSTER_LIST_ROLE = keccak256("CLUSTER_LIST_ROLE");
     bytes32 public constant SUBNET_ATTR_ROLE = keccak256("SUBNET_ATTR_ROLE");
-    bytes32 public constant COOLDOWN_ROLE =keccak256("COOLDOWN_ROLE");
+    bytes32 public constant COOLDOWN_ROLE = keccak256("COOLDOWN_ROLE");
     bytes32 public constant PRICE_ROLE = keccak256("PRICE_ROLE");
-    bytes32 public constant WHITELIST_ROLE =keccak256("WHITELIST_ROLE");
+    bytes32 public constant WHITELIST_ROLE = keccak256("WHITELIST_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    address public GLOBAL_DAO_ADDRESS;
+
+    uint256 public daoRate; // 1000 = 1%
 
     struct SubnetAttributes {
         uint256 subnetType;
         bool sovereignStatus;
         uint256 cloudProviderType;
         bool subnetStatusListed;
-        uint256 price;
-        uint256[] otherAttributes;
+        uint256[] unitPrices;
+        uint256[] otherAttributes; // eg. [1,2] if reqd
         uint256 maxClusters;
+        uint256 supportFeeRate; // 1000 = 1%
     }
 
     struct Cluster {
@@ -43,7 +47,7 @@ contract Registration is
 
     struct PriceChangeRequest {
         uint256 timestamp;
-        uint256 price;
+        uint256[] unitPrices;
     }
 
     mapping(uint256 => PriceChangeRequest) requestPriceChange;
@@ -98,10 +102,11 @@ contract Registration is
         bool sovereignStatus,
         uint256 cloudProviderType,
         bool subnetStatusListed,
-        uint256 price,
+        uint256[] unitPrices,
         uint256[] otherAttributes,
         uint256 maxClusters,
         address[] whiteListedClusters,
+        uint256 supportFeeRate,
         address sender
     );
     event SubnetAttributesChanged(
@@ -115,16 +120,18 @@ contract Registration is
     );
     event RemovedWhitelistCluster(uint256 subnetId, address blacklistAddress);
     event ResetWhitelistCluster(uint256 subnetId);
-    event RequestedClusterPriceChange(uint256 subnetId, uint256 price);
+    event RequestedClusterPriceChange(uint256 subnetId, uint256[] unitPrices);
     event ChangedCoolDownForPriceChange(uint256 coolDownTimeSecs);
-    event AppliedChangedClusterPrice(uint256 subnetId, uint256 price);
+    event AppliedChangedClusterPrice(uint256 subnetId, uint256[] unitPrices);
     event WithdrawnNFTs(uint256[] nftIds);
     event ChangedNFTAddress(address DarkMatterNFT);
+    event DAORateChanged(uint256 daoRate, uint256 _daoRate);
 
     function initialize(
         IERC721Upgradeable _DarkMatterNFT,
         address _GlobalDAO,
-        uint256 _coolDownTimeForPriceChange
+        uint256 _coolDownTimeForPriceChange,
+        uint256 _daoRate
     ) public initializer {
         __AccessControl_init_unchained();
         __Pausable_init_unchained();
@@ -137,11 +144,56 @@ contract Registration is
         _grantRole(WHITELIST_ROLE, _GlobalDAO);
         _grantRole(PAUSER_ROLE, _GlobalDAO);
 
+        GLOBAL_DAO_ADDRESS = _GlobalDAO;
+
         DarkMatterNFT = _DarkMatterNFT;
         totalSubnets = 0;
         coolDownTimeForPriceChange = _coolDownTimeForPriceChange;
+        daoRate = _daoRate;
     }
 
+    function getSubnetAttributes(uint256 subnetId)
+        external
+        view
+        returns (
+            uint256,
+            bool,
+            uint256,
+            bool,
+            uint256[] memory,
+            uint256[] memory,
+            uint256,
+            uint256
+        )
+    {
+        uint256 _subnetId = subnetId;
+        return (
+            subnetAttributes[_subnetId].subnetType,
+            subnetAttributes[_subnetId].sovereignStatus,
+            subnetAttributes[_subnetId].cloudProviderType,
+            subnetAttributes[_subnetId].subnetStatusListed,
+            subnetAttributes[_subnetId].unitPrices,
+            subnetAttributes[_subnetId].otherAttributes,
+            subnetAttributes[_subnetId].maxClusters,
+            subnetAttributes[_subnetId].supportFeeRate
+        );
+    }
+
+    function getClusterAttributes(uint256 _subnetId, uint256 _clusterId)
+        external
+        view
+        returns (
+            address,
+            string memory,
+            bool
+        )
+    {
+        return (
+            subnetClusters[_subnetId][_clusterId].ClusterDAO,
+            subnetClusters[_subnetId][_clusterId].DNSIP,
+            subnetClusters[_subnetId][_clusterId].listed
+        );
+    }
 
     function createSubnet(
         uint256 nftId,
@@ -150,10 +202,11 @@ contract Registration is
         bool _sovereignStatus,
         uint256 _cloudProviderType,
         bool _subnetStatusListed,
-        uint256 _price,
+        uint256[] memory _unitPrices,
         uint256[] memory _otherAttributes,
         uint256 _maxClusters,
-        address[] memory _whiteListedClusters
+        address[] memory _whiteListedClusters,
+        uint256 _supportFeeRate
     ) external whenNotPaused {
         DarkMatterNFT.transferFrom(_msgSender(), address(this), nftId);
 
@@ -164,9 +217,10 @@ contract Registration is
         _subnetAttributes.sovereignStatus = _sovereignStatus;
         _subnetAttributes.cloudProviderType = _cloudProviderType;
         _subnetAttributes.subnetStatusListed = _subnetStatusListed;
-        _subnetAttributes.price = _price;
+        _subnetAttributes.unitPrices = _unitPrices;
         _subnetAttributes.otherAttributes = _otherAttributes;
         _subnetAttributes.maxClusters = _maxClusters;
+        _subnetAttributes.supportFeeRate = _supportFeeRate;
 
         subnetAttributes[totalSubnets] = _subnetAttributes;
         emit SubnetCreated(
@@ -176,10 +230,11 @@ contract Registration is
             _sovereignStatus,
             _cloudProviderType,
             _subnetStatusListed,
-            _price,
+            _unitPrices,
             _otherAttributes,
             _maxClusters,
             _whiteListedClusters,
+            _supportFeeRate,
             _msgSender()
         );
         emit NFTLockedForSubnet(_msgSender(), totalSubnets, nftId);
@@ -196,7 +251,8 @@ contract Registration is
         uint256 _cloudProviderType, // 3
         bool _subnetStatusListed, // 4
         uint256[] memory _otherAttributes, // 5
-        uint256 _maxClusters // 6
+        uint256 _maxClusters, // 6
+        uint256 _supportFeeRate
     ) external onlyRole(SUBNET_ATTR_ROLE) {
         if (_attributeNo == 1)
             subnetAttributes[subnetId].subnetType = _subnetType;
@@ -210,6 +266,8 @@ contract Registration is
             subnetAttributes[subnetId].otherAttributes = _otherAttributes;
         else if (_attributeNo == 6)
             subnetAttributes[subnetId].maxClusters = _maxClusters;
+        else if (_attributeNo == 7)
+            subnetAttributes[subnetId].supportFeeRate = _supportFeeRate;
 
         emit SubnetAttributesChanged(
             subnetId,
@@ -226,7 +284,11 @@ contract Registration is
             subnetAttributes[subnetId].subnetType == 1,
             "Already public subnet"
         );
-        require(hasRole(WHITELIST_ROLE, _msgSender())||subnetLocalDAO[subnetId]==_msgSender(),"Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses" );
+        require(
+            hasRole(WHITELIST_ROLE, _msgSender()) ||
+                subnetLocalDAO[subnetId] == _msgSender(),
+            "Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses"
+        );
         for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
             whiteListedClusters[subnetId].push(_whitelistAddresses[i]);
         }
@@ -237,12 +299,16 @@ contract Registration is
         uint256 subnetId,
         address _blacklistAddress,
         uint256 _index
-    ) external  {
+    ) external {
         require(
             whiteListedClusters[subnetId][_index] == _blacklistAddress,
             "Address donot match with index provided"
         );
-        require(hasRole(WHITELIST_ROLE, _msgSender())||subnetLocalDAO[subnetId]==_msgSender(),"Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses" );
+        require(
+            hasRole(WHITELIST_ROLE, _msgSender()) ||
+                subnetLocalDAO[subnetId] == _msgSender(),
+            "Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses"
+        );
 
         for (
             uint256 i = _index;
@@ -265,7 +331,11 @@ contract Registration is
             subnetAttributes[subnetId].subnetType == 1,
             "Already public subnet"
         );
-        require(hasRole(WHITELIST_ROLE, _msgSender())||subnetLocalDAO[subnetId]==_msgSender(),"Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses" );
+        require(
+            hasRole(WHITELIST_ROLE, _msgSender()) ||
+                subnetLocalDAO[subnetId] == _msgSender(),
+            "Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses"
+        );
         address[] memory AllAddresses;
         whiteListedClusters[subnetId] = AllAddresses;
         emit ResetWhitelistCluster(subnetId);
@@ -288,7 +358,6 @@ contract Registration is
         return subnetAttributes[subnetId].maxClusters.sub(totalSpotsFilled);
     }
 
-    
     function clusterSignUp(
         uint256 subnetId,
         string memory _DNSIP,
@@ -303,7 +372,10 @@ contract Registration is
             );
         }
 
-        require(totalClusterSpotsAvailable(subnetId)>0,"No spots available, maxSlots reached for subnet");
+        require(
+            totalClusterSpotsAvailable(subnetId) > 0,
+            "No spots available, maxSlots reached for subnet"
+        );
 
         DarkMatterNFT.transferFrom(_msgSender(), address(this), nftId);
 
@@ -369,14 +441,14 @@ contract Registration is
         emit ChangedListingCluster(subnetId, clusterId, _msgSender(), _allow);
     }
 
-    function requestClusterPriceChange(uint256 subnetId, uint256 _price)
-        external
-        onlyRole(PRICE_ROLE)
-    {
+    function requestClusterPriceChange(
+        uint256 subnetId,
+        uint256[] memory _unitPrices
+    ) external onlyRole(PRICE_ROLE) {
         requestPriceChange[subnetId].timestamp = block.timestamp;
-        requestPriceChange[subnetId].price = _price;
+        requestPriceChange[subnetId].unitPrices = _unitPrices;
 
-        emit RequestedClusterPriceChange(subnetId, _price);
+        emit RequestedClusterPriceChange(subnetId, _unitPrices);
     }
 
     function changeCoolDownTime(uint256 _coolDownTimeSecs)
@@ -396,12 +468,21 @@ contract Registration is
                 ),
             "Cooldown time not over yet"
         );
-        subnetAttributes[subnetId].price = requestPriceChange[subnetId].price;
+        subnetAttributes[subnetId].unitPrices = requestPriceChange[subnetId]
+            .unitPrices;
 
         emit AppliedChangedClusterPrice(
             subnetId,
-            requestPriceChange[subnetId].price
+            requestPriceChange[subnetId].unitPrices
         );
+    }
+
+    function changeDAORate(uint256 _daoRate)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        emit DAORateChanged(daoRate, _daoRate);
+        daoRate = _daoRate;
     }
 
     function withdrawNFT(uint256[] memory _nftIds)

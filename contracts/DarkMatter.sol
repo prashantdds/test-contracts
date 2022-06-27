@@ -1704,14 +1704,21 @@ contract DarkMatter is ERC721 {
 
     }
 
-    function mint(address user) public{
-        require(msg.sender == gov, "!gov");
+
+    function getCurrentTokenId() public view returns(uint){
+        return _tokenIds.current();
+    }
+
+    // ANYONE CAN MINT - TESTING......
+    function mint(address user) public returns(uint){
+        // require(msg.sender == gov, "!gov");
         // ONLY done below to testing by Jas so that NFT is minted always
         _tokenIds.increment();
 
-        uint256 newItemId = _tokenIds.current();
+        uint newItemId = _tokenIds.current();
         _mint(user, newItemId);
         _setTokenURI(newItemId, "https://ipfs.io/ipfs/QmX3PG8VAkaRcgLvV96NCrFgGQAjtR4FbbvKm9h49c6yRL");
+        return newItemId;
 
     }
 
