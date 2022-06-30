@@ -2,33 +2,28 @@
 
 pragma solidity 0.8.2;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "./TokensRecoverableOwner.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "./interfaces/IRegistration.sol";
 import "./interfaces/IERC721.sol";
+import "./interfaces/ISubscriptionBalance.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
-contract Subscription is
-    OwnableUpgradeable,
-    PausableUpgradeable,
-    TokensRecoverableOwner
-{
+contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     // contract addresses cannot be changed once initialised
     IRegistration public RegistrationContract;
     IERC721 public ApplicationNFT;
-    IERC20Upgradeable public XCTToken;
+    ISubscriptionBalance public SubscriptionBalance;
+    IERC20Upgradeable public XCT;
 
-    struct NFTAttribute {
-        uint256 lastBalanceUpdateTime;
-        uint256 prevBalance;
-        uint256[] subnetIds;// cannot be changed unless delisted
-        address NFTMinter;
-        uint256 endOfXCTBalance;
-    }
+    bytes32 public constant CHANGE_COMPUTE_ROLE =
+        keccak256("CHANGE_COMPUTE_ROLE");
+    bytes32 public constant WITHDRAW_CREDITS_ROLE =
+        keccak256("WITHDRAW_CREDITS_ROLE");
+    address public GLOBAL_DAO_ADDRESS;
 
     struct NFTSubnetAttribute {
         string serviceProviderAddress;
@@ -38,14 +33,9 @@ contract Subscription is
         bool subscribed;
     }
 
-    // NFT id => NFTAttribute
-    mapping(uint256 => NFTAttribute) public nftAttributes;
-
     // NFT id => SubnetID => NFTSubnetAttribute
     mapping(uint256 => mapping(uint256 => NFTSubnetAttribute))
         public userSubscription;
-
-    mapping(address=>uint256) public balanceOfRev;
 
     uint256 public LIMIT_NFT_SUBNETS;
     uint256 public MIN_TIME_FUNDS;
@@ -60,17 +50,11 @@ contract Subscription is
     }
 
     // NFT id => Subnet ID =>
-    mapping(uint256 => mapping(uint256 => PriceChangeRequest)) requestPriceChange;
+    mapping(uint256 => mapping(uint256 => PriceChangeRequest)) public requestPriceChange;
 
-    event Changed_LIMIT_NFT_SUBNETS(
-        uint256 prev_limit,
-        uint256 new_limit
-    );
+    event Changed_LIMIT_NFT_SUBNETS(uint256 prev_limit, uint256 new_limit);
 
-    event Changed_LIMIT_MIN_TIME_FUNDS(
-        uint256 prev_limit,
-        uint256 new_limit
-    );
+    event Changed_LIMIT_MIN_TIME_FUNDS(uint256 prev_limit, uint256 new_limit);
 
     event Changed_REQD_NOTICE_TIME_S_PROVIDER(
         uint256 prev_limit,
@@ -82,8 +66,6 @@ contract Subscription is
         uint256 new_limit
     );
 
-    event BalanceAdded(uint256 NFTId, uint256 bal);
-
     event Subscribed(
         uint256 NFTId,
         uint256 subnetId,
@@ -93,11 +75,7 @@ contract Subscription is
         uint256[] computeRequired
     );
 
-    event ReferralAdded(
-        uint256 NFTId,
-        uint256 subnetId,
-        address refAddress
-    );
+    event ReferralAdded(uint256 NFTId, uint256 subnetId, address refAddress);
 
     event ChangedSubnetSubscription(
         uint256 NFTId,
@@ -117,123 +95,90 @@ contract Subscription is
         string newServiceProvider
     );
 
-    event RefreshedBalance(
-        uint256 NFTId
-    );
-
-    event ReceivedRevenue(
-        address benficiary,
-        uint256 bal
-    );
-
     function initialize(
+        address _GlobalDAO,
         uint256 _LIMIT_NFT_SUBNETS,
         uint256 _MIN_TIME_FUNDS,
         IRegistration _RegistrationContract,
         IERC721 _ApplicationNFT,
-        IERC20Upgradeable _XCTToken,
+        ISubscriptionBalance _SubscriptionBalance,
+        IERC20Upgradeable _XCT,
         uint256 _REQD_NOTICE_TIME_S_PROVIDER,
         uint256 _REQD_COOLDOWN_S_PROVIDER
     ) public initializer {
-        __Ownable_init_unchained();
+        __AccessControl_init_unchained();
         __Pausable_init_unchained();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, _GlobalDAO);
+        _grantRole(CHANGE_COMPUTE_ROLE, _GlobalDAO);
+        _grantRole(WITHDRAW_CREDITS_ROLE, _GlobalDAO);
+        GLOBAL_DAO_ADDRESS = _GlobalDAO;
+
         LIMIT_NFT_SUBNETS = _LIMIT_NFT_SUBNETS;
         MIN_TIME_FUNDS = _MIN_TIME_FUNDS;
         RegistrationContract = _RegistrationContract;
         ApplicationNFT = _ApplicationNFT;
-        XCTToken = _XCTToken;
+        SubscriptionBalance = _SubscriptionBalance;
+        XCT = _XCT;
         REQD_NOTICE_TIME_S_PROVIDER = _REQD_NOTICE_TIME_S_PROVIDER;
         REQD_COOLDOWN_S_PROVIDER = _REQD_COOLDOWN_S_PROVIDER;
+
+        _XCT.approve(address(_SubscriptionBalance), 2**256 - 1);
+    }
+
+    function getBytes32OfRole(string memory _roleName)
+        external
+        view
+        returns (bytes32)
+    {
+        return keccak256(bytes(_roleName));
+    }
+
+    function change__GLOBAL_DAO_ADDRESS(address _newGlobalDAO)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        GLOBAL_DAO_ADDRESS = _newGlobalDAO;
     }
 
     function change__LIMIT_NFT_SUBNETS(uint256 _new_LIMIT_NFT_SUBNETS)
         external
-        onlyOwner
+        onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        emit Changed_LIMIT_NFT_SUBNETS(LIMIT_NFT_SUBNETS, _new_LIMIT_NFT_SUBNETS);
+        emit Changed_LIMIT_NFT_SUBNETS(
+            LIMIT_NFT_SUBNETS,
+            _new_LIMIT_NFT_SUBNETS
+        );
         LIMIT_NFT_SUBNETS = _new_LIMIT_NFT_SUBNETS;
     }
 
     function change__MIN_TIME_FUNDS(uint256 _new_MIN_TIME_FUNDS)
         external
-        onlyOwner
+        onlyRole(DEFAULT_ADMIN_ROLE)
     {
         emit Changed_LIMIT_MIN_TIME_FUNDS(MIN_TIME_FUNDS, _new_MIN_TIME_FUNDS);
         MIN_TIME_FUNDS = _new_MIN_TIME_FUNDS;
     }
 
-
-    function change__REQD_NOTICE_TIME_S_PROVIDER(uint256 _REQD_NOTICE_TIME_S_PROVIDER)
-        external
-        onlyOwner
-    {
-        emit Changed_REQD_NOTICE_TIME_S_PROVIDER(REQD_NOTICE_TIME_S_PROVIDER, _REQD_NOTICE_TIME_S_PROVIDER);
+    function change__REQD_NOTICE_TIME_S_PROVIDER(
+        uint256 _REQD_NOTICE_TIME_S_PROVIDER
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        emit Changed_REQD_NOTICE_TIME_S_PROVIDER(
+            REQD_NOTICE_TIME_S_PROVIDER,
+            _REQD_NOTICE_TIME_S_PROVIDER
+        );
         REQD_NOTICE_TIME_S_PROVIDER = _REQD_NOTICE_TIME_S_PROVIDER;
     }
 
-
     function change__REQD_COOLDOWN_S_PROVIDER(uint256 _REQD_COOLDOWN_S_PROVIDER)
         external
-        onlyOwner
+        onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        emit Changed_REQD_COOLDOWN_S_PROVIDER(REQD_COOLDOWN_S_PROVIDER, _REQD_COOLDOWN_S_PROVIDER);
+        emit Changed_REQD_COOLDOWN_S_PROVIDER(
+            REQD_COOLDOWN_S_PROVIDER,
+            _REQD_COOLDOWN_S_PROVIDER
+        );
         REQD_COOLDOWN_S_PROVIDER = _REQD_COOLDOWN_S_PROVIDER;
-    }
-
-    function changeComputes() changeComputeRole{
-
-    }
-
-
-    function withdrawCredits() changeComputeRole{
-
-    }
-    
-    function dripRatePerSec(uint256 NFTid)
-        public
-        view
-        returns (uint256 totalDripRate)
-    {
-        uint256[] memory subnetIds = nftAttributes[NFTid].subnetIds;
-        totalDripRate = 0;
-        for (uint256 i = 0; i < subnetIds.length; i++) {
-            totalDripRate = totalDripRate.add(
-                dripRatePerSecOfSubnet(NFTid, subnetIds[i])
-            );
-        }
-    }
-
-    function dripRatePerSecOfSubnet(uint256 NFTid, uint256 subnetId)
-        public
-        view
-        returns (uint256)
-    {
-        uint256 factor = s_GlobalDAORate()
-            .add(r_licenseFee(NFTid, subnetId))
-            .add(t_SupportFeeRate(subnetId))
-            .add(100000);
-        (, , , , uint256[] memory prices, , , ) = RegistrationContract
-            .getSubnetAttributes(subnetId);
-        uint256 cost = 0;
-        for (uint256 i = 0; i < prices.length; i++) {
-            cost = cost.add(prices[i].mul(userSubscription[NFTid][subnetId]
-            .computeRequired[i]));
-        }
-        return factor.mul(cost).div(100000);
-    }
-
-    function t_supportFeeAddress(uint256 _tokenId) public view returns (address) {
-        return ApplicationNFT.ownerOf(_tokenId);
-    }
-
-    function s_GlobalDAOAddress() public view returns (address) {
-        return RegistrationContract.GLOBAL_DAO_ADDRESS();
-    }
-
-    // r address is NFT minter address => nftAttributes[_nftId].NFTMinter
-
-    function subnetDAOWalletFor1(uint256 _subnetId) public view returns (address) {
-        return RegistrationContract.subnetLocalDAO(_subnetId);
     }
 
     function r_licenseFee(uint256 _nftId, uint256 _subnetId)
@@ -244,48 +189,21 @@ contract Subscription is
         return userSubscription[_nftId][_subnetId].r_licenseFee;
     }
 
-    function s_GlobalDAORate() public view returns (uint256) {
-        return RegistrationContract.daoRate();
-    }
-
-    function t_SupportFeeRate(uint256 _subnetId)
-        public
-        view
-        returns (uint256 fee)
-    {
-        (, , , , , , , fee) = RegistrationContract.getSubnetAttributes(
-            _subnetId
-        );
-    }
-
-    function balanceLeft(uint256 NFTid) public view returns (uint256) {
-        uint256 cost = (
-            block.timestamp.sub(nftAttributes[NFTid].lastBalanceUpdateTime)
-        ).mul(dripRatePerSec(NFTid));
-        if (nftAttributes[NFTid].prevBalance < cost) return 0;
-        return nftAttributes[NFTid].prevBalance.sub(cost);
-    }
-
-    function changeComputesOfSubnet(uint _NFTid, uint _subnetId){
-
-    }
-
-    withdrawAllBalance()
-
-    function addBalance(uint256 _nftId, uint256 _balanceToAdd)
+    function getComputesOfSubnet(uint256 NFTid, uint256 subnetId)
         external
-        updateBalance(_nftId)
-        returns (bool)
-    {   
-        uint256 id = _nftId;
-        XCTToken.transferFrom(_msgSender(), address(this), _balanceToAdd);
-        uint256 newBal = nftAttributes[id].prevBalance.add(_balanceToAdd);
-        nftAttributes[id].prevBalance = newBal;
-        nftAttributes[id].lastBalanceUpdateTime = block.timestamp;
-        nftAttributes[id].endOfXCTBalance = block.timestamp.add(
-            newBal.div(dripRatePerSec(id))
-        );
-        emit BalanceAdded(_nftId, _balanceToAdd);
+        view
+        returns (uint256[] memory)
+    {
+        return userSubscription[NFTid][subnetId].computeRequired;
+    }
+
+    function changeComputesOfSubnet(
+        uint256 _NFTid,
+        uint256 _subnetId,
+        uint256[] memory _computeRequired
+    ) external onlyRole(CHANGE_COMPUTE_ROLE) whenNotPaused {
+        userSubscription[_NFTid][_subnetId].computeRequired = _computeRequired;
+        SubscriptionBalance.refreshEndOfBalance(_NFTid);
     }
 
     function subscribeBatchNew(
@@ -315,7 +233,8 @@ contract Subscription is
             );
         }
         require(
-            dripRatePerSec(NFTid).mul(MIN_TIME_FUNDS) < _balanceToAdd,
+            SubscriptionBalance.dripRatePerSec(NFTid).mul(MIN_TIME_FUNDS) <
+                _balanceToAdd,
             "Balance added should be enough with MIN_TIME_FUNDS"
         );
     }
@@ -328,28 +247,13 @@ contract Subscription is
         uint256 _licenseFee,
         uint256[] memory _computeRequired
     ) public whenNotPaused returns (uint256) {
-
         // find next mint id
         uint256 NFTid = ApplicationNFT.getCurrentTokenId().add(1);
         ApplicationNFT.mint(_msgSender()); // NFT contract should return NFT id on minting
 
-        // struct NFTAttribute {
-        //     uint256 lastBalanceUpdateTime;
-        //     uint256 prevBalance;
-        //     uint256[] subnetIds;
-        //     address NFTMinter;
-        //     uint256 endOfXCTBalance;
-        // }
-        uint256[] memory arr;
-        nftAttributes[NFTid] = NFTAttribute(
-            block.timestamp,
-            _balanceToAdd,
-            arr,
-            _msgSender(),
-            0
-        );
+        XCT.transferFrom(_msgSender(), address(this), _balanceToAdd);
 
-        _subscribeToExistingNFT(
+        _subscribeSubnet(
             NFTid,
             subnetId,
             _serviceProviderAddress,
@@ -357,16 +261,19 @@ contract Subscription is
             _licenseFee,
             _computeRequired
         );
-        require(
-            dripRatePerSecOfSubnet(NFTid, subnetId).mul(MIN_TIME_FUNDS) <
-                _balanceToAdd,
-            "Balance added should be enough with MIN_TIME_FUNDS"
-        );
-        XCTToken.transferFrom(_msgSender(), address(this), _balanceToAdd);
-        emit BalanceAdded(NFTid, _balanceToAdd);
 
-        nftAttributes[NFTid].endOfXCTBalance = block.timestamp.add(
-            _balanceToAdd.div(dripRatePerSec(NFTid))
+        SubscriptionBalance.subscribeNew(
+            NFTid,
+            _balanceToAdd,
+            subnetId,
+            _msgSender()
+        );
+
+        require(
+            SubscriptionBalance.dripRatePerSecOfSubnet(NFTid, subnetId).mul(
+                MIN_TIME_FUNDS
+            ) < _balanceToAdd,
+            "Balance added should be enough with MIN_TIME_FUNDS"
         );
 
         return NFTid;
@@ -399,8 +306,11 @@ contract Subscription is
         address _referralAddress,
         uint256 _licenseFee,
         uint256[] memory _computeRequired
-    ) public whenNotPaused updateBalance(_nftId) {
-        _subscribeToExistingNFT(
+    ) public whenNotPaused {
+        SubscriptionBalance.refreshBalance(_nftId);
+        SubscriptionBalance.addSubnetToNFT(_nftId,_subnetId);
+
+        _subscribeSubnet(
             _nftId,
             _subnetId,
             _serviceProviderAddress,
@@ -410,7 +320,7 @@ contract Subscription is
         );
     }
 
-    function _subscribeToExistingNFT(
+    function _subscribeSubnet(
         uint256 _nftId,
         uint256 _subnetId,
         string memory _serviceProviderAddress,
@@ -418,16 +328,16 @@ contract Subscription is
         uint256 _licenseFee,
         uint256[] memory _computeRequired
     ) internal {
+
+        require(!userSubscription[_nftId][_subnetId].subscribed,"Already subscribed");
         require(
-            nftAttributes[_nftId].subnetIds.length < LIMIT_NFT_SUBNETS,
+            SubscriptionBalance.totalSubnets(_nftId) < LIMIT_NFT_SUBNETS,
             "Cannot subscribe as limit exceeds to max Subnet subscription allowed per NFT"
         );
         require(
             ApplicationNFT.ownerOf(_nftId) == _msgSender(),
             "Sender not the owner of NFT id"
         );
-
-        nftAttributes[_nftId].subnetIds.push(_subnetId);
 
         userSubscription[_nftId][_subnetId]
             .serviceProviderAddress = _serviceProviderAddress;
@@ -436,7 +346,14 @@ contract Subscription is
         userSubscription[_nftId][_subnetId].computeRequired = _computeRequired;
         userSubscription[_nftId][_subnetId].subscribed = true;
 
-        emit Subscribed(_nftId, _subnetId, _serviceProviderAddress, _referralAddress, _licenseFee, _computeRequired);
+        emit Subscribed(
+            _nftId,
+            _subnetId,
+            _serviceProviderAddress,
+            _referralAddress,
+            _licenseFee,
+            _computeRequired
+        );
     }
 
     function addReferralAddress(
@@ -492,15 +409,13 @@ contract Subscription is
             .computeRequired;
 
         userSubscription[_nftId][_currentSubnetId].subscribed = false;
-        uint256[] memory subnetIdsInNFT = nftAttributes[_nftId].subnetIds;
-        // replace subnetId
-        for (uint256 i = 0; i < subnetIdsInNFT.length; i++) {
-            if (subnetIdsInNFT[i] == _currentSubnetId) {
-                subnetIdsInNFT[i] = _newSubnetId;
-                break;
-            }
-        }
-        nftAttributes[_nftId].subnetIds = subnetIdsInNFT;
+
+        SubscriptionBalance.changeSubnet(
+            _nftId,
+            _currentSubnetId,
+            _newSubnetId
+        );
+
         emit ChangedSubnetSubscription(_nftId, _currentSubnetId, _newSubnetId);
     }
 
@@ -508,6 +423,9 @@ contract Subscription is
     function applyServiceProviderChange(uint256 _nftId, uint256 _subnetId)
         external
     {
+        string memory empty = "";
+        require(keccak256(bytes(requestPriceChange[_nftId][_subnetId].serviceProviderAddress)) != keccak256(bytes(empty)),"No request for service provider change done yet");
+
         require(
             requestPriceChange[_nftId][_subnetId].timestamp.add(
                 REQD_COOLDOWN_S_PROVIDER
@@ -519,11 +437,13 @@ contract Subscription is
             .serviceProviderAddress = requestPriceChange[_nftId][_subnetId]
             .serviceProviderAddress;
 
-        requestPriceChange[_nftId][_subnetId]
-            .serviceProviderAddress = "";
+        requestPriceChange[_nftId][_subnetId].serviceProviderAddress = "";
 
-        emit AppliedServiceProviderChange(_nftId, _subnetId, userSubscription[_nftId][_subnetId]
-            .serviceProviderAddress);
+        emit AppliedServiceProviderChange(
+            _nftId,
+            _subnetId,
+            userSubscription[_nftId][_subnetId].serviceProviderAddress
+        );
     }
 
     function requestServiceProviderChange(
@@ -550,102 +470,10 @@ contract Subscription is
         requestPriceChange[_nftId][_subnetId]
             .serviceProviderAddress = _newServiceProvider;
 
-        emit RequestedServiceProviderChange(_nftId, _subnetId, _newServiceProvider);
-
+        emit RequestedServiceProviderChange(
+            _nftId,
+            _subnetId,
+            _newServiceProvider
+        );
     }
-
-    function refreshBalance(uint256 _nftId) external updateBalance(_nftId) {
-        // modifier is only required to call
-        emit RefreshedBalance(_nftId);
-    }
-
-    function receiveRevenue() external {
-        receiveRevenueForAddress(_msgSender());
-    }
-
-    function receiveRevenueForAddressBulk(address[] memory _userAddresses) external {
-        for(uint256 i=0;i<_userAddresses.length;i++)
-            receiveRevenueForAddress(_userAddresses[i]);
-    }
-
-    function receiveRevenueForAddress(address _userAddress) public {
-        uint256 bal = balanceOfRev[_userAddress];
-        XCTToken.transfer(_userAddress, bal);
-        balanceOfRev[_userAddress] = 0;
-        emit ReceivedRevenue(_userAddress, bal);
-    }
-
-    // ALWAYS check before computing
-    function isBalancePresent(uint256 _nftId) public view returns (bool) {
-        if (block.timestamp < nftAttributes[_nftId].endOfXCTBalance) return true;
-        return false;
-    }
-
-    function onERC721Received(
-        address _operator,
-        address _from,
-        uint256 _id,
-        bytes calldata _data
-    ) external returns (bytes4) {
-        return 0x150b7a02;
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier updateBalance(uint256 NFTid) {
-
-        uint256 computeCostPerSec = 0;
-        uint256[] memory subnetIds = nftAttributes[NFTid].subnetIds;
-
-        for (uint256 i = 0; i < subnetIds.length; i++) {
-
-            (, , , , uint256[] memory prices, , , ) = RegistrationContract
-            .getSubnetAttributes(subnetIds[i]);
-            for (uint256 j = 0; j < prices.length; j++) {
-                computeCostPerSec = computeCostPerSec.add(prices[j].mul(userSubscription[NFTid][subnetIds[i]]
-                .computeRequired[j]));
-            }
-        }
-        uint256 computeCost = computeCostPerSec.mul(block.timestamp.sub(
-            nftAttributes[NFTid].lastBalanceUpdateTime
-        ));
-        
-
-        if(computeCost>100000){
-
-            uint256 costIncurred_r;
-            uint256 costIncurred_s;
-            uint256 costIncurred_t;
-            uint256 costIncurred_1 = computeCost; // 1 of (1+R+S+T) revenue
-
-            costIncurred_s = s_GlobalDAORate().mul(computeCost).div(100000);
-            // update S revenue of (1+R+S+T) revenue
-            balanceOfRev[s_GlobalDAOAddress()] = balanceOfRev[s_GlobalDAOAddress()].add(costIncurred_s);
-
-            for (uint256 i = 0; i < subnetIds.length; i++) {
-                costIncurred_r = costIncurred_r.add(r_licenseFee(NFTid, subnetIds[i]).mul(computeCost).div(100000));
-                costIncurred_t = costIncurred_t.add(t_SupportFeeRate(subnetIds[i]).mul(computeCost).div(100000));
-                // update (1)(for subnetDAOWallet) of (1+R+S+T) revenue
-                balanceOfRev[subnetDAOWalletFor1(subnetIds[i])] = balanceOfRev[subnetDAOWalletFor1(subnetIds[i])].add(costIncurred_1);
-            }
-            // update R revenue of (1+R+S+T) revenue
-            balanceOfRev[nftAttributes[NFTid].NFTMinter] = balanceOfRev[nftAttributes[NFTid].NFTMinter].add(costIncurred_r);
-
-            // update T revenue of (1+R+S+T) revenue
-            balanceOfRev[t_supportFeeAddress(NFTid)] = balanceOfRev[t_supportFeeAddress(NFTid)].add(costIncurred_t);
-
-            uint256 totalCostIncurred = costIncurred_r.add(costIncurred_s).add(costIncurred_t).add(costIncurred_1);
-            uint256 newBalance = 0;
-            if (totalCostIncurred < nftAttributes[NFTid].prevBalance)
-                newBalance = nftAttributes[NFTid].prevBalance.sub(totalCostIncurred);
-
-            nftAttributes[NFTid].prevBalance = newBalance;
-            nftAttributes[NFTid].lastBalanceUpdateTime = block.timestamp;
-        }
-
-
-        _;
-    }
-
-
 }

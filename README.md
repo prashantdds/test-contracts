@@ -19,20 +19,22 @@ Sections below describes the following :
 | Contract Name | File and Location | Description |
 |--|--| --|
 |Registration| [`Registration.sol`](./contracts/Registration.sol) | Upgradeable Registration contract with creating subnet, clusters and defining rules around it.  |
-|Subscription| [`Subscription.sol`](./contracts/Subscription.sol) | Upgradeable Subscription contract for subscribing to subnets and minting NFTs to subscriber address. Revenue is distributed as per (1+r+s+t)*( compute Reqd * Unit Price + ...) formula|
+|Subscription| [`Subscription.sol`](./contracts/Subscription.sol) | Upgradeable Subscription contract for subscribing to subnets and minting NFTs to subscriber address.|
+|SubscriptionBalance| [`SubscriptionBalance.sol`](./contracts/SubscriptionBalance.sol) | Upgradeable contract for maintaining balances of subscriptions, subnets included in NFTs. Revenue is distributed as per (1+r+s+t)*( compute Reqd * Unit Price + ...) formula|
 
 ## Deployment
 
 Use `deploy.js` to deploy the Registration smart contract.
 
-
 ## Audit-Scope
 Solidity files that need auditing
 |--|
 [`Registration.sol`](./contracts/Registration.sol) |
+[`Subscription.sol`](./contracts/Subscription.sol) |
+[`SubscriptionBalance.sol`](./contracts/SubscriptionBalance.sol) |
 
 ## Rationale
-#### Registration
+### Registration
 1. `createSubnet` is called by wallet that holds DarkMatter NFT. NFT is locked in contract withdrawable by global DAO. 
 ```
         uint256 nftId - Dark Matter NFT id to be locked
@@ -89,7 +91,7 @@ resetWhitelistClusters(uint256 subnetId)
 10. Local DAO ownership can be transferred by `transferClusterDAOOwnership`.
 
 
-#### Subscription
+### Subscription
 1. `subscribeNew` is called by wallet that wants to subscribe to the subnet. XCT balance should be added for MIN_TIME_FUNDS time period. computeRequired array needs to set for reqd compute. Application NFT will be minted and NFT id is returned.
 ```
         uint256 _balanceToAdd - XCT tokens to add, should be above set min time limit
@@ -100,20 +102,77 @@ resetWhitelistClusters(uint256 subnetId)
         uint256[] memory _computeRequired = array with same size as unitPrices array of Registration contract.
 ```
 Call subscribeBatchNew() with array values to subcribe multiple subnet ids at once.
-Please note: ERC 721 NFT contract should have following functions mandatory.
+<b>Please note: ERC 721 NFT contract should have following functions mandatory.</b>
 ```
 getCurrentTokenId() returns uint - to get current/last token Id minted.
 mint(address _to) - to mint the NFT. Subscription contract address should have permissions to MINT.
 ownerOf(_nftId) - returns address of owner of provided _nftId.
 ```
+
 2. `subscribeToExistingNFT` is called by wallet that already holds Application NFT. Subnet id given is pushed to that NFT computations. To add multiple subnet ids at once on existing NFT, call subscribeBatchToExistingNFT().
+
+
+3. To add referral address if not set during subscription, call `addReferralAddress`
+```
+        uint256 _nftId,
+        uint256 _subnetId,
+        address _refAddress - address to be set as referrer
+``` 
+4. If subnet is delisted in Registration contract, call `changeSubnetSubscription` to replace existing subnet id with new one.
+```
+        uint256 _nftId,
+        uint256 _currentSubnetId - subnet id to be replaced
+        uint256 _newSubnetId - new subnet id chosen
+```
+
+5. If NFT owner wants to change service provider, then `requestServiceProviderChange` is called. There is limit `REQD_NOTICE_TIME_S_PROVIDER` that should pass before one can request for change. Also, in order to apply the requested service provider change, `applyServiceProviderChange` needs to called (callable by anyone once `REQD_COOLDOWN_S_PROVIDER` is passed)
+
+6. Only few attributes can be changed by contract `DEFAULT_ADMIN_ROLE`:
+```
+change__LIMIT_NFT_SUBNETS(uint256 _new_LIMIT_NFT_SUBNETS)
+change__MIN_TIME_FUNDS(uint256 _new_MIN_TIME_FUNDS)
+change__REQD_NOTICE_TIME_S_PROVIDER(uint256 _REQD_NOTICE_TIME_S_PROVIDER)
+change__REQD_COOLDOWN_S_PROVIDER(uint256 _REQD_COOLDOWN_S_PROVIDER)
+```
+
+Some function roles are defined
+```
+CHANGE_COMPUTE_ROLE - to call changeComputesOfSubnet()
+WITHDRAW_CREDITS_ROLE - to call withdrawCreditsForNFT() in SubscriptionBalance contract.
+```
+More roles can be added by `addRole()` function. To get bytes32 of role use view function `getBytes32OfRole()`. Admin can revoke the role by calling `revokeRole`.
+
+7. `userSubscription(NFT id, Subnet id)` gives details of subnet subscribed to NFT in general. 
+```
+    struct NFTSubnetAttribute {
+        string serviceProviderAddress; - can be changed after REQD_NOTICE_TIME_S_PROVIDER in REQD_COOLDOWN_S_PROVIDER
+        address referralAddress; - address that referred. It can be set later if not set during subscription.  
+        uint256 r_licenseFee; - 1000 = 1% and so on
+        uint256[] computeRequired; - array of units required by subscriber, can be changed anytime.
+        bool subscribed; - current status of use of subnet.
+    }
+```
+
+
+### SubscriptionBalance
+
+1. `totalPrevBalance` view function gives total XCT balance (including credit and external deposit) at last updated time of balance. Use `prevBalances` to see division into credit, external storage and owner wallet.
+```
+prevBalances[0] - Credits (withdrawable by WITHDRAW_CREDITS_ROLE)
+prevBalances[1] - External deposit (non withdrawable)
+prevBalances[2] - Owner wallet
+```
+Note: nftBalances[NFTid].prevBalance[0] - Credits balance is withdrawable after expiry by WITHDRAW_CREDITS_ROLE by calling `withdrawCreditsForNFT`.
+
+2. XCT balance for NFT is refreshed everytime new subscription happens on NFT or balance is added. 
+
+<b>Note: `isBalancePresent` boolean view function should be checked from backend before computation.</b>
+
+For updating XCT balance on smart contract anytime call `refreshBalance`.  
+`balanceLeft` view function can be used to get realtime total balance left.
+
 3. `addBalance` is callable by anyone to add XCT balance to NFT id. Call view function `balanceLeft` to see balance remaining. For ANY COMPUTATION, ALWAYS check view function `isBalancePresent()` that returns bool.
-4. `dripRatePerSec` view function is to check drip rate of the NFT. How much XCT is charged per second based on computation demanded while adding the subnet to NFT. It calculates for all subnets present in NFT. For particular subnet id, use view function `dripRatePerSecOfSubnet`.
-```
-Calculation:
-[1+r+s+t] * [ {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)+(resourcecompute3 requested * unit price)......} + {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)......} ]
-```
-5. Following view functions are present to check addresses and values for 1, R, S, T.
+4. Following view functions are present to check addresses and values for 1, R, S, T.
 ```
 t_supportFeeAddress(uint256 _tokenId)
 s_GlobalDAOAddress()
@@ -124,33 +183,28 @@ r_licenseFee(uint256 _nftId, uint256 _subnetId)
 s_GlobalDAORate()
 t_SupportFeeRate(uint256 _subnetId)
 ```
-6. XCT balance for NFT is refreshed everytime new subscription happens on NFT or balance is added. Note: `isBalancePresent` boolean view function should be checked from backend before computation. For updating XCT balance on smart contract anytime call `refreshBalance`.  
-7. To add referral address if not set during subscription, call `addReferralAddress`
+5. `dripRatePerSec` view function is to check drip rate of the NFT. How much XCT is charged per second based on computation demanded while adding the subnet to NFT. It calculates for all subnets present in NFT. For particular subnet id, use view function `dripRatePerSecOfSubnet`.
 ```
-        uint256 _nftId,
-        uint256 _subnetId,
-        address _refAddress - address to be set as referrer
-``` 
-8. If subnet is delisted in Registration contract, call `changeSubnetSubscription` to replace existing subnet id with new one.
+Calculation:
+[1+r+s+t] * [ {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)+(resourcecompute3 requested * unit price)......} + {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)......} ]
 ```
-        uint256 _nftId,
-        uint256 _currentSubnetId - subnet id to be replaced
-        uint256 _newSubnetId - new subnet id chosen
-```
-9. If NFT owner wants to change service provider, then `requestServiceProviderChange` is called. There is limit `REQD_NOTICE_TIME_S_PROVIDER` that should pass before one can request for change. Also, in order to apply the requested service provider change, `applyServiceProviderChange` needs to called (callable by anyone once `REQD_COOLDOWN_S_PROVIDER` is passed)
-10. In order to receive revenues for (1, R, S, T) addresses, any of following functions can be called. It transfers the XCT as per the formula.
+
+6. In order to receive revenues for (1, R, S, T) addresses, any of following functions can be called. It transfers the XCT as per the formula.
 ```
 receiveRevenue() - by owner of wallet address
 receiveRevenueForAddress(address _userAddress) - anyone can call
 receiveRevenueForAddressBulk(address[] memory _userAddresses) - anyone can call
 ```
-11. Only few attributes can be changed by contract `owner`:
-```
-change__LIMIT_NFT_SUBNETS(uint256 _new_LIMIT_NFT_SUBNETS)
-change__MIN_TIME_FUNDS(uint256 _new_MIN_TIME_FUNDS)
-change__REQD_NOTICE_TIME_S_PROVIDER(uint256 _REQD_NOTICE_TIME_S_PROVIDER)
-change__REQD_COOLDOWN_S_PROVIDER(uint256 _REQD_COOLDOWN_S_PROVIDER)
-```
+7. To withdraw some owner's NFT subscription balance, call `withdrawBalance` or to withdraw all balance, call `withdrawAllOwnerBalance`. 
 
-
+8.  `nftBalances[NFT id]` mapping is present to get NFT Balance details in general.
+    ```
+    struct NFTBalance {
+        uint256 lastBalanceUpdateTime; - last refreshed balances time
+        uint256[3] prevBalance; -  prevBalance[0] = Credit wallet, prevBalance[1] = External Deposit, prevBalance[3] = Owner wallet
+        uint256[] subnetIds; // cannot be changed unless delisted
+        address NFTMinter; subscriber address
+        uint256 endOfXCTBalance; unix timestamp when balance finished
+    }
+    ```
 
