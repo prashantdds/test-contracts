@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/jaspreetsingh/Desktop/stackos/contracts/Registration.sol": {
-      "lastModificationDate": 1656556672776,
-      "contentHash": "407441a83221e19a373ef0d93d3b9027",
+      "lastModificationDate": 1657176472446,
+      "contentHash": "ad52764a4c6134585482aaaa68458e46",
       "sourceName": "contracts/Registration.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -649,8 +649,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/TestERC20.sol": {
-      "lastModificationDate": 1654925831113,
-      "contentHash": "6cb55b1be54c7c49b463fd70ce06a28f",
+      "lastModificationDate": 1657187882188,
+      "contentHash": "8b5e493857d7a2b0f748693c778550ce",
       "sourceName": "contracts/TestERC20.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -993,70 +993,6 @@
       ],
       "artifacts": [
         "MathUpgradeable"
-      ]
-    },
-    "/Users/jaspreetsingh/Desktop/stackos/contracts/DarkMatter.sol": {
-      "lastModificationDate": 1656219226764,
-      "contentHash": "25560ba2f9a61f2edb89cf7f21dab00f",
-      "sourceName": "contracts/DarkMatter.sol",
-      "solcConfig": {
-        "version": "0.6.2",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata",
-                "storageLayout"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.6.0",
-        "^0.6.0",
-        "^0.6.2",
-        "^0.6.2",
-        "^0.6.2",
-        "^0.6.0",
-        "^0.6.0",
-        "^0.6.0",
-        "^0.6.2",
-        "^0.6.0",
-        "^0.6.0",
-        "^0.6.0",
-        "^0.6.0",
-        "^0.6.0",
-        "^0.6.0"
-      ],
-      "artifacts": [
-        "Address",
-        "Context",
-        "Counters",
-        "DarkMatter",
-        "ERC165",
-        "ERC721",
-        "EnumerableMap",
-        "EnumerableSet",
-        "IERC165",
-        "IERC721",
-        "IERC721Enumerable",
-        "IERC721Metadata",
-        "IERC721Receiver",
-        "SafeMath",
-        "Strings"
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/node_modules/@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol": {
@@ -1703,8 +1639,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IRegistration.sol": {
-      "lastModificationDate": 1656261089721,
-      "contentHash": "79125d7ad39c6013948311246b8cd587",
+      "lastModificationDate": 1657274818096,
+      "contentHash": "fcab41502b584147d1b13db5c8474292",
       "sourceName": "contracts/interfaces/IRegistration.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -1843,53 +1779,9 @@
         "TestAppNFT"
       ]
     },
-    "/Users/jaspreetsingh/Desktop/stackos/contracts/Subscription2.sol": {
-      "lastModificationDate": 1656556115701,
-      "contentHash": "75f80e45b0615c500cc1d8ec70438203",
-      "sourceName": "contracts/Subscription2.sol",
-      "solcConfig": {
-        "version": "0.8.2",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata",
-                "storageLayout"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol",
-        "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol",
-        "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol",
-        "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol",
-        "./interfaces/IRegistration.sol",
-        "./interfaces/IERC721.sol",
-        "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol"
-      ],
-      "versionPragmas": [
-        "0.8.2"
-      ],
-      "artifacts": [
-        "Subscription2"
-      ]
-    },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/SubscriptionBalance.sol": {
-      "lastModificationDate": 1656566259538,
-      "contentHash": "4e784ac802129e8b9a1f2b086c027a1d",
+      "lastModificationDate": 1657263706076,
+      "contentHash": "7853a9c3d6960aad323c3d658fbac413",
       "sourceName": "contracts/SubscriptionBalance.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -1922,6 +1814,7 @@
         "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol",
         "./interfaces/IRegistration.sol",
         "./interfaces/ISubscription.sol",
+        "./interfaces/IBalanceCalculator.sol",
         "./interfaces/IERC721.sol",
         "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol"
       ],
@@ -1933,8 +1826,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/ISubscription.sol": {
-      "lastModificationDate": 1656505559486,
-      "contentHash": "10e80dba67af02502b67ce3f3e8fadea",
+      "lastModificationDate": 1657188699880,
+      "contentHash": "2a02ee9a4fc92cf1a64e372466e92456",
       "sourceName": "contracts/interfaces/ISubscription.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -1969,8 +1862,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/Subscription.sol": {
-      "lastModificationDate": 1656561024515,
-      "contentHash": "7242c40280df9bb5d761672966855f8c",
+      "lastModificationDate": 1657276044069,
+      "contentHash": "e312e18234507c4d7433cd5f3338f565",
       "sourceName": "contracts/Subscription.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2013,8 +1906,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/ISubscriptionBalance.sol": {
-      "lastModificationDate": 1656557768128,
-      "contentHash": "6a424138115d61120efec3df05455fc6",
+      "lastModificationDate": 1657188696342,
+      "contentHash": "b8345aa5a9a6d5400a3d3892b69342ee",
       "sourceName": "contracts/interfaces/ISubscriptionBalance.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2046,6 +1939,310 @@
       ],
       "artifacts": [
         "ISubscriptionBalance"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/ContractBasedDeployment.sol": {
+      "lastModificationDate": 1657081622255,
+      "contentHash": "5d15b83b0ed63654c32cef445b644b9b",
+      "sourceName": "contracts/ContractBasedDeployment.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./interfaces/IRoleControl.sol",
+        "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "ContractBasedDeployment"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IRoleControl.sol": {
+      "lastModificationDate": 1656813722068,
+      "contentHash": "ec5efecce08dba4ae56fc79e221f3a7a",
+      "sourceName": "contracts/interfaces/IRoleControl.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "IRoleControl"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/SubscriptionBalanceCalculator.sol": {
+      "lastModificationDate": 1657263486732,
+      "contentHash": "e95467d0b7f9a76f59a98297e3ee0d8b",
+      "sourceName": "contracts/SubscriptionBalanceCalculator.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol",
+        "./interfaces/ISubscriptionBalance.sol",
+        "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol",
+        "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol",
+        "./interfaces/IRegistration.sol",
+        "./interfaces/ISubscription.sol",
+        "./interfaces/IERC721.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "SubscriptionBalanceCalculator"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/RoleControl.sol": {
+      "lastModificationDate": 1657081237175,
+      "contentHash": "c7a293af33f4d157720bfa89e70a24ca",
+      "sourceName": "contracts/RoleControl.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol",
+        "./interfaces/IERC721.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "RoleControl"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IBalanceCalculator.sol": {
+      "lastModificationDate": 1657261117450,
+      "contentHash": "f9faf5d12d1c94b3ebca369f35cff88d",
+      "sourceName": "contracts/interfaces/IBalanceCalculator.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "IBalanceCalculator"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/deprecated/Subscription2.sol": {
+      "lastModificationDate": 1656823612574,
+      "contentHash": "4b1c1e641739366d37d532536e2a4c8e",
+      "sourceName": "contracts/deprecated/Subscription2.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol",
+        "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol",
+        "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol",
+        "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol",
+        "../interfaces/IRegistration.sol",
+        "../interfaces/IERC721.sol",
+        "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "Subscription2"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/TestDarkMatter.sol": {
+      "lastModificationDate": 1657186942227,
+      "contentHash": "f975d412f7b05117b232c8ecb3755934",
+      "sourceName": "contracts/TestDarkMatter.sol",
+      "solcConfig": {
+        "version": "0.6.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.6.0",
+        "^0.6.0",
+        "^0.6.2",
+        "^0.6.2",
+        "^0.6.2",
+        "^0.6.0",
+        "^0.6.0",
+        "^0.6.0",
+        "^0.6.2",
+        "^0.6.0",
+        "^0.6.0",
+        "^0.6.0",
+        "^0.6.0",
+        "^0.6.0",
+        "^0.6.0"
+      ],
+      "artifacts": [
+        "Address",
+        "Context",
+        "Counters",
+        "ERC165",
+        "ERC721",
+        "EnumerableMap",
+        "EnumerableSet",
+        "IERC165",
+        "IERC721",
+        "IERC721Enumerable",
+        "IERC721Metadata",
+        "IERC721Receiver",
+        "SafeMath",
+        "Strings",
+        "TestDarkMatter"
       ]
     }
   }

@@ -9,6 +9,6 @@ contract TestERC20 is
 {
     function initialize() public initializer {
         __ERC20_init_unchained("TestERC20", "TERC20");
-        _mint(msg.sender, 100000000 ether);
+        _mint(msg.sender, 100000000000 ether);
     }
 }

@@ -50,7 +50,8 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     }
 
     // NFT id => Subnet ID =>
-    mapping(uint256 => mapping(uint256 => PriceChangeRequest)) public requestPriceChange;
+    mapping(uint256 => mapping(uint256 => PriceChangeRequest))
+        public requestPriceChange;
 
     event Changed_LIMIT_NFT_SUBNETS(uint256 prev_limit, uint256 new_limit);
 
@@ -128,7 +129,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
 
     function getBytes32OfRole(string memory _roleName)
         external
-        view
+        pure
         returns (bytes32)
     {
         return keccak256(bytes(_roleName));
@@ -179,6 +180,14 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             _REQD_COOLDOWN_S_PROVIDER
         );
         REQD_COOLDOWN_S_PROVIDER = _REQD_COOLDOWN_S_PROVIDER;
+    }
+
+    function getReferralAddress(uint256 _nftId, uint256 _subnetId)
+        public
+        view
+        returns (address)
+    {
+        return userSubscription[_nftId][_subnetId].referralAddress;
     }
 
     function r_licenseFee(uint256 _nftId, uint256 _subnetId)
@@ -249,7 +258,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     ) public whenNotPaused returns (uint256) {
         // find next mint id
         uint256 NFTid = ApplicationNFT.getCurrentTokenId().add(1);
-        ApplicationNFT.mint(_msgSender()); // NFT contract should return NFT id on minting
+        ApplicationNFT.mint(_msgSender());
 
         XCT.transferFrom(_msgSender(), address(this), _balanceToAdd);
 
@@ -308,7 +317,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256[] memory _computeRequired
     ) public whenNotPaused {
         SubscriptionBalance.refreshBalance(_nftId);
-        SubscriptionBalance.addSubnetToNFT(_nftId,_subnetId);
+        SubscriptionBalance.addSubnetToNFT(_nftId, _subnetId);
 
         _subscribeSubnet(
             _nftId,
@@ -328,10 +337,22 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 _licenseFee,
         uint256[] memory _computeRequired
     ) internal {
-
-        require(!userSubscription[_nftId][_subnetId].subscribed,"Already subscribed");
         require(
-            SubscriptionBalance.totalSubnets(_nftId) < LIMIT_NFT_SUBNETS,
+            !userSubscription[_nftId][_subnetId].subscribed,
+            "Already subscribed"
+        );
+        require(
+            RegistrationContract.totalSubnets() > _subnetId,
+            "_subnetId donot exist in RegistrationContract"
+        );
+        (, , , bool subnetStatusListed, , , , , ) = RegistrationContract
+            .getSubnetAttributes(_subnetId);
+        require(
+            subnetStatusListed,
+            "RegistrationContract: subnet is delisted and hence cannot be subscribed"
+        );
+        require(
+            SubscriptionBalance.totalSubnets(_nftId) <= LIMIT_NFT_SUBNETS,
             "Cannot subscribe as limit exceeds to max Subnet subscription allowed per NFT"
         );
         require(
@@ -378,7 +399,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 _currentSubnetId,
         uint256 _newSubnetId
     ) external whenNotPaused {
-        (, , , bool isListed, , , , ) = RegistrationContract
+        (, , , bool isListed, , , , , ) = RegistrationContract
             .getSubnetAttributes(_currentSubnetId);
 
         require(
@@ -424,7 +445,14 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         external
     {
         string memory empty = "";
-        require(keccak256(bytes(requestPriceChange[_nftId][_subnetId].serviceProviderAddress)) != keccak256(bytes(empty)),"No request for service provider change done yet");
+        require(
+            keccak256(
+                bytes(
+                    requestPriceChange[_nftId][_subnetId].serviceProviderAddress
+                )
+            ) != keccak256(bytes(empty)),
+            "No request for service provider change done yet"
+        );
 
         require(
             requestPriceChange[_nftId][_subnetId].timestamp.add(

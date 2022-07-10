@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/IRegistration.sol";
 import "./interfaces/ISubscription.sol";
+import "./interfaces/IBalanceCalculator.sol";
 import "./interfaces/IERC721.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
@@ -19,30 +20,39 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     IERC721 public ApplicationNFT;
     IERC20Upgradeable public XCTToken;
     ISubscription public SubscriptionContract;
+    IBalanceCalculator public BalanceCalculator;
+    uint256 public ReferralPercent; // 1000 = 1%
+    uint256 public ReferralRevExpirySecs; // eg. after 2 years, Global DAO will receive referral percent reward
 
     struct NFTBalance {
         uint256 lastBalanceUpdateTime;
         uint256[3] prevBalance; // prevBalance[0] = Credit wallet, prevBalance[1] = External Deposit, prevBalance[3] = Owner wallet
         uint256[] subnetIds; // cannot be changed unless delisted
         address NFTMinter;
+        uint256 mintTime;
         uint256 endOfXCTBalance;
     }
 
     // NFT id => NFTBalance
     mapping(uint256 => NFTBalance) public nftBalances;
-    mapping(address => uint256) public balanceOfRev;
     // Credit provider => NFT id => expiry
     mapping(address => mapping(uint256 => uint256)) public creditsExpiry;
 
     event BalanceAdded(uint256 NFTId, uint256 balanceType, uint256 bal);
     event BalanceWithdrawn(uint256 NFTId, uint256 balanceType, uint256 bal);
     event RefreshedBalance(uint256 NFTId);
-    event ReceivedRevenue(address benficiary, uint256 bal);
+    event ChangedReferralAttributes(
+        uint256 ReferralPercent,
+        uint256 ReferralRevExpirySecs
+    );
 
     function initialize(
         IRegistration _RegistrationContract,
         IERC721 _ApplicationNFT,
-        IERC20Upgradeable _XCTToken
+        IERC20Upgradeable _XCTToken,
+        IBalanceCalculator _BalanceCalculator,
+        uint256 _ReferralPercent,
+        uint256 _ReferralRevExpirySecs
     ) public initializer {
         __Ownable_init_unchained();
         __Pausable_init_unchained();
@@ -50,11 +60,26 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         RegistrationContract = _RegistrationContract;
         ApplicationNFT = _ApplicationNFT;
         XCTToken = _XCTToken;
+        BalanceCalculator = _BalanceCalculator;
+        ReferralPercent = _ReferralPercent;
+        ReferralRevExpirySecs = _ReferralRevExpirySecs;
     }
 
     function setSubscriptionContract(address _Subscription) external onlyOwner {
         require(address(SubscriptionContract) == address(0), "Already set");
         SubscriptionContract = ISubscription(_Subscription);
+    }
+
+    function change__ReferralAttributes(
+        uint256 _ReferralPercent,
+        uint256 _ReferralRevExpirySecs
+    ) external onlyOwner {
+        ReferralPercent = _ReferralPercent;
+        ReferralRevExpirySecs = _ReferralRevExpirySecs;
+        emit ChangedReferralAttributes(
+            _ReferralPercent,
+            _ReferralRevExpirySecs
+        );
     }
 
     function t_supportFeeAddress(uint256 _tokenId)
@@ -96,7 +121,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         view
         returns (uint256 fee)
     {
-        (, , , , , , , fee) = RegistrationContract.getSubnetAttributes(
+        (, , , , , , , fee, ) = RegistrationContract.getSubnetAttributes(
             _subnetId
         );
     }
@@ -123,8 +148,9 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         uint256 factor = s_GlobalDAORate()
             .add(r_licenseFee(NFTid, subnetId))
             .add(t_SupportFeeRate(subnetId))
+            .add(ReferralPercent)
             .add(100000);
-        (, , , , uint256[] memory prices, , , ) = RegistrationContract
+        (, , , , uint256[] memory prices, , , , ) = RegistrationContract
             .getSubnetAttributes(subnetId);
         uint256 cost = 0;
         uint256[] memory computeRequired = SubscriptionContract
@@ -133,10 +159,14 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         for (uint256 i = 0; i < prices.length; i++) {
             cost = cost.add(prices[i].mul(computeRequired[i]));
         }
-        return factor.mul(cost).div(100000);
+        return factor.mul(cost).div(100000); // 10^5 for percent
     }
 
-    function prevBalances(uint256 NFTid) public view returns(uint256[3] memory){
+    function prevBalances(uint256 NFTid)
+        public
+        view
+        returns (uint256[3] memory)
+    {
         return nftBalances[NFTid].prevBalance;
     }
 
@@ -191,6 +221,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             [uint256(0), uint256(0), uint256(0)],
             arr,
             _minter,
+            block.timestamp,
             0
         );
         nftBalances[_nftId].subnetIds.push(_subnetId);
@@ -199,10 +230,11 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         return true;
     }
 
-    function addSubnetToNFT(
-        uint256 _nftId,
-        uint256 _subnetId
-    ) external onlySubscription returns(bool){
+    function addSubnetToNFT(uint256 _nftId, uint256 _subnetId)
+        external
+        onlySubscription
+        returns (bool)
+    {
         nftBalances[_nftId].subnetIds.push(_subnetId);
         return true;
     }
@@ -223,7 +255,11 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         uint256 id = _nftId;
         XCTToken.transferFrom(_msgSender(), address(this), _balanceToAdd);
 
-        nftBalances[id].prevBalance = [nftBalances[id].prevBalance[0], nftBalances[id].prevBalance[1], nftBalances[id].prevBalance[2].add(_balanceToAdd)];
+        nftBalances[id].prevBalance = [
+            nftBalances[id].prevBalance[0],
+            nftBalances[id].prevBalance[1],
+            nftBalances[id].prevBalance[2].add(_balanceToAdd)
+        ];
 
         nftBalances[id].lastBalanceUpdateTime = block.timestamp;
         refreshEndOfBalance(_nftId);
@@ -249,9 +285,13 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             ApplicationNFT.ownerOf(_NFTid) == _msgSender(),
             "Sender not the owner of NFT id"
         );
-        uint id = _NFTid;
+        uint256 id = _NFTid;
         XCTToken.transfer(_msgSender(), _bal);
-        nftBalances[id].prevBalance = [nftBalances[id].prevBalance[0], nftBalances[id].prevBalance[1], nftBalances[id].prevBalance[2].sub(_bal)];
+        nftBalances[id].prevBalance = [
+            nftBalances[id].prevBalance[0],
+            nftBalances[id].prevBalance[1],
+            nftBalances[id].prevBalance[2].sub(_bal)
+        ];
 
         refreshBalance(id);
 
@@ -274,7 +314,11 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         );
 
         XCTToken.transferFrom(_msgSender(), address(this), _balanceToAdd);
-        nftBalances[id].prevBalance = [nftBalances[id].prevBalance[0].add(_balanceToAdd), nftBalances[id].prevBalance[1], nftBalances[id].prevBalance[2]];
+        nftBalances[id].prevBalance = [
+            nftBalances[id].prevBalance[0].add(_balanceToAdd),
+            nftBalances[id].prevBalance[1],
+            nftBalances[id].prevBalance[2]
+        ];
 
         nftBalances[id].lastBalanceUpdateTime = block.timestamp;
         nftBalances[id].endOfXCTBalance = block.timestamp.add(
@@ -291,9 +335,13 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     {
         uint256 id = _NFTid;
         XCTToken.transferFrom(_msgSender(), address(this), _balanceToAdd);
-        
-        nftBalances[id].prevBalance = [nftBalances[id].prevBalance[0], nftBalances[id].prevBalance[1].add(_balanceToAdd), nftBalances[id].prevBalance[2]];
-        
+
+        nftBalances[id].prevBalance = [
+            nftBalances[id].prevBalance[0],
+            nftBalances[id].prevBalance[1].add(_balanceToAdd),
+            nftBalances[id].prevBalance[2]
+        ];
+
         nftBalances[id].lastBalanceUpdateTime = block.timestamp;
         nftBalances[id].endOfXCTBalance = block.timestamp.add(
             totalPrevBalance(id).div(dripRatePerSec(id))
@@ -314,7 +362,11 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             "Credits not expired yet"
         );
 
-        nftBalances[id].prevBalance = [0, nftBalances[id].prevBalance[1], nftBalances[id].prevBalance[2]];
+        nftBalances[id].prevBalance = [
+            0,
+            nftBalances[id].prevBalance[1],
+            nftBalances[id].prevBalance[2]
+        ];
         nftBalances[id].lastBalanceUpdateTime = block.timestamp;
         nftBalances[id].endOfXCTBalance = block.timestamp.add(
             totalPrevBalance(id).div(dripRatePerSec(id))
@@ -323,6 +375,17 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         refreshBalance(id);
 
         emit BalanceWithdrawn(_NFTid, 0, bal);
+    }
+
+    function refreshEndOfBalance(uint256 _nftId)
+        public
+        updateBalance(_nftId)
+        returns (bool)
+    {
+        nftBalances[_nftId].endOfXCTBalance = block.timestamp.add(
+            totalPrevBalance(_nftId).div(dripRatePerSec(_nftId))
+        );
+        return true;
     }
 
     function refreshBalance(uint256 _nftId)
@@ -335,39 +398,10 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         return true;
     }
 
-    function receiveRevenue() external {
-        receiveRevenueForAddress(_msgSender());
-    }
-
-    function receiveRevenueForAddressBulk(address[] memory _userAddresses)
-        external
-    {
-        for (uint256 i = 0; i < _userAddresses.length; i++)
-            receiveRevenueForAddress(_userAddresses[i]);
-    }
-
-    function receiveRevenueForAddress(address _userAddress) public {
-        uint256 bal = balanceOfRev[_userAddress];
-        XCTToken.transfer(_userAddress, bal);
-        balanceOfRev[_userAddress] = 0;
-        emit ReceivedRevenue(_userAddress, bal);
-    }
-
     // ALWAYS check before computing
     function isBalancePresent(uint256 _nftId) public view returns (bool) {
         if (block.timestamp < nftBalances[_nftId].endOfXCTBalance) return true;
         return false;
-    }
-
-    function refreshEndOfBalance(uint256 _nftId)
-        public
-        updateBalance(_nftId)
-        returns (bool)
-    {
-        nftBalances[_nftId].endOfXCTBalance = block.timestamp.add(
-            totalPrevBalance(_nftId).div(dripRatePerSec(_nftId))
-        );
-        return true;
     }
 
     /* ========== MODIFIERS ========== */
@@ -392,98 +426,18 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     }
 
     modifier updateBalance(uint256 NFTid) {
-        uint256 computeCostPerSec = 0;
-        uint256[] memory subnetIds = nftBalances[NFTid].subnetIds;
+        uint256[3] memory prevBalanceUpdated = BalanceCalculator
+            .getUpdatedBalance(
+                NFTid,
+                nftBalances[NFTid].subnetIds,
+                nftBalances[NFTid].NFTMinter,
+                nftBalances[NFTid].mintTime,
+                nftBalances[NFTid].prevBalance,
+                nftBalances[NFTid].lastBalanceUpdateTime
+            );
 
-        for (uint256 i = 0; i < subnetIds.length; i++) {
-            (, , , , uint256[] memory prices, , , ) = RegistrationContract
-                .getSubnetAttributes(subnetIds[i]);
-            uint256[] memory computeRequired = SubscriptionContract
-                .getComputesOfSubnet(NFTid, subnetIds[i]);
-            for (uint256 j = 0; j < prices.length; j++) {
-                computeCostPerSec = computeCostPerSec.add(
-                    prices[j].mul(computeRequired[j])
-                );
-            }
-        }
-        uint256 computeCost = computeCostPerSec.mul(
-            block.timestamp.sub(nftBalances[NFTid].lastBalanceUpdateTime)
-        );
-
-        if (computeCost > 100000) {
-            uint256 costIncurred_r;
-            uint256 costIncurred_s;
-            uint256 costIncurred_t;
-            uint256 costIncurred_1 = computeCost; // 1 of (1+R+S+T) revenue
-
-            costIncurred_s = s_GlobalDAORate().mul(computeCost).div(100000);
-            // update S revenue of (1+R+S+T) revenue
-            balanceOfRev[s_GlobalDAOAddress()] = balanceOfRev[
-                s_GlobalDAOAddress()
-            ].add(costIncurred_s);
-
-            for (uint256 i = 0; i < subnetIds.length; i++) {
-                costIncurred_r = costIncurred_r.add(
-                    r_licenseFee(NFTid, subnetIds[i]).mul(computeCost).div(
-                        100000
-                    )
-                );
-                costIncurred_t = costIncurred_t.add(
-                    t_SupportFeeRate(subnetIds[i]).mul(computeCost).div(100000)
-                );
-                // update (1)(for subnetDAOWallet) of (1+R+S+T) revenue
-                balanceOfRev[subnetDAOWalletFor1(subnetIds[i])] = balanceOfRev[
-                    subnetDAOWalletFor1(subnetIds[i])
-                ].add(costIncurred_1);
-            }
-            // update R revenue of (1+R+S+T) revenue
-            balanceOfRev[nftBalances[NFTid].NFTMinter] = balanceOfRev[
-                nftBalances[NFTid].NFTMinter
-            ].add(costIncurred_r);
-
-            // update T revenue of (1+R+S+T) revenue
-            balanceOfRev[t_supportFeeAddress(NFTid)] = balanceOfRev[
-                t_supportFeeAddress(NFTid)
-            ].add(costIncurred_t);
-
-            uint256 totalCostIncurred = costIncurred_r
-                .add(costIncurred_s)
-                .add(costIncurred_t)
-                .add(costIncurred_1);
-            uint256 balCostLeft = 0;
-            if (totalCostIncurred < nftBalances[NFTid].prevBalance[0])
-                nftBalances[NFTid].prevBalance[0] = nftBalances[NFTid]
-                    .prevBalance[0]
-                    .sub(totalCostIncurred);
-            else {
-                balCostLeft = totalCostIncurred.sub(
-                    nftBalances[NFTid].prevBalance[0]
-                );
-                nftBalances[NFTid].prevBalance[0] = 0;
-                if (balCostLeft < nftBalances[NFTid].prevBalance[1]) {
-                    nftBalances[NFTid].prevBalance[1] = nftBalances[NFTid]
-                        .prevBalance[1]
-                        .sub(balCostLeft);
-                    balCostLeft = 0;
-                } else {
-                    balCostLeft = balCostLeft.sub(
-                        nftBalances[NFTid].prevBalance[1]
-                    );
-                    nftBalances[NFTid].prevBalance[1] = 0;
-                    if (balCostLeft < nftBalances[NFTid].prevBalance[2]) {
-                        nftBalances[NFTid].prevBalance[2] = nftBalances[NFTid]
-                            .prevBalance[2]
-                            .sub(balCostLeft);
-                        balCostLeft = 0;
-                    } else {
-                        nftBalances[NFTid].prevBalance[2] = 0;
-                        balCostLeft = 0;
-                    }
-                }
-            }
-
-            nftBalances[NFTid].lastBalanceUpdateTime = block.timestamp;
-        }
+        nftBalances[NFTid].prevBalance = prevBalanceUpdated;
+        nftBalances[NFTid].lastBalanceUpdateTime = block.timestamp;
 
         _;
     }

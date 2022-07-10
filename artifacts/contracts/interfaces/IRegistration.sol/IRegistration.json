@@ -112,6 +112,11 @@
           "internalType": "uint256",
           "name": "supportFeeRate",
           "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "stackFeeReqd",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -167,6 +172,11 @@
             {
               "internalType": "uint256",
               "name": "supportFeeRate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stackFeesReqd",
               "type": "uint256"
             }
           ],
@@ -233,6 +243,19 @@
           "internalType": "address",
           "name": "",
           "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalSubnets",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",

@@ -16,7 +16,8 @@ contract Registration is
 {
     using SafeMathUpgradeable for uint256;
 
-    IERC721Upgradeable DarkMatterNFT;
+    IERC721Upgradeable public DarkMatterNFT;
+    IERC20Upgradeable public StackToken;
 
     bytes32 public constant CLUSTER_LIST_ROLE = keccak256("CLUSTER_LIST_ROLE");
     bytes32 public constant SUBNET_ATTR_ROLE = keccak256("SUBNET_ATTR_ROLE");
@@ -24,9 +25,12 @@ contract Registration is
     bytes32 public constant PRICE_ROLE = keccak256("PRICE_ROLE");
     bytes32 public constant WHITELIST_ROLE = keccak256("WHITELIST_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant WITHDRAW_STACK_ROLE = keccak256("WITHDRAW_STACK_ROLE");
+    
     address public GLOBAL_DAO_ADDRESS;
 
     uint256 public daoRate; // 1000 = 1%
+    uint256 public REQD_STACK_FEES_FOR_SUBNET;
 
     struct SubnetAttributes {
         uint256 subnetType;
@@ -37,6 +41,7 @@ contract Registration is
         uint256[] otherAttributes; // eg. [1,2] if reqd
         uint256 maxClusters;
         uint256 supportFeeRate; // 1000 = 1%
+        uint256 stackFeesReqd; // in wei
     }
 
     struct Cluster {
@@ -61,6 +66,9 @@ contract Registration is
 
     // SubnetID => ClusterID =>
     mapping(uint256 => mapping(uint256 => Cluster)) public subnetClusters;
+
+    //keeps track of stack locked during cluster creation
+    mapping(address => uint256) public balanceOfStackLocked;
 
     uint256 public coolDownTimeForPriceChange;
 
@@ -107,7 +115,8 @@ contract Registration is
         uint256 maxClusters,
         address[] whiteListedClusters,
         uint256 supportFeeRate,
-        address sender
+        address sender,
+        uint256 stackFeesReqd
     );
     event SubnetAttributesChanged(
         uint256 subnetId,
@@ -127,11 +136,26 @@ contract Registration is
     event ChangedNFTAddress(address DarkMatterNFT);
     event DAORateChanged(uint256 daoRate, uint256 _daoRate);
 
+    event WithdrawnStackFromCluster(
+        uint256 subnetId,
+        uint256 clusterId,
+        address sender
+    );
+
+    event WithdrawnStackFromClusterByDAO(
+        uint256 subnetId,
+        uint256 clusterId,
+        address sender,
+        uint256 amount
+    );
+
     function initialize(
         IERC721Upgradeable _DarkMatterNFT,
+        IERC20Upgradeable _StackToken,
         address _GlobalDAO,
         uint256 _coolDownTimeForPriceChange,
-        uint256 _daoRate
+        uint256 _daoRate,
+        uint256 _REQD_STACK_FEES_FOR_SUBNET
     ) public initializer {
         __AccessControl_init_unchained();
         __Pausable_init_unchained();
@@ -143,13 +167,16 @@ contract Registration is
         _grantRole(PRICE_ROLE, _GlobalDAO);
         _grantRole(WHITELIST_ROLE, _GlobalDAO);
         _grantRole(PAUSER_ROLE, _GlobalDAO);
-
+        _grantRole(WITHDRAW_STACK_ROLE, _GlobalDAO);
+        
         GLOBAL_DAO_ADDRESS = _GlobalDAO;
 
         DarkMatterNFT = _DarkMatterNFT;
+        StackToken = _StackToken;
         totalSubnets = 0;
         coolDownTimeForPriceChange = _coolDownTimeForPriceChange;
         daoRate = _daoRate;
+        REQD_STACK_FEES_FOR_SUBNET = _REQD_STACK_FEES_FOR_SUBNET;
     }
 
     function getSubnetAttributes(uint256 subnetId)
@@ -163,6 +190,7 @@ contract Registration is
             uint256[] memory,
             uint256[] memory,
             uint256,
+            uint256,
             uint256
         )
     {
@@ -175,7 +203,8 @@ contract Registration is
             subnetAttributes[_subnetId].unitPrices,
             subnetAttributes[_subnetId].otherAttributes,
             subnetAttributes[_subnetId].maxClusters,
-            subnetAttributes[_subnetId].supportFeeRate
+            subnetAttributes[_subnetId].supportFeeRate,
+            subnetAttributes[_subnetId].stackFeesReqd
         );
     }
 
@@ -206,9 +235,15 @@ contract Registration is
         uint256[] memory _otherAttributes,
         uint256 _maxClusters,
         address[] memory _whiteListedClusters,
-        uint256 _supportFeeRate
+        uint256 _supportFeeRate,
+        uint256 _stackFeesReqd
     ) external whenNotPaused {
         DarkMatterNFT.transferFrom(_msgSender(), address(this), nftId);
+        StackToken.transferFrom(
+            _msgSender(),
+            GLOBAL_DAO_ADDRESS,
+            REQD_STACK_FEES_FOR_SUBNET
+        );
 
         subnetLocalDAO[totalSubnets] = _subnetLocalDAO;
 
@@ -221,6 +256,7 @@ contract Registration is
         _subnetAttributes.otherAttributes = _otherAttributes;
         _subnetAttributes.maxClusters = _maxClusters;
         _subnetAttributes.supportFeeRate = _supportFeeRate;
+        _subnetAttributes.stackFeesReqd = _stackFeesReqd;
 
         subnetAttributes[totalSubnets] = _subnetAttributes;
         emit SubnetCreated(
@@ -235,7 +271,8 @@ contract Registration is
             _maxClusters,
             _whiteListedClusters,
             _supportFeeRate,
-            _msgSender()
+            _msgSender(),
+            _stackFeesReqd
         );
         emit NFTLockedForSubnet(_msgSender(), totalSubnets, nftId);
 
@@ -252,7 +289,8 @@ contract Registration is
         bool _subnetStatusListed, // 4
         uint256[] memory _otherAttributes, // 5
         uint256 _maxClusters, // 6
-        uint256 _supportFeeRate
+        uint256 _supportFeeRate, // 7
+        uint256 _stackFeesReqd // 8
     ) external onlyRole(SUBNET_ATTR_ROLE) {
         if (_attributeNo == 1)
             subnetAttributes[subnetId].subnetType = _subnetType;
@@ -268,6 +306,8 @@ contract Registration is
             subnetAttributes[subnetId].maxClusters = _maxClusters;
         else if (_attributeNo == 7)
             subnetAttributes[subnetId].supportFeeRate = _supportFeeRate;
+        else if (_attributeNo == 8)
+            subnetAttributes[subnetId].stackFeesReqd = _stackFeesReqd;
 
         emit SubnetAttributesChanged(
             subnetId,
@@ -378,6 +418,13 @@ contract Registration is
         );
 
         DarkMatterNFT.transferFrom(_msgSender(), address(this), nftId);
+        StackToken.transferFrom(
+            _msgSender(),
+            address(this),
+            subnetAttributes[subnetId].stackFeesReqd
+        );
+        balanceOfStackLocked[_clusterDAO] = balanceOfStackLocked[_clusterDAO]
+            .add(subnetAttributes[subnetId].stackFeesReqd);
 
         uint256 clusterId = totalClustersSigned[subnetId];
         subnetClusters[subnetId][clusterId].ClusterDAO = _clusterDAO;
@@ -477,7 +524,52 @@ contract Registration is
         );
     }
 
-    function changeDAORate(uint256 _daoRate)
+    function withdrawStackFromClusterByDAO(
+        uint256 subnetId,
+        uint256 clusterId,
+        uint256 _amount
+    ) external onlyRole(WITHDRAW_STACK_ROLE) {
+        balanceOfStackLocked[subnetClusters[subnetId][clusterId].ClusterDAO] = balanceOfStackLocked[subnetClusters[subnetId][clusterId].ClusterDAO]
+            .sub(_amount);
+        StackToken.transferFrom(address(this), _msgSender(), _amount);
+
+        emit WithdrawnStackFromClusterByDAO(
+            subnetId,
+            clusterId,
+            _msgSender(),
+            _amount
+        );
+    }
+
+    function withdrawStackFromClusterForDelistedSubnet(
+        uint256 subnetId,
+        uint256 clusterId
+    ) external {
+        // if subnet delisted ClusterDAO DAO can withdraw..
+        require(
+            !subnetAttributes[subnetId].subnetStatusListed,
+            "Cannot withdraw Stack locked if subnet is not delisted"
+        );
+
+        require(
+            subnetClusters[subnetId][clusterId].ClusterDAO == _msgSender(),
+            "Only ClusterDAO DAO can withdraw Stack locked"
+        );
+        uint256 bal = balanceOfStackLocked[_msgSender()] = 0;
+
+        balanceOfStackLocked[_msgSender()] = 0;
+        StackToken.transferFrom(address(this), _msgSender(), bal);
+
+        emit WithdrawnStackFromCluster(subnetId, clusterId, _msgSender());
+    }
+
+    function change_REQD_STACK_FEES_FOR_SUBNET(
+        uint256 _REQD_STACK_FEES_FOR_SUBNET
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        REQD_STACK_FEES_FOR_SUBNET = _REQD_STACK_FEES_FOR_SUBNET;
+    }
+
+    function change_DAORate(uint256 _daoRate)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {

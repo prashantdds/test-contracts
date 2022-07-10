@@ -20,11 +20,14 @@ Sections below describes the following :
 |--|--| --|
 |Registration| [`Registration.sol`](./contracts/Registration.sol) | Upgradeable Registration contract with creating subnet, clusters and defining rules around it.  |
 |Subscription| [`Subscription.sol`](./contracts/Subscription.sol) | Upgradeable Subscription contract for subscribing to subnets and minting NFTs to subscriber address.|
-|SubscriptionBalance| [`SubscriptionBalance.sol`](./contracts/SubscriptionBalance.sol) | Upgradeable contract for maintaining balances of subscriptions, subnets included in NFTs. Revenue is distributed as per (1+r+s+t)*( compute Reqd * Unit Price + ...) formula|
+|SubscriptionBalance| [`SubscriptionBalance.sol`](./contracts/SubscriptionBalance.sol) | Upgradeable contract for maintaining balances of subscriptions, subnets included in NFTs. Revenue is distributed as per (1+r+s+t+u)*( compute Reqd * Unit Price + ...) formula|
+|SubscriptionBalanceCalculator| [`SubscriptionBalanceCalculator.sol`](./contracts/SubscriptionBalanceCalculator.sol) | Upgradeable contract for calculating balances of subscriptions, subnets included in NFTs internally by `SubscriptionBalance` contract above. Revenue logic for distribution as per (1+r+s+t+u)*( compute Reqd * Unit Price + ...) formula is coded here. Revenue can be claimed by addresses using this smart contract.|
+|RoleControl| [`RoleControl.sol`](./contracts/RoleControl.sol) | Upgradeable RoleControl contract for each NFT to add roles - `READ, DEPLOYER, ACCESS_MANAGER, BILLING_MANAGER and CONTRACT_BASED_DEPLOYER` by NFT owner.|
+|ContractBasedDeployment| [`ContractBasedDeployment.sol`](./contracts/ContractBasedDeployment.sol) | Upgradeable ContractBasedDeployment contract is used to store IPFS hash linked to app name, update it or delete it for particular NFT by `CONTRACT_BASED_DEPLOYER` role defined in `RoleControl` contract.|
 
 ## Deployment
 
-Use `deploy.js` to deploy the Registration smart contract.
+Use `deploy.js` to deploy the smart contracts.
 
 ## Audit-Scope
 Solidity files that need auditing
@@ -32,10 +35,13 @@ Solidity files that need auditing
 [`Registration.sol`](./contracts/Registration.sol) |
 [`Subscription.sol`](./contracts/Subscription.sol) |
 [`SubscriptionBalance.sol`](./contracts/SubscriptionBalance.sol) |
+[`SubscriptionBalanceCalculator.sol`](./contracts/SubscriptionBalanceCalculator.sol) |
+[`RoleControl.sol`](./contracts/RoleControl.sol) |
+[`ContractBasedDeployment.sol`](./contracts/ContractBasedDeployment.sol) |
 
 ## Rationale
 ### Registration
-1. `createSubnet` is called by wallet that holds DarkMatter NFT. NFT is locked in contract withdrawable by global DAO. 
+1. `createSubnet` is called by wallet that holds DarkMatter NFT. NFT is locked in contract withdrawable by global DAO. `REQD_STACK_FEES_FOR_SUBNET` no of STACK tokens are locked in smart contract forever, only withdrawable by GLOBAL_DAO.
 ```
         uint256 nftId - Dark Matter NFT id to be locked
         address _subnetLocalDAO - DAO address
@@ -43,13 +49,15 @@ Solidity files that need auditing
         bool _sovereignStatus, T/F
         uint256 _cloudProviderType - mapping can be maintained as required on some web page.
         bool _subnetStatusListed - by default should be true
-        uint256[] memory _unitPrices 
+        uint256[] memory _unitPrices - 1 means 10^decimals wei => if "decimals = 16" <=> "100 = 1 token (in eth)" , "decimals = 15" <=> "1000 = 1 token (in eth)". Note: this means you cannot set actual unit price less than 0.0001 STACK if decimals = 14. This "decimal" variable is set in "SubscriptionBalanceCalculator" smart contract.
         uint256[] memory _otherAttributes
         uint256 _maxClusters - max clusters limit for subnet
         address[] memory _whiteListedClusters - if private, whitelisted addresses allowed to signup for cluster
         uint256 _supportFeeRate - shall be used for subscription contract
+        uint256 _stackFeesReqd - Stack tokens required by user who signsup for cluster in the subnet.
+
 ```
-2. `clusterSignUp` is called by wallet that holds DarkMatter NFT. NFT is locked in contract withdrawable by global DAO. 
+2. `clusterSignUp` is called by wallet that holds DarkMatter NFT. NFT is locked in contract withdrawable by global DAO. `stackFeesReqd` STACK is locked in the contract, withdrawable by `WITHDRAW_STACK_ROLE` or `ClusterDAO` if subnet is delisted.
 ```
     subnetId is required to add cluster to that subnet.
     _DNSIP - IP address is compulsory if subnet is not sovereign else can be left empty.
@@ -89,7 +97,9 @@ resetWhitelistClusters(uint256 subnetId)
 ```
 9. `daoRate` can only be changed by `DEFAULT_ADMIN_ROLE` by calling `changeDAORate`.
 10. Local DAO ownership can be transferred by `transferClusterDAOOwnership`.
-
+11. To check STACK tokens locked, use view function `balanceOfStackLocked(ClusterDAO address)`. To fetch ClusterDAO address use `subnetClusters[subnetId][clusterId].ClusterDAO` address.
+12. To withdraw STACK by DAO for cluster with role `WITHDRAW_STACK_ROLE` call `withdrawStackFromClusterByDAO`. Can be called if cluster performance is not upto mark.
+13. Incase subnet is delisted, withdraw STACK by `ClusterDAO`, call function `withdrawStackFromClusterForDelistedSubnet`.
 
 ### Subscription
 1. `subscribeNew` is called by wallet that wants to subscribe to the subnet. XCT balance should be added for MIN_TIME_FUNDS time period. computeRequired array needs to set for reqd compute. Application NFT will be minted and NFT id is returned.
@@ -172,11 +182,12 @@ For updating XCT balance on smart contract anytime call `refreshBalance`.
 `balanceLeft` view function can be used to get realtime total balance left.
 
 3. `addBalance` is callable by anyone to add XCT balance to NFT id. Call view function `balanceLeft` to see balance remaining. For ANY COMPUTATION, ALWAYS check view function `isBalancePresent()` that returns bool.
-4. Following view functions are present to check addresses and values for 1, R, S, T.
+4. Following view functions are present to check addresses and values for 1, R, S, T, U.
 ```
 t_supportFeeAddress(uint256 _tokenId)
 s_GlobalDAOAddress()
 r address is NFT minter address => nftAttributes[_nftId].NFTMinter
+u_address is referrer address - `Subscription.userSubscription[NFT id][Subnet id].referralAddress`
 
 subnetDAOWalletFor1(uint _subnetId)
 r_licenseFee(uint256 _nftId, uint256 _subnetId)
@@ -186,18 +197,12 @@ t_SupportFeeRate(uint256 _subnetId)
 5. `dripRatePerSec` view function is to check drip rate of the NFT. How much XCT is charged per second based on computation demanded while adding the subnet to NFT. It calculates for all subnets present in NFT. For particular subnet id, use view function `dripRatePerSecOfSubnet`.
 ```
 Calculation:
-[1+r+s+t] * [ {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)+(resourcecompute3 requested * unit price)......} + {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)......} ]
+[1+r+s+t+u] * [ {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)+(resourcecompute3 requested * unit price)......} + {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)......} ]
 ```
 
-6. In order to receive revenues for (1, R, S, T) addresses, any of following functions can be called. It transfers the XCT as per the formula.
-```
-receiveRevenue() - by owner of wallet address
-receiveRevenueForAddress(address _userAddress) - anyone can call
-receiveRevenueForAddressBulk(address[] memory _userAddresses) - anyone can call
-```
-7. To withdraw some owner's NFT subscription balance, call `withdrawBalance` or to withdraw all balance, call `withdrawAllOwnerBalance`. 
+6. To withdraw some owner's NFT subscription balance, call `withdrawBalance` or to withdraw all balance, call `withdrawAllOwnerBalance`. 
 
-8.  `nftBalances[NFT id]` mapping is present to get NFT Balance details in general.
+7.  `nftBalances[NFT id]` mapping is present to get NFT Balance details in general.
     ```
     struct NFTBalance {
         uint256 lastBalanceUpdateTime; - last refreshed balances time
@@ -208,3 +213,110 @@ receiveRevenueForAddressBulk(address[] memory _userAddresses) - anyone can call
     }
     ```
 
+### SubscriptionBalanceCalculator
+1. This smart contract is used internally by SubscriptionBalance smart contract to calculate and compute the balances by calling `getUpdatedBalance`.
+```
+Calculation:
+[1+r+s+t+u] * [ {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)+(resourcecompute3 requested * unit price)......} + {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)......} ]
+```
+2. In order to receive revenues for (1, R, S, T) addresses, any of following functions can be called. It transfers the XCT as per the formula.
+```
+receiveRevenue() - by owner of wallet address
+receiveRevenueForAddress(address _userAddress) - anyone can call
+receiveRevenueForAddressBulk(address[] memory _userAddresses) - anyone can call
+```
+
+### RoleControl
+1. It is deployed for particular NFT id and only the owner of that NFT can grant roles.
+```
+READ
+DEPLOYER
+ACCESS_MANAGER
+BILLING_MANAGER
+CONTRACT_BASED_DEPLOYER
+```
+2. NFT owner calls `grantRole` to give any of above roles to any address.
+```
+grantRole(
+    bytes32 role, - bytes32 of the role name, constants are defined as public to fetch values like `READ`, `DEPLOYER` etc.
+    address account - address to give the role to.
+    )
+```
+3. NFT owner can call `revokeRole` to revoke any particular role as well same way.
+4. NFT owner can also add more roles as desired apart from above roles. To get bytes32 of any role in string, call `getBytes32OfRole` with role name string.
+5. To fetch if any particular account has that role or not, use `hasRole` or `hasRoleOf` view function. 
+```
+hasRole(bytes32 roleName, address account) - if you have roleName in bytes32 use this function.
+
+hasRoleOf(string roleName, address account) - if you have roleName in string, use this function
+```
+
+### ContractBasedDeployment
+1. Reference taken from https://github.com/saurfang/ipfs-multihash-on-solidity for efficient use of bytes32 and store IPFS hash.
+2. To convert IPFS hash into following:
+    ```
+        bytes32 _digest,
+        uint8 _hashFunction,
+        uint8 _size
+    ```
+    use JS library `bs58` and following JS code (can be referred in `deploy.js` script):
+    ```
+    const bs58 = require('bs58')
+    const multihash = 'QmahqCsAUAw7zMv6P6Ae8PjCTck7taQA6FgGQLnWdKG7U8'
+    console.log("IPFS hash = "+multihash)
+    const decoded = bs58.decode(multihash)
+    digest= `0x${Buffer.from(decoded.slice(2)).toString('hex')}`
+    hashFunction= decoded[0]
+    size= decoded[1]
+    ```
+3. Once you have digest, hashFunction and size `CONTRACT_BASED_DEPLOYER` role defined in `RoleControl` smart contract can call `createData` or `updateData` or `deleteData` functions in this smart contract with `appName` string to use in reference.
+
+```
+    To store new data:
+    function createData(
+        string memory appName,
+        bytes32 _digest,
+        uint8 _hashFunction,
+        uint8 _size
+    ) 
+
+    To update existing data:
+    function updateData(
+        string memory appName,
+        bytes32 _digest,
+        uint8 _hashFunction,
+        uint8 _size
+    )
+
+    To delete data:
+    function deleteData(
+        string memory appName
+    )
+```
+4. To get data stored in smart contract for particular appName call view function `getData`.
+```
+    function getData(string memory appName)
+        public
+        view
+        returns (
+            bytes32 digest,
+            uint8 hashfunction,
+            uint8 size
+        )
+```
+It returns digest, hashfunction and size. To convert these back to IPFS hash, use following JS code (also present in `deploy.js` script).
+```
+function getMultihashFromBytes32(multihash) {
+    const { digest, hashfunction, size } = multihash;
+    const bs58 = require('bs58')
+    if (size === 0) return null;    
+    // cut off leading "0x"
+    const hashBytes = Buffer.from(digest.slice(2), 'hex');
+    // prepend hashFunction and digest size
+    const multihashBytes = new (hashBytes.constructor)(2 + hashBytes.length);
+    multihashBytes[0] = hashfunction;
+    multihashBytes[1] = size;
+    multihashBytes.set(hashBytes, 2);
+    return bs58.encode(multihashBytes);
+  }
+```
