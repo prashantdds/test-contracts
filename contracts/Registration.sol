@@ -47,7 +47,8 @@ contract Registration is
     struct Cluster {
         address ClusterDAO;
         string DNSIP;
-        bool listed;
+        uint8 listed;//uint8 [1,2,3] if in 1st state, should be able to withdraw
+        uint NFTidLocked;
     }
 
     struct PriceChangeRequest {
@@ -101,7 +102,7 @@ contract Registration is
         uint256 subnetId,
         uint256 clusterId,
         address sender,
-        bool allow
+        uint8 allowStatus
     );
     event SubnetCreated(
         uint256 subnetId,
@@ -139,7 +140,15 @@ contract Registration is
     event WithdrawnStackFromCluster(
         uint256 subnetId,
         uint256 clusterId,
-        address sender
+        address sender,
+        uint256 stackTokens
+    );
+
+    event WithdrawnNFTFromCluster(
+        uint256 subnetId,
+        uint256 clusterId,
+        address sender,
+        uint256 NFTid
     );
 
     event WithdrawnStackFromClusterByDAO(
@@ -214,13 +223,15 @@ contract Registration is
         returns (
             address,
             string memory,
-            bool
+            uint8,
+            uint256
         )
     {
         return (
             subnetClusters[_subnetId][_clusterId].ClusterDAO,
             subnetClusters[_subnetId][_clusterId].DNSIP,
-            subnetClusters[_subnetId][_clusterId].listed
+            subnetClusters[_subnetId][_clusterId].listed,
+            subnetClusters[_subnetId][_clusterId].NFTidLocked
         );
     }
 
@@ -390,7 +401,7 @@ contract Registration is
         uint256 totalDelisted = 0;
 
         for (uint256 i = 0; i < totalSignedIn; i++) {
-            if (!subnetClusters[subnetId][i].listed)
+            if (subnetClusters[subnetId][i].listed==2)
                 totalDelisted = totalDelisted.add(1);
         }
 
@@ -429,8 +440,9 @@ contract Registration is
         uint256 clusterId = totalClustersSigned[subnetId];
         subnetClusters[subnetId][clusterId].ClusterDAO = _clusterDAO;
         subnetClusters[subnetId][clusterId].DNSIP = _DNSIP;
-        subnetClusters[subnetId][clusterId].listed = true;
-
+        subnetClusters[subnetId][clusterId].listed = 1;
+        subnetClusters[subnetId][clusterId].NFTidLocked = nftId;
+        
         totalClustersSigned[subnetId] = totalClustersSigned[subnetId].add(1);
 
         emit ClusterSignedUp(
@@ -474,18 +486,25 @@ contract Registration is
         );
     }
 
-    function changeListingCluster(
+    function approveListingCluster(
         uint256 subnetId,
-        uint256 clusterId,
-        bool _allow
+        uint256 clusterId
+    ) external onlyRole(CLUSTER_LIST_ROLE) {
+        subnetClusters[subnetId][clusterId].listed = 2;
+        emit ChangedListingCluster(subnetId, clusterId, _msgSender(), 2);
+    }
+
+    function delistCluster(
+        uint256 subnetId,
+        uint256 clusterId
     ) external {
         require(
             hasRole(CLUSTER_LIST_ROLE, _msgSender()) ||
                 subnetClusters[subnetId][clusterId].ClusterDAO == _msgSender(),
             "Sender is not Cluster owner or has CLUSTER_LIST_ROLE"
         );
-        subnetClusters[subnetId][clusterId].listed = _allow;
-        emit ChangedListingCluster(subnetId, clusterId, _msgSender(), _allow);
+        subnetClusters[subnetId][clusterId].listed = 2;
+        emit ChangedListingCluster(subnetId, clusterId, _msgSender(), 2);
     }
 
     function requestClusterPriceChange(
@@ -541,7 +560,7 @@ contract Registration is
         );
     }
 
-    function withdrawStackFromClusterForDelistedSubnet(
+    function withdrawClusterForDelistedSubnet(
         uint256 subnetId,
         uint256 clusterId
     ) external {
@@ -558,9 +577,13 @@ contract Registration is
         uint256 bal = balanceOfStackLocked[_msgSender()] = 0;
 
         balanceOfStackLocked[_msgSender()] = 0;
-        StackToken.transferFrom(address(this), _msgSender(), bal);
+        subnetClusters[subnetId][clusterId].listed = 2; // delisted cluster as withdrawn
 
-        emit WithdrawnStackFromCluster(subnetId, clusterId, _msgSender());
+        StackToken.transferFrom(address(this), _msgSender(), bal);
+        DarkMatterNFT.transferFrom(address(this), _msgSender(), subnetClusters[subnetId][clusterId].NFTidLocked);
+
+        emit WithdrawnNFTFromCluster(subnetId, clusterId, _msgSender(), subnetClusters[subnetId][clusterId].NFTidLocked);
+        emit WithdrawnStackFromCluster(subnetId, clusterId, _msgSender(), bal);
     }
 
     function change_REQD_STACK_FEES_FOR_SUBNET(

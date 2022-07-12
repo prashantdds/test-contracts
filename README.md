@@ -12,7 +12,8 @@ Sections below describes the following :
 - [How to deploy](#deployment)
 - [Audit scope](#audit-scope)
 - [Rationale](#Rationale)
-- [Doc Link](https://docs.google.com/document/d/12w1iET9kHGh7iw4f1XJXoyv8OpjlBRy6cmePGxiTa0A/edit)
+- [Google Docs Link](https://docs.google.com/document/d/12w1iET9kHGh7iw4f1XJXoyv8OpjlBRy6cmePGxiTa0A/edit)
+- [Explanation Videos on YouTube](https://www.youtube.com/playlist?list=PLdh5k6-F8fppMv3xok1zNLBHALz-mqlhx)
 
 ## Overview
 
@@ -49,7 +50,7 @@ Solidity files that need auditing
         bool _sovereignStatus, T/F
         uint256 _cloudProviderType - mapping can be maintained as required on some web page.
         bool _subnetStatusListed - by default should be true
-        uint256[] memory _unitPrices - 1 means 10^decimals wei => if "decimals = 16" <=> "100 = 1 token (in eth)" , "decimals = 15" <=> "1000 = 1 token (in eth)". Note: this means you cannot set actual unit price less than 0.0001 STACK if decimals = 14. This "decimal" variable is set in "SubscriptionBalanceCalculator" smart contract.
+        uint256[] memory _unitPrices - array of XCT tokens for storage, memory etc prices. 1 means 10^decimals wei for XCT tokens, so set 10^18 if 1 XCT 
         uint256[] memory _otherAttributes
         uint256 _maxClusters - max clusters limit for subnet
         address[] memory _whiteListedClusters - if private, whitelisted addresses allowed to signup for cluster
@@ -57,13 +58,27 @@ Solidity files that need auditing
         uint256 _stackFeesReqd - Stack tokens required by user who signsup for cluster in the subnet.
 
 ```
-2. `clusterSignUp` is called by wallet that holds DarkMatter NFT. NFT is locked in contract withdrawable by global DAO. `stackFeesReqd` STACK is locked in the contract, withdrawable by `WITHDRAW_STACK_ROLE` or `ClusterDAO` if subnet is delisted.
+2. `clusterSignUp` is called by wallet that holds DarkMatter NFT. NFT is locked in contract withdrawable by global DAO. `stackFeesReqd` STACK is locked in the contract, withdrawable by `WITHDRAW_STACK_ROLE` (or `ClusterDAO` if subnet is delisted.)
 ```
     subnetId is required to add cluster to that subnet.
     _DNSIP - IP address is compulsory if subnet is not sovereign else can be left empty.
     _clusterDAO has rights to change _DNSIP or listing of cluster.
     nftId - This Dark Matter NFT id is locked.
 ```
+
+```
+Listed statuses of cluster ==>
+1 = pending
+2 = approved
+3 = delisted
+```
+
+By default, `listed status of cluster = 1 => pending`
+
+To change listing status, `CLUSTER_LIST_ROLE` calls `approveListingCluster(subnetId, clusterId)`.
+
+To delist cluster, `CLUSTER_LIST_ROLE` or `ClusterDAO` calls `delistCluster(subnetId, clusterId)`.
+
 3. `requestClusterPriceChange` is callable by PRICE_ROLE and change subnet pricing effective after cooldown time by calling `applyChangedClusterPrice` by anyone.
 4. `withdrawNFT` is callable by only `DEFAULT_ADMIN_ROLE` to withdraw NFTs locked in smart contract. Note: make sure to withdraw all NFTs before changing NFT address by `changeNFT`.
 5. To get realtime cluster spots open, call `totalClusterSpotsAvailable` with subnetId. It calculates keeping delisted clusters in context.
@@ -77,6 +92,7 @@ Solidity files that need auditing
     PAUSER_ROLE - to pause/unpause
 ``` 
 Note Global DAO has access to all these roles by default who can revoke or grant access to these roles.
+
 7. Call `changeSubnetAttributes` to change the attributes of subnet. `SUBNET_ATTR_ROLE` can call it.
 ```
         uint256 subnetId,
@@ -99,7 +115,7 @@ resetWhitelistClusters(uint256 subnetId)
 10. Local DAO ownership can be transferred by `transferClusterDAOOwnership`.
 11. To check STACK tokens locked, use view function `balanceOfStackLocked(ClusterDAO address)`. To fetch ClusterDAO address use `subnetClusters[subnetId][clusterId].ClusterDAO` address.
 12. To withdraw STACK by DAO for cluster with role `WITHDRAW_STACK_ROLE` call `withdrawStackFromClusterByDAO`. Can be called if cluster performance is not upto mark.
-13. Incase subnet is delisted, withdraw STACK by `ClusterDAO`, call function `withdrawStackFromClusterForDelistedSubnet`.
+13. Incase subnet is delisted, withdraw STACK and NFT locked by calling function `withdrawClusterForDelistedSubnet` from  `ClusterDAO`.
 
 ### Subscription
 1. `subscribeNew` is called by wallet that wants to subscribe to the subnet. XCT balance should be added for MIN_TIME_FUNDS time period. computeRequired array needs to set for reqd compute. Application NFT will be minted and NFT id is returned.

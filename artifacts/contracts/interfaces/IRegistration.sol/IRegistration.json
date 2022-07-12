@@ -55,9 +55,14 @@
           "type": "string"
         },
         {
-          "internalType": "bool",
+          "internalType": "uint8",
           "name": "listed",
-          "type": "bool"
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint256",
+          "name": "NFTIdLocked",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -216,9 +221,14 @@
               "type": "string"
             },
             {
-              "internalType": "bool",
+              "internalType": "uint8",
               "name": "listed",
-              "type": "bool"
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint256",
+              "name": "NFTidLocked",
+              "type": "uint256"
             }
           ],
           "internalType": "struct IRegistration.Cluster",

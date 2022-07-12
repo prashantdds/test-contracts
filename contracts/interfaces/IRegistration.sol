@@ -17,7 +17,8 @@ interface IRegistration {
     struct Cluster {
         address ClusterDAO;
         string DNSIP;
-        bool listed;
+        uint8 listed;
+        uint NFTidLocked;
     }
 
     struct PriceChangeRequest {
@@ -34,7 +35,7 @@ interface IRegistration {
 
     function getSubnetAttributes(uint256 _subnetId) external view returns(uint256 subnetType, bool sovereignStatus, uint256 cloudProviderType, bool subnetStatusListed, uint256[] memory unitPrices, uint256[] memory otherAttributes, uint256 maxClusters, uint256 supportFeeRate, uint256 stackFeeReqd);
 
-    function getClusterAttributes(uint256 _subnetId, uint256 _clusterId) external view returns(address ClusterDAO, string memory DNSIP, bool listed);
+    function getClusterAttributes(uint256 _subnetId, uint256 _clusterId) external view returns(address ClusterDAO, string memory DNSIP, uint8 listed, uint NFTIdLocked);
 
     function subnetLocalDAO(uint256 subnetId) external view returns (address);
 
