@@ -165,6 +165,96 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         emit ReceivedRevenue(_userAddress, bal);
     }
 
+
+    function getRealtimeBalance(
+        uint256 nftId,
+        uint256[] memory subnetIds,
+        uint256[3] memory prevBalance,
+        uint256 lastBalanceUpdatedTime
+    ) external view returns (uint256[3] memory) {
+        uint256 computeCost = getComputeCosts(
+            nftId,
+            subnetIds,
+            lastBalanceUpdatedTime
+        );
+
+        uint256[4] memory costIncurredArr = [
+            uint256(0),
+            s_GlobalDAORate().mul(computeCost).div(100000),
+            0,
+            u_ReferralPercent().mul(computeCost).div(100000)
+        ]; //r,s,t,u
+
+        for (uint256 i = 0; i < subnetIds.length; i++) {
+            costIncurredArr[0] = costIncurredArr[0].add(
+                r_licenseFee(nftId, subnetIds[i])
+                    .mul(computeCost)
+                    .div(100000)
+            );
+            costIncurredArr[2] = costIncurredArr[2].add(
+                t_SupportFeeRate(subnetIds[i]).mul(computeCost).div(
+                    100000
+                )
+            );
+        }
+
+        return calculateUpdatedPrevBal(
+            (
+                costIncurredArr[0] // r
+                .add(costIncurredArr[1]) // s
+                .add(costIncurredArr[2]) // t
+                .add
+                (costIncurredArr[3]).add(computeCost) // u
+            ), // 1
+            prevBalance
+        );
+
+    }
+
+
+    function getRealtimeCostIncurred(
+        uint256 nftId,
+        uint256[] memory subnetIds,
+        uint256[3] memory prevBalance,
+        uint256 lastBalanceUpdatedTime
+    ) external view returns (uint256) {
+        uint256 computeCost = getComputeCosts(
+            nftId,
+            subnetIds,
+            lastBalanceUpdatedTime
+        );
+
+        uint256[4] memory costIncurredArr = [
+            uint256(0),
+            s_GlobalDAORate().mul(computeCost).div(100000),
+            0,
+            u_ReferralPercent().mul(computeCost).div(100000)
+        ]; //r,s,t,u
+
+        for (uint256 i = 0; i < subnetIds.length; i++) {
+            costIncurredArr[0] = costIncurredArr[0].add(
+                r_licenseFee(nftId, subnetIds[i])
+                    .mul(computeCost)
+                    .div(100000)
+            );
+            costIncurredArr[2] = costIncurredArr[2].add(
+                t_SupportFeeRate(subnetIds[i]).mul(computeCost).div(
+                    100000
+                )
+            );
+        }
+
+        return (
+                costIncurredArr[0] // r
+                .add(costIncurredArr[1]) // s
+                .add(costIncurredArr[2]) // t
+                .add
+                (costIncurredArr[3]).add(computeCost) // u
+            );
+
+    }
+
+
     function getUpdatedBalance(
         uint256 nftId,
         uint256[] memory subnetIds,
@@ -172,7 +262,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         uint256 mintTime,
         uint256[3] memory prevBalance,
         uint256 lastBalanceUpdatedTime
-    ) external returns (uint256[3] memory prevBalanceUpdated) {
+    ) external returns (uint256[3] memory) {
         uint256 computeCost = getComputeCosts(
             nftId,
             subnetIds,
@@ -242,7 +332,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                 t_supportFeeAddress(nftIdCopy)
             ].add(costIncurredArr[2]);
 
-            prevBalanceUpdated = calculateUpdatedPrevBal(
+            return calculateUpdatedPrevBal(
                 (
                     costIncurredArr[0] // r
                     .add(costIncurredArr[1]) // s
@@ -252,7 +342,6 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                 prevBalance
             );
         }
-
-        return (prevBalanceUpdated);
+        return prevBalance;
     }
 }

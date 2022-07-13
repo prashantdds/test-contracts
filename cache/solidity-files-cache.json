@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/jaspreetsingh/Desktop/stackos/contracts/Registration.sol": {
-      "lastModificationDate": 1657520442653,
-      "contentHash": "4b079a6bafe250f4316eb73be43990ab",
+      "lastModificationDate": 1657520664186,
+      "contentHash": "c4a03b05284055ed95288fc3af6d3628",
       "sourceName": "contracts/Registration.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -1780,8 +1780,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/SubscriptionBalance.sol": {
-      "lastModificationDate": 1657263706076,
-      "contentHash": "7853a9c3d6960aad323c3d658fbac413",
+      "lastModificationDate": 1657693644706,
+      "contentHash": "9e5899a0676dc01983808b6d8fedc97f",
       "sourceName": "contracts/SubscriptionBalance.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -1862,8 +1862,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/Subscription.sol": {
-      "lastModificationDate": 1657276044069,
-      "contentHash": "e312e18234507c4d7433cd5f3338f565",
+      "lastModificationDate": 1657641415725,
+      "contentHash": "6e69a643c145937681dde31bd93dd222",
       "sourceName": "contracts/Subscription.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -1906,8 +1906,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/ISubscriptionBalance.sol": {
-      "lastModificationDate": 1657188696342,
-      "contentHash": "b8345aa5a9a6d5400a3d3892b69342ee",
+      "lastModificationDate": 1657641336203,
+      "contentHash": "6710942ade3708a5d3393371f1b7c358",
       "sourceName": "contracts/interfaces/ISubscriptionBalance.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2019,8 +2019,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/SubscriptionBalanceCalculator.sol": {
-      "lastModificationDate": 1657263486732,
-      "contentHash": "e95467d0b7f9a76f59a98297e3ee0d8b",
+      "lastModificationDate": 1657691507010,
+      "contentHash": "0a92b6eb458c0c24527878e461096766",
       "sourceName": "contracts/SubscriptionBalanceCalculator.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2102,8 +2102,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IBalanceCalculator.sol": {
-      "lastModificationDate": 1657261117450,
-      "contentHash": "f9faf5d12d1c94b3ebca369f35cff88d",
+      "lastModificationDate": 1657640972618,
+      "contentHash": "2e07461e4dcc33afba83b5d045a56ad9",
       "sourceName": "contracts/interfaces/IBalanceCalculator.sol",
       "solcConfig": {
         "version": "0.8.2",

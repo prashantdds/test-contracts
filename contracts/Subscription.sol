@@ -316,9 +316,11 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 _licenseFee,
         uint256[] memory _computeRequired
     ) public whenNotPaused {
-        SubscriptionBalance.refreshBalance(_nftId);
+        SubscriptionBalance.settleAccountBalance(_nftId);
+        require(SubscriptionBalance.isBalancePresent(_nftId),"Balance for NFT id = 0, so cannot subscribe more subnets");
+        
         SubscriptionBalance.addSubnetToNFT(_nftId, _subnetId);
-
+        
         _subscribeSubnet(
             _nftId,
             _subnetId,

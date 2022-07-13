@@ -147,16 +147,37 @@ async function main(){
     const mintId = Number(Number(id1)+1);
     console.log("Mint NFT id: "+ mintId);
 
+
     // uint256 _balanceToAdd,
     // uint256 subnetId,
     // string memory _serviceProviderAddress,
     // address _referralAddress,
     // uint256 _licenseFee, - 10%
     // uint256[] memory _computeRequired
-    await Subscription.subscribeNew(ethers.utils.parseEther("1000000"),0,"ddf","0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",10000,[1,1,1,1]);
-    
-    console.log("refresh balance");
-    await SubscriptionBalance.refreshBalance(mintId);
+    await Subscription.subscribeNew(ethers.utils.parseEther("10000"),0,"ddf","0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",10000,[1,1,1,1]);
+
+    console.log("addBalanceAsCredit: ");
+    await SubscriptionBalance.addBalanceAsCredit(mintId, ethers.utils.parseEther("100"),99999999999);
+
+    console.log("addBalanceAsExternalDeposit: ");
+    await SubscriptionBalance.addBalanceAsExternalDeposit(mintId, ethers.utils.parseEther("100"));
+
+    balArr = await SubscriptionBalance.prevBalances(mintId);
+    console.log("prevBalances: " +balArr);
+
+    totalPrevBalance = await SubscriptionBalance.totalPrevBalance(mintId);
+    console.log("totalPrevBalance: " +totalPrevBalance);
+
+
+    getRealtimeCostIncurredUnsettled = await SubscriptionBalance.getRealtimeCostIncurredUnsettled(mintId);
+    console.log("getRealtimeCostIncurredUnsettled: " +getRealtimeCostIncurredUnsettled);
+
+    balArr = await SubscriptionBalance.getRealtimeBalances(mintId);
+    console.log("RealtimeBalances: " +balArr);
+
+
+    console.log("settleAccountBalance ");
+    await SubscriptionBalance.settleAccountBalance(mintId);
     console.log("refresh end of balance");
     await SubscriptionBalance.refreshEndOfBalance(mintId);
     console.log("subscribe existing");
@@ -191,6 +212,25 @@ async function main(){
     rate = await SubscriptionBalance.dripRatePerSec(mintId);
     console.log("rate: " +rate);
 
+
+    balArr = await SubscriptionBalance.prevBalances(mintId);
+    console.log("prevBalances: " +balArr);
+
+    totalPrevBalance = await SubscriptionBalance.totalPrevBalance(mintId);
+    console.log("totalPrevBalance: " +ethers.utils.formatEther(totalPrevBalance) +" tokens");
+
+    isBalancePresent = await SubscriptionBalance.isBalancePresent(mintId);
+    console.log("isBalancePresent: " +isBalancePresent);
+    
+    getRealtimeCostIncurredUnsettled = await SubscriptionBalance.getRealtimeCostIncurredUnsettled(mintId);
+    console.log("getRealtimeCostIncurredUnsettled: " +getRealtimeCostIncurredUnsettled);
+
+    balArr = await SubscriptionBalance.getRealtimeBalances(mintId);
+    console.log("RealtimeBalances: " +balArr);
+
+    
+
+        
     // delisting subnet
     console.log("Delisting and changing subnet");
     await Registration.changeSubnetAttributes(1,4,0,true,0,false,[],0,0,0);
@@ -229,6 +269,28 @@ async function main(){
     data = await ContractBasedDeployment.getData("app1");
     console.log(`data fetched`);
     console.log("Hash retrieved: "+getMultihashFromBytes32(data));
+
+    getRealtimeCostIncurredUnsettled = await SubscriptionBalance.getRealtimeCostIncurredUnsettled(mintId);
+    console.log("getRealtimeCostIncurredUnsettled: " +ethers.utils.formatEther(getRealtimeCostIncurredUnsettled) + " tokens");
+
+    balArr = await SubscriptionBalance.prevBalances(mintId);
+    console.log("prevBalances: " +balArr);
+
+    totalPrevBalance = await SubscriptionBalance.totalPrevBalance(mintId);
+    console.log("totalPrevBalance: " +ethers.utils.formatEther(totalPrevBalance) +" tokens");
+
+    console.log("settleAccountBalance ");
+    await SubscriptionBalance.settleAccountBalance(mintId);
+
+    balArr = await SubscriptionBalance.prevBalances(mintId);
+    console.log("prevBalances: " +balArr);
+
+    totalPrevBalance = await SubscriptionBalance.totalPrevBalance(mintId);
+    console.log("totalPrevBalance: " +ethers.utils.formatEther(totalPrevBalance) +" tokens");
+
+    console.log("receiveRevenueForAddress");
+    await SubscriptionBalanceCalculator.receiveRevenueForAddress(deployer.address);
+
 }
 
 main().then(()=>process.exit(0))

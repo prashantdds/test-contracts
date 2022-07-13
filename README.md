@@ -184,26 +184,26 @@ More roles can be added by `addRole()` function. To get bytes32 of role use view
 
 1. `totalPrevBalance` view function gives total XCT balance (including credit and external deposit) at last updated time of balance. Use `prevBalances` to see division into credit, external storage and owner wallet.
 ```
-prevBalances[0] - Credits (withdrawable by WITHDRAW_CREDITS_ROLE)
-prevBalances[1] - External deposit (non withdrawable)
-prevBalances[2] - Owner wallet
+prevBalances[0] - Credits (withdrawable by WITHDRAW_CREDITS_ROLE) - add balance by function call => addBalanceAsCredit(nftID,balance)
+prevBalances[1] - External deposit (non withdrawable) - add balance by function call => addBalanceAsExternalDeposit(nftID,balance)
+prevBalances[2] - Owner wallet - add balance by addBalance() function.
 ```
-Note: nftBalances[NFTid].prevBalance[0] - Credits balance is withdrawable after expiry by WITHDRAW_CREDITS_ROLE by calling `withdrawCreditsForNFT`.
+Note: nftBalances[NFTid].prevBalance[0] - Credits balance is withdrawable after `expiryUnixTimestamp` by WITHDRAW_CREDITS_ROLE by calling `withdrawCreditsForNFT`.
 
-2. XCT balance for NFT is refreshed everytime new subscription happens on NFT or balance is added. 
+2. XCT balance for NFT is settled/refreshed everytime new subscription happens on NFT or balance is added. 
 
 <b>Note: `isBalancePresent` boolean view function should be checked from backend before computation.</b>
 
-For updating XCT balance on smart contract anytime call `refreshBalance`.  
+For settling & updating XCT balance on smart contract anytime call `settleAccountBalance`.  
 `balanceLeft` view function can be used to get realtime total balance left.
 
-3. `addBalance` is callable by anyone to add XCT balance to NFT id. Call view function `balanceLeft` to see balance remaining. For ANY COMPUTATION, ALWAYS check view function `isBalancePresent()` that returns bool.
+3. `addBalance` is callable by anyone to add XCT balance to NFT id. Call view function `balanceLeft` to see balance remaining. For ANY COMPUTATION, ALWAYS check view function `isBalancePresent()` that returns bool. Use `addBalanceAsCredit()` & `addBalanceAsExternalDeposit()` for adding balance as credit for some NFTid or as external deposit. 
 4. Following view functions are present to check addresses and values for 1, R, S, T, U.
 ```
 t_supportFeeAddress(uint256 _tokenId)
 s_GlobalDAOAddress()
 r address is NFT minter address => nftAttributes[_nftId].NFTMinter
-u_address is referrer address - `Subscription.userSubscription[NFT id][Subnet id].referralAddress`
+u_address is referrer address - `Subscription.userSubscription[NFT id][Subnet id].referralAddress` - till `ReferralRevExpirySecs` = 2 years dynamic changeable by `change__ReferralAttributes()` function
 
 subnetDAOWalletFor1(uint _subnetId)
 r_licenseFee(uint256 _nftId, uint256 _subnetId)
@@ -216,9 +216,11 @@ Calculation:
 [1+r+s+t+u] * [ {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)+(resourcecompute3 requested * unit price)......} + {(resourcecompute1 requested * unit price)+(resourcecompute2 requested * unit price)......} ]
 ```
 
-6. To withdraw some owner's NFT subscription balance, call `withdrawBalance` or to withdraw all balance, call `withdrawAllOwnerBalance`. 
+6. `getRealtimeBalances()` view function is used to fetch realtime balances calculating the unsettled balances also. To get total costs unsettled for NFT id, use view function `getRealtimeCostIncurredUnsettled()`.
 
-7.  `nftBalances[NFT id]` mapping is present to get NFT Balance details in general.
+7. To withdraw some owner's NFT subscription balance, call `withdrawBalance` or to withdraw all balance, call `withdrawAllOwnerBalance`. 
+
+8.  `nftBalances[NFT id]` mapping is present to get NFT Balance details in general.
     ```
     struct NFTBalance {
         uint256 lastBalanceUpdateTime; - last refreshed balances time

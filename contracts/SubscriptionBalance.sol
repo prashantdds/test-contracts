@@ -40,7 +40,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
     event BalanceAdded(uint256 NFTId, uint256 balanceType, uint256 bal);
     event BalanceWithdrawn(uint256 NFTId, uint256 balanceType, uint256 bal);
-    event RefreshedBalance(uint256 NFTId);
+    event SettledBalanceFor(uint256 NFTId);
     event ChangedReferralAttributes(
         uint256 ReferralPercent,
         uint256 ReferralRevExpirySecs
@@ -241,7 +241,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
     function addBalance(uint256 _nftId, uint256 _balanceToAdd)
         public
-        updateBalance(_nftId)
+        // updateBalance(_nftId)
         returns (bool)
     {
         _addBalance(_nftId, _balanceToAdd);
@@ -253,14 +253,17 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         returns (bool)
     {
         uint256 id = _nftId;
-        XCTToken.transferFrom(_msgSender(), address(this), _balanceToAdd);
+        XCTToken.transferFrom(_msgSender(), address(BalanceCalculator), _balanceToAdd);
+
+        // so that if someone comes after x days to restart the subnet operation, donot cost him for time it was unoperative
+        if(totalPrevBalance(id)==0)
+            nftBalances[id].lastBalanceUpdateTime = block.timestamp;
 
         nftBalances[id].prevBalance = [
             nftBalances[id].prevBalance[0],
             nftBalances[id].prevBalance[1],
             nftBalances[id].prevBalance[2].add(_balanceToAdd)
         ];
-
         nftBalances[id].lastBalanceUpdateTime = block.timestamp;
         refreshEndOfBalance(_nftId);
         emit BalanceAdded(_nftId, 2, _balanceToAdd);
@@ -293,7 +296,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             nftBalances[id].prevBalance[2].sub(_bal)
         ];
 
-        refreshBalance(id);
+        settleAccountBalance(id);
 
         nftBalances[id].endOfXCTBalance = block.timestamp.add(
             totalPrevBalance(id).div(dripRatePerSec(id))
@@ -306,19 +309,23 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         uint256 _toNFTid,
         uint256 _balanceToAdd,
         uint256 _expiryUnixTimestamp
-    ) external whenNotPaused updateBalance(_toNFTid) {
+    ) external whenNotPaused 
+    // updateBalance(_toNFTid) 
+    {
         uint256 id = _toNFTid;
         require(
             creditsExpiry[_msgSender()][id] < _expiryUnixTimestamp,
             "Credits expiry cannot be set lesser than previous expiry"
         );
 
-        XCTToken.transferFrom(_msgSender(), address(this), _balanceToAdd);
+        XCTToken.transferFrom(_msgSender(), address(BalanceCalculator), _balanceToAdd);
         nftBalances[id].prevBalance = [
             nftBalances[id].prevBalance[0].add(_balanceToAdd),
             nftBalances[id].prevBalance[1],
             nftBalances[id].prevBalance[2]
         ];
+
+        settleAccountBalance(id);
 
         nftBalances[id].lastBalanceUpdateTime = block.timestamp;
         nftBalances[id].endOfXCTBalance = block.timestamp.add(
@@ -331,10 +338,10 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     function addBalanceAsExternalDeposit(uint256 _NFTid, uint256 _balanceToAdd)
         external
         whenNotPaused
-        updateBalance(_NFTid)
+        // updateBalance(_NFTid)
     {
         uint256 id = _NFTid;
-        XCTToken.transferFrom(_msgSender(), address(this), _balanceToAdd);
+        XCTToken.transferFrom(_msgSender(), address(BalanceCalculator), _balanceToAdd);
 
         nftBalances[id].prevBalance = [
             nftBalances[id].prevBalance[0],
@@ -342,10 +349,13 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             nftBalances[id].prevBalance[2]
         ];
 
+        settleAccountBalance(id);
+
         nftBalances[id].lastBalanceUpdateTime = block.timestamp;
         nftBalances[id].endOfXCTBalance = block.timestamp.add(
             totalPrevBalance(id).div(dripRatePerSec(id))
         );
+                
         emit BalanceAdded(id, 1, _balanceToAdd);
     }
 
@@ -372,7 +382,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             totalPrevBalance(id).div(dripRatePerSec(id))
         );
         XCTToken.transfer(_to, bal);
-        refreshBalance(id);
+        settleAccountBalance(id);
 
         emit BalanceWithdrawn(_NFTid, 0, bal);
     }
@@ -388,13 +398,13 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         return true;
     }
 
-    function refreshBalance(uint256 _nftId)
+    function settleAccountBalance(uint256 _nftId)
         public
         updateBalance(_nftId)
         returns (bool)
     {
         // modifier is only required to call
-        emit RefreshedBalance(_nftId);
+        emit SettledBalanceFor(_nftId);
         return true;
     }
 
@@ -402,6 +412,27 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     function isBalancePresent(uint256 _nftId) public view returns (bool) {
         if (block.timestamp < nftBalances[_nftId].endOfXCTBalance) return true;
         return false;
+    }
+
+    function getRealtimeBalances(uint256 NFTid) public view returns (uint[3] memory) {
+        return BalanceCalculator
+            .getRealtimeBalance(
+                NFTid,
+                nftBalances[NFTid].subnetIds,
+                nftBalances[NFTid].prevBalance,
+                nftBalances[NFTid].lastBalanceUpdateTime
+            );
+    }
+
+
+    function getRealtimeCostIncurredUnsettled(uint256 NFTid) public view returns (uint) {
+        return BalanceCalculator
+            .getRealtimeCostIncurred(
+                NFTid,
+                nftBalances[NFTid].subnetIds,
+                nftBalances[NFTid].prevBalance,
+                nftBalances[NFTid].lastBalanceUpdateTime
+            );
     }
 
     /* ========== MODIFIERS ========== */
@@ -436,7 +467,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
                 nftBalances[NFTid].lastBalanceUpdateTime
             );
 
-        nftBalances[NFTid].prevBalance = prevBalanceUpdated;
+        nftBalances[NFTid].prevBalance = [prevBalanceUpdated[0],prevBalanceUpdated[1],prevBalanceUpdated[2]];
         nftBalances[NFTid].lastBalanceUpdateTime = block.timestamp;
 
         _;
