@@ -14,6 +14,7 @@ Sections below describes the following :
 - [Rationale](#Rationale)
 - [Google Docs Link](https://docs.google.com/document/d/12w1iET9kHGh7iw4f1XJXoyv8OpjlBRy6cmePGxiTa0A/edit)
 - [Explanation Videos on YouTube](https://www.youtube.com/playlist?list=PLdh5k6-F8fppMv3xok1zNLBHALz-mqlhx)
+- [Flowchart](https://docs.google.com/drawings/d/1trayY847r8Kf8Nmh8ZBJI9WPnK01Rz25XuVXwvxQZGw/edit)
 
 ## Overview
 
