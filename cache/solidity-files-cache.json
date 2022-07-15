@@ -1780,8 +1780,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/SubscriptionBalance.sol": {
-      "lastModificationDate": 1657693644706,
-      "contentHash": "9e5899a0676dc01983808b6d8fedc97f",
+      "lastModificationDate": 1657898807575,
+      "contentHash": "3180fa7204f6671f170ca93823caa619",
       "sourceName": "contracts/SubscriptionBalance.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -1862,8 +1862,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/Subscription.sol": {
-      "lastModificationDate": 1657641415725,
-      "contentHash": "6e69a643c145937681dde31bd93dd222",
+      "lastModificationDate": 1657773314280,
+      "contentHash": "efd4a384bae681305890bcd60ee1c166",
       "sourceName": "contracts/Subscription.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2019,8 +2019,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/SubscriptionBalanceCalculator.sol": {
-      "lastModificationDate": 1657691507010,
-      "contentHash": "0a92b6eb458c0c24527878e461096766",
+      "lastModificationDate": 1657898778187,
+      "contentHash": "0f84579349858d7995072d4966f11067",
       "sourceName": "contracts/SubscriptionBalanceCalculator.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2102,8 +2102,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IBalanceCalculator.sol": {
-      "lastModificationDate": 1657640972618,
-      "contentHash": "2e07461e4dcc33afba83b5d045a56ad9",
+      "lastModificationDate": 1657898815099,
+      "contentHash": "7933bf1aeb9740f837a52eb73f37111e",
       "sourceName": "contracts/interfaces/IBalanceCalculator.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2243,6 +2243,237 @@
         "SafeMath",
         "Strings",
         "TestDarkMatter"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/node_modules/@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol": {
+      "lastModificationDate": 1654930563792,
+      "contentHash": "c9cde6037fc8b1fe0ef04b79149ba733",
+      "sourceName": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../proxy/utils/Initializable.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ReentrancyGuardUpgradeable"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/XCTMinter.sol": {
+      "lastModificationDate": 1657900173802,
+      "contentHash": "04079d26f1b4b03a122dad1c5af89fa3",
+      "sourceName": "contracts/XCTMinter.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./TokensRecoverable.sol",
+        "./interfaces/IUniswapV2Factory.sol",
+        "./interfaces/IERC20Mintable.sol",
+        "./interfaces/IUniswapV2Router02.sol",
+        "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol",
+        "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol",
+        "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol",
+        "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "XCTMinter"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IUniswapV2Factory.sol": {
+      "lastModificationDate": 1657863760787,
+      "contentHash": "c99812b4eb66ddd72738f27129f97282",
+      "sourceName": "contracts/interfaces/IUniswapV2Factory.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "IUniswapV2Factory"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IERC20Mintable.sol": {
+      "lastModificationDate": 1657898657847,
+      "contentHash": "b58a0f0d943ac02bfa0f9fd0bb925149",
+      "sourceName": "contracts/interfaces/IERC20Mintable.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "IERC20Mintable"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IUniswapV2Router02.sol": {
+      "lastModificationDate": 1657863747253,
+      "contentHash": "1f2fed38ee8249d96aa32a7d35b5bd50",
+      "sourceName": "contracts/interfaces/IUniswapV2Router02.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./IUniswapV2Router01.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "IUniswapV2Router02"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IUniswapV2Router01.sol": {
+      "lastModificationDate": 1657863754813,
+      "contentHash": "718013d6a936bcbcff8e89686dde3619",
+      "sourceName": "contracts/interfaces/IUniswapV2Router01.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "IUniswapV2Router01"
       ]
     }
   }

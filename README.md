@@ -26,6 +26,8 @@ Sections below describes the following :
 |SubscriptionBalanceCalculator| [`SubscriptionBalanceCalculator.sol`](./contracts/SubscriptionBalanceCalculator.sol) | Upgradeable contract for calculating balances of subscriptions, subnets included in NFTs internally by `SubscriptionBalance` contract above. Revenue logic for distribution as per (1+r+s+t+u)*( compute Reqd * Unit Price + ...) formula is coded here. Revenue can be claimed by addresses using this smart contract.|
 |RoleControl| [`RoleControl.sol`](./contracts/RoleControl.sol) | Upgradeable RoleControl contract for each NFT to add roles - `READ, DEPLOYER, ACCESS_MANAGER, BILLING_MANAGER and CONTRACT_BASED_DEPLOYER` by NFT owner.|
 |ContractBasedDeployment| [`ContractBasedDeployment.sol`](./contracts/ContractBasedDeployment.sol) | Upgradeable ContractBasedDeployment contract is used to store IPFS hash linked to app name, update it or delete it for particular NFT by `CONTRACT_BASED_DEPLOYER` role defined in `RoleControl` contract.|
+|XCTMinter| [`XCTMinter.sol`](./contracts/XCTMinter.sol) | Upgradeable XCTMinter contract has rights to mint XCT token. This contract is used by anyone to buy XCT from any token. If token is Stack token, there is benefits on fees paid for minting XCT. XCT can be sold anytime to receive USDC token back. |
+
 
 ## Deployment
 
@@ -40,6 +42,7 @@ Solidity files that need auditing
 [`SubscriptionBalanceCalculator.sol`](./contracts/SubscriptionBalanceCalculator.sol) |
 [`RoleControl.sol`](./contracts/RoleControl.sol) |
 [`ContractBasedDeployment.sol`](./contracts/ContractBasedDeployment.sol) |
+[`XCTMinter.sol`](./contracts/XCTMinter.sol) |
 
 ## Rationale
 ### Registration
@@ -339,3 +342,42 @@ function getMultihashFromBytes32(multihash) {
     return bs58.encode(multihashBytes);
   }
 ```
+
+
+### XCTMinter
+
+1. Use view functions `estimateBuyFromStack`, `estimateBuyFromAnyToken` or `estimateBuy` to get estimates for buying XCT from Stack token, any other token or payable token (like Matic in Polygon) respectively.
+
+2. User can buy XCT from Matic in Polygon chain by calling `easyBuyXCT()`.
+
+3. User can buy XCT from any ERC20 token by calling `buyXCT(address _token, uint256 _tokenAmount)`.
+```
+address _token, - token address used to buy.
+uint256 _tokenAmount - tokens amount to be used
+```
+Note: make sure to `approve` atleast `_tokenAmount` to this smart contract from that ERC20 token address.
+
+4. To sell XCT and receive USDC back, call `sellXCT(_amountXCT)`. Sender account's XCT is burned and USDC locked in smart contract is released back to sender.
+
+5. Use following view functions to get percentage used in calculations - 
+`percentStackConversion()` - 1000 <=> 1% 
+If user buys from Stack token, there is some advantage to percentage fees given by:
+`percentStackAdvantage()`
+
+```
+eg. 
+If you buy from token X, you pay 10% fees in Stack token and receive XCT from 90% USDC locked.
+On other hand, if you buy from Stack token, you pay lesser fees say 5% fees in Stack token and receive XCT from 95% USDC locked. Hence, 5% advantage.
+```
+
+Admin can change slippage used by contract and above parameters by following:
+```
+setSlippage(uint256 _slippage) 
+setPercentStack(
+        uint256 _percentStackConversion,
+        uint256 _percentStackAdvantage
+    ) 
+for setting 1% use -> 1000
+```
+
+6. `totalXCTMints()` view function gives total XCT minted by this smart contract.

@@ -215,7 +215,6 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     function getRealtimeCostIncurred(
         uint256 nftId,
         uint256[] memory subnetIds,
-        uint256[3] memory prevBalance,
         uint256 lastBalanceUpdatedTime
     ) external view returns (uint256) {
         uint256 computeCost = getComputeCosts(

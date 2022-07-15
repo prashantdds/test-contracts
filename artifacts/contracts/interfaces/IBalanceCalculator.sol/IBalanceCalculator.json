@@ -50,11 +50,6 @@
           "type": "uint256[]"
         },
         {
-          "internalType": "uint256[3]",
-          "name": "prevBalance",
-          "type": "uint256[3]"
-        },
-        {
           "internalType": "uint256",
           "name": "lastBalanceUpdatedTime",
           "type": "uint256"
