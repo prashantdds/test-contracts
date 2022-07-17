@@ -728,7 +728,7 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/node_modules/@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol": {
-      "lastModificationDate": 1654749325013,
+      "lastModificationDate": 1654930562312,
       "contentHash": "8c58ae2b48b49da0634bc2db620540cf",
       "sourceName": "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol",
       "solcConfig": {
@@ -2284,8 +2284,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/XCTMinter.sol": {
-      "lastModificationDate": 1657900173802,
-      "contentHash": "04079d26f1b4b03a122dad1c5af89fa3",
+      "lastModificationDate": 1658038567643,
+      "contentHash": "0104b5defe3299cc98c84ff8f50d3bbe",
       "sourceName": "contracts/XCTMinter.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2365,8 +2365,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IERC20Mintable.sol": {
-      "lastModificationDate": 1657898657847,
-      "contentHash": "b58a0f0d943ac02bfa0f9fd0bb925149",
+      "lastModificationDate": 1658034738929,
+      "contentHash": "107494b9cff6f9ac30c26568f877d936",
       "sourceName": "contracts/interfaces/IERC20Mintable.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2403,7 +2403,7 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IUniswapV2Router02.sol": {
-      "lastModificationDate": 1657863747253,
+      "lastModificationDate": 1658035994111,
       "contentHash": "1f2fed38ee8249d96aa32a7d35b5bd50",
       "sourceName": "contracts/interfaces/IUniswapV2Router02.sol",
       "solcConfig": {
@@ -2441,7 +2441,7 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IUniswapV2Router01.sol": {
-      "lastModificationDate": 1657863754813,
+      "lastModificationDate": 1658035991983,
       "contentHash": "718013d6a936bcbcff8e89686dde3619",
       "sourceName": "contracts/interfaces/IUniswapV2Router01.sol",
       "solcConfig": {
@@ -2474,6 +2474,157 @@
       ],
       "artifacts": [
         "IUniswapV2Router01"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/TestXCTERC20.sol": {
+      "lastModificationDate": 1658037244620,
+      "contentHash": "0f26832a9f8cec848baa714ad41bade3",
+      "sourceName": "contracts/TestXCTERC20.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol",
+        "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol",
+        "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "TestXCTERC20"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/libraries/UniswapV2Library.sol": {
+      "lastModificationDate": 1658036133232,
+      "contentHash": "074680dddc2ab30f21ca67402df50a8b",
+      "sourceName": "contracts/libraries/UniswapV2Library.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../interfaces/IUniswapV2Pair.sol",
+        "@openzeppelin/contracts/utils/math/SafeMath.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "UniswapV2Library"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IUniswapV2Pair.sol": {
+      "lastModificationDate": 1658035989634,
+      "contentHash": "f0778996dfb491be30400133ac6288d9",
+      "sourceName": "contracts/interfaces/IUniswapV2Pair.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.2"
+      ],
+      "artifacts": [
+        "IUniswapV2Pair"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/node_modules/@openzeppelin/contracts/utils/math/SafeMath.sol": {
+      "lastModificationDate": 1658035676702,
+      "contentHash": "2337f0279507b5edf14a07067adf0d05",
+      "sourceName": "@openzeppelin/contracts/utils/math/SafeMath.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "SafeMath"
       ]
     }
   }

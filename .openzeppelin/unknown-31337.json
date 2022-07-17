@@ -7506,46 +7506,6 @@
       "kind": "transparent"
     },
     {
-      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-      "txHash": "0xe41308a75ddd3d546f9237d7905b9a32e7697eb42acc00f057271d9e65e41740",
-      "kind": "transparent"
-    },
-    {
-      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-      "txHash": "0x7ef739d78fdf6b338519b828864584dfc405d031ce7b7b70e90537c65ba224c7",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
-      "txHash": "0x629fe2e8e9c8f8f22fe725d4bbace0e0a174407201a7899527aa6609ead9068e",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE",
-      "txHash": "0x4c11e5c76ccfbfcbcb182c4fe3ecdc8d39af6a39163f272b7ecb7aae2784285e",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c",
-      "txHash": "0x63cb0a96cd8f09f02caffcfccb782b1b428bd0ae8a21ffb5e249a95a61cf6019",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x59b670e9fA9D0A427751Af201D676719a970857b",
-      "txHash": "0x14563259a6bf3ea9b8df17c026519b76d2c5d780177d67b5a4ee464b3498ef2c",
-      "kind": "transparent"
-    },
-    {
-      "address": "0xf5059a5D33d5853360D16C683c16e67980206f36",
-      "txHash": "0x97452d423b89f8cb17bbfd6e02e5c55e96564e41506276e2d07ca0a7ba9ed4a3",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x998abeb3E57409262aE5b751f60747921B33613E",
-      "txHash": "0x99f001e50d9bd3118611f47a5778e82d54a89f7188c315b20ddb103e896ed90f",
-      "kind": "transparent"
-    },
-    {
       "address": "0x4826533B4897376654Bb4d4AD88B7faFD0C98528",
       "txHash": "0x982a3e71d4787c5e5b145b5228f1102567a011f82be36de9321248db7874bd6e",
       "kind": "transparent"
@@ -8173,6 +8133,46 @@
     {
       "address": "0xa68E430060f74F9821D2dC9A9E2CE3aF7d842EBe",
       "txHash": "0x7b20305aeddb710cbd7ef690b9dc9b9dcf6d74b53d64aecfc0067d80a566c8fe",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "txHash": "0xe41308a75ddd3d546f9237d7905b9a32e7697eb42acc00f057271d9e65e41740",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "txHash": "0x7ef739d78fdf6b338519b828864584dfc405d031ce7b7b70e90537c65ba224c7",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+      "txHash": "0x629fe2e8e9c8f8f22fe725d4bbace0e0a174407201a7899527aa6609ead9068e",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE",
+      "txHash": "0x75655220d860446ad02467eb599bbba978a422277515a6ff961238f84958dd63",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c",
+      "txHash": "0xde547d159c7b2666f0aece18aec29c9995194f937149db220e2c1e65d1a0ec3c",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x59b670e9fA9D0A427751Af201D676719a970857b",
+      "txHash": "0xfc0b50d090aa1a5379893487676288a739b01e24f79d8dd746b36dec1bfb8c0a",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xf5059a5D33d5853360D16C683c16e67980206f36",
+      "txHash": "0x83f706960f46265fb0ffd4f463058a90013d9d701b0ea54a9f4167d80839109e",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x998abeb3E57409262aE5b751f60747921B33613E",
+      "txHash": "0x0bf00a8d87e97f0ef5434d5e9ab032ff3d1a72a0dff44b7a9722bf1dd3992d55",
       "kind": "transparent"
     }
   ],
@@ -37701,7 +37701,7 @@
     },
     "06ab0e2a820676791402db530365a9688be1978046a6bcfbce91325b4f912fd8": {
       "address": "0x851356ae760d987E095750cCeb3bC6014560891C",
-      "txHash": "0x3272efb623bfeb7619b1f915cb49cca1e1722f1ea5b7cbc5994740f102d991fb",
+      "txHash": "0x964c22030ff9303d1efd059804c4312ac5394c5af2e3bfd7cc0ec13e5816874d",
       "layout": {
         "storage": [
           {
@@ -37757,7 +37757,7 @@
             "label": "NFT_Address",
             "offset": 0,
             "slot": "151",
-            "type": "t_contract(IERC721)11220",
+            "type": "t_contract(IERC721)12324",
             "contract": "RoleControl",
             "src": "contracts/RoleControl.sol:10"
           },
@@ -37791,7 +37791,7 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(IERC721)11220": {
+          "t_contract(IERC721)12324": {
             "label": "contract IERC721",
             "numberOfBytes": "20"
           },
@@ -50796,7 +50796,7 @@
             "label": "DarkMatterNFT",
             "offset": 0,
             "slot": "201",
-            "type": "t_contract(IERC721Upgradeable)1983",
+            "type": "t_contract(IERC721Upgradeable)2042",
             "contract": "Registration",
             "src": "contracts/Registration.sol:19"
           },
@@ -50804,7 +50804,7 @@
             "label": "StackToken",
             "offset": 0,
             "slot": "202",
-            "type": "t_contract(IERC20Upgradeable)1600",
+            "type": "t_contract(IERC20Upgradeable)1659",
             "contract": "Registration",
             "src": "contracts/Registration.sol:20"
           },
@@ -50836,7 +50836,7 @@
             "label": "requestPriceChange",
             "offset": 0,
             "slot": "206",
-            "type": "t_mapping(t_uint256,t_struct(PriceChangeRequest)3181_storage)",
+            "type": "t_mapping(t_uint256,t_struct(PriceChangeRequest)3240_storage)",
             "contract": "Registration",
             "src": "contracts/Registration.sol:59"
           },
@@ -50844,7 +50844,7 @@
             "label": "subnetAttributes",
             "offset": 0,
             "slot": "207",
-            "type": "t_mapping(t_uint256,t_struct(SubnetAttributes)3166_storage)",
+            "type": "t_mapping(t_uint256,t_struct(SubnetAttributes)3225_storage)",
             "contract": "Registration",
             "src": "contracts/Registration.sol:62"
           },
@@ -50884,7 +50884,7 @@
             "label": "subnetClusters",
             "offset": 0,
             "slot": "212",
-            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(Cluster)3175_storage))",
+            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(Cluster)3234_storage))",
             "contract": "Registration",
             "src": "contracts/Registration.sol:69"
           },
@@ -50934,11 +50934,11 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(IERC20Upgradeable)1600": {
+          "t_contract(IERC20Upgradeable)1659": {
             "label": "contract IERC20Upgradeable",
             "numberOfBytes": "20"
           },
-          "t_contract(IERC721Upgradeable)1983": {
+          "t_contract(IERC721Upgradeable)2042": {
             "label": "contract IERC721Upgradeable",
             "numberOfBytes": "20"
           },
@@ -50962,19 +50962,19 @@
             "label": "mapping(uint256 => address[])",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(Cluster)3175_storage))": {
+          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(Cluster)3234_storage))": {
             "label": "mapping(uint256 => mapping(uint256 => struct Registration.Cluster))",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(Cluster)3175_storage)": {
+          "t_mapping(t_uint256,t_struct(Cluster)3234_storage)": {
             "label": "mapping(uint256 => struct Registration.Cluster)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(PriceChangeRequest)3181_storage)": {
+          "t_mapping(t_uint256,t_struct(PriceChangeRequest)3240_storage)": {
             "label": "mapping(uint256 => struct Registration.PriceChangeRequest)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(SubnetAttributes)3166_storage)": {
+          "t_mapping(t_uint256,t_struct(SubnetAttributes)3225_storage)": {
             "label": "mapping(uint256 => struct Registration.SubnetAttributes)",
             "numberOfBytes": "32"
           },
@@ -50986,7 +50986,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(Cluster)3175_storage": {
+          "t_struct(Cluster)3234_storage": {
             "label": "struct Registration.Cluster",
             "members": [
               {
@@ -51016,7 +51016,7 @@
             ],
             "numberOfBytes": "128"
           },
-          "t_struct(PriceChangeRequest)3181_storage": {
+          "t_struct(PriceChangeRequest)3240_storage": {
             "label": "struct Registration.PriceChangeRequest",
             "members": [
               {
@@ -51052,7 +51052,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(SubnetAttributes)3166_storage": {
+          "t_struct(SubnetAttributes)3225_storage": {
             "label": "struct Registration.SubnetAttributes",
             "members": [
               {
@@ -53008,153 +53008,6 @@
         }
       }
     },
-    "06cdb48a1428693be541354dca5460ab552204ec249eea77d4b022adc1a223ae": {
-      "address": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
-      "txHash": "0xedb9e9ebdbec457c5fe5779c2c97201a7be7afc5317d83a0a1ea08d061028339",
-      "layout": {
-        "storage": [
-          {
-            "label": "_initialized",
-            "offset": 0,
-            "slot": "0",
-            "type": "t_uint8",
-            "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
-            "retypedFrom": "bool"
-          },
-          {
-            "label": "_initializing",
-            "offset": 1,
-            "slot": "0",
-            "type": "t_bool",
-            "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "1",
-            "type": "t_array(t_uint256)50_storage",
-            "contract": "ContextUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
-          },
-          {
-            "label": "_owner",
-            "offset": 0,
-            "slot": "51",
-            "type": "t_address",
-            "contract": "OwnableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "52",
-            "type": "t_array(t_uint256)49_storage",
-            "contract": "OwnableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
-          },
-          {
-            "label": "RegistrationContract",
-            "offset": 0,
-            "slot": "101",
-            "type": "t_contract(IRegistration)11339",
-            "contract": "SubscriptionBalanceCalculator",
-            "src": "contracts/SubscriptionBalanceCalculator.sol:16"
-          },
-          {
-            "label": "ApplicationNFT",
-            "offset": 0,
-            "slot": "102",
-            "type": "t_contract(IERC721)11220",
-            "contract": "SubscriptionBalanceCalculator",
-            "src": "contracts/SubscriptionBalanceCalculator.sol:17"
-          },
-          {
-            "label": "SubscriptionContract",
-            "offset": 0,
-            "slot": "103",
-            "type": "t_contract(ISubscription)11400",
-            "contract": "SubscriptionBalanceCalculator",
-            "src": "contracts/SubscriptionBalanceCalculator.sol:18"
-          },
-          {
-            "label": "SubscriptionBalance",
-            "offset": 0,
-            "slot": "104",
-            "type": "t_contract(ISubscriptionBalance)11530",
-            "contract": "SubscriptionBalanceCalculator",
-            "src": "contracts/SubscriptionBalanceCalculator.sol:19"
-          },
-          {
-            "label": "XCTToken",
-            "offset": 0,
-            "slot": "105",
-            "type": "t_contract(IERC20Upgradeable)1600",
-            "contract": "SubscriptionBalanceCalculator",
-            "src": "contracts/SubscriptionBalanceCalculator.sol:20"
-          },
-          {
-            "label": "balanceOfRev",
-            "offset": 0,
-            "slot": "106",
-            "type": "t_mapping(t_address,t_uint256)",
-            "contract": "SubscriptionBalanceCalculator",
-            "src": "contracts/SubscriptionBalanceCalculator.sol:21"
-          }
-        ],
-        "types": {
-          "t_address": {
-            "label": "address",
-            "numberOfBytes": "20"
-          },
-          "t_array(t_uint256)49_storage": {
-            "label": "uint256[49]",
-            "numberOfBytes": "1568"
-          },
-          "t_array(t_uint256)50_storage": {
-            "label": "uint256[50]",
-            "numberOfBytes": "1600"
-          },
-          "t_bool": {
-            "label": "bool",
-            "numberOfBytes": "1"
-          },
-          "t_contract(IERC20Upgradeable)1600": {
-            "label": "contract IERC20Upgradeable",
-            "numberOfBytes": "20"
-          },
-          "t_contract(IERC721)11220": {
-            "label": "contract IERC721",
-            "numberOfBytes": "20"
-          },
-          "t_contract(IRegistration)11339": {
-            "label": "contract IRegistration",
-            "numberOfBytes": "20"
-          },
-          "t_contract(ISubscription)11400": {
-            "label": "contract ISubscription",
-            "numberOfBytes": "20"
-          },
-          "t_contract(ISubscriptionBalance)11530": {
-            "label": "contract ISubscriptionBalance",
-            "numberOfBytes": "20"
-          },
-          "t_mapping(t_address,t_uint256)": {
-            "label": "mapping(address => uint256)",
-            "numberOfBytes": "32"
-          },
-          "t_uint256": {
-            "label": "uint256",
-            "numberOfBytes": "32"
-          },
-          "t_uint8": {
-            "label": "uint8",
-            "numberOfBytes": "1"
-          }
-        }
-      }
-    },
     "c9995d9e7a27a66ac8065db4c94afe224ef83eef610352cf40bf5c71dfe90b25": {
       "address": "0x6Da3D07a6BF01F02fB41c02984a49B5d9Aa6ea92",
       "txHash": "0x4d8332d2d668edebc4b3f561ed0b8bffd09776635d52b1c7169dbe0d7d24b748",
@@ -53388,323 +53241,6 @@
               }
             ],
             "numberOfBytes": "256"
-          },
-          "t_uint256": {
-            "label": "uint256",
-            "numberOfBytes": "32"
-          },
-          "t_uint8": {
-            "label": "uint8",
-            "numberOfBytes": "1"
-          }
-        }
-      }
-    },
-    "84b924b96a0621c93ea1c61a59d47aa4e36344b48928b102ffc1f24cdf36af62": {
-      "address": "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
-      "txHash": "0xf80b816f26294d2c24ebe3a9be5ffe0216ffac199e157864a49f4193b2de218f",
-      "layout": {
-        "storage": [
-          {
-            "label": "_initialized",
-            "offset": 0,
-            "slot": "0",
-            "type": "t_uint8",
-            "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
-            "retypedFrom": "bool"
-          },
-          {
-            "label": "_initializing",
-            "offset": 1,
-            "slot": "0",
-            "type": "t_bool",
-            "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "1",
-            "type": "t_array(t_uint256)50_storage",
-            "contract": "ContextUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "51",
-            "type": "t_array(t_uint256)50_storage",
-            "contract": "ERC165Upgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:41"
-          },
-          {
-            "label": "_roles",
-            "offset": 0,
-            "slot": "101",
-            "type": "t_mapping(t_bytes32,t_struct(RoleData)34_storage)",
-            "contract": "AccessControlUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:61"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "102",
-            "type": "t_array(t_uint256)49_storage",
-            "contract": "AccessControlUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:247"
-          },
-          {
-            "label": "_paused",
-            "offset": 0,
-            "slot": "151",
-            "type": "t_bool",
-            "contract": "PausableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "152",
-            "type": "t_array(t_uint256)49_storage",
-            "contract": "PausableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:102"
-          },
-          {
-            "label": "RegistrationContract",
-            "offset": 0,
-            "slot": "201",
-            "type": "t_contract(IRegistration)11339",
-            "contract": "Subscription",
-            "src": "contracts/Subscription.sol:17"
-          },
-          {
-            "label": "ApplicationNFT",
-            "offset": 0,
-            "slot": "202",
-            "type": "t_contract(IERC721)11220",
-            "contract": "Subscription",
-            "src": "contracts/Subscription.sol:18"
-          },
-          {
-            "label": "SubscriptionBalance",
-            "offset": 0,
-            "slot": "203",
-            "type": "t_contract(ISubscriptionBalance)11530",
-            "contract": "Subscription",
-            "src": "contracts/Subscription.sol:19"
-          },
-          {
-            "label": "XCT",
-            "offset": 0,
-            "slot": "204",
-            "type": "t_contract(IERC20Upgradeable)1600",
-            "contract": "Subscription",
-            "src": "contracts/Subscription.sol:20"
-          },
-          {
-            "label": "GLOBAL_DAO_ADDRESS",
-            "offset": 0,
-            "slot": "205",
-            "type": "t_address",
-            "contract": "Subscription",
-            "src": "contracts/Subscription.sol:26"
-          },
-          {
-            "label": "userSubscription",
-            "offset": 0,
-            "slot": "206",
-            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(NFTSubnetAttribute)5066_storage))",
-            "contract": "Subscription",
-            "src": "contracts/Subscription.sol:37"
-          },
-          {
-            "label": "LIMIT_NFT_SUBNETS",
-            "offset": 0,
-            "slot": "207",
-            "type": "t_uint256",
-            "contract": "Subscription",
-            "src": "contracts/Subscription.sol:40"
-          },
-          {
-            "label": "MIN_TIME_FUNDS",
-            "offset": 0,
-            "slot": "208",
-            "type": "t_uint256",
-            "contract": "Subscription",
-            "src": "contracts/Subscription.sol:41"
-          },
-          {
-            "label": "REQD_NOTICE_TIME_S_PROVIDER",
-            "offset": 0,
-            "slot": "209",
-            "type": "t_uint256",
-            "contract": "Subscription",
-            "src": "contracts/Subscription.sol:43"
-          },
-          {
-            "label": "REQD_COOLDOWN_S_PROVIDER",
-            "offset": 0,
-            "slot": "210",
-            "type": "t_uint256",
-            "contract": "Subscription",
-            "src": "contracts/Subscription.sol:44"
-          },
-          {
-            "label": "requestPriceChange",
-            "offset": 0,
-            "slot": "211",
-            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(PriceChangeRequest)5088_storage))",
-            "contract": "Subscription",
-            "src": "contracts/Subscription.sol:53"
-          }
-        ],
-        "types": {
-          "t_address": {
-            "label": "address",
-            "numberOfBytes": "20"
-          },
-          "t_array(t_uint256)49_storage": {
-            "label": "uint256[49]",
-            "numberOfBytes": "1568"
-          },
-          "t_array(t_uint256)50_storage": {
-            "label": "uint256[50]",
-            "numberOfBytes": "1600"
-          },
-          "t_array(t_uint256)dyn_storage": {
-            "label": "uint256[]",
-            "numberOfBytes": "32"
-          },
-          "t_bool": {
-            "label": "bool",
-            "numberOfBytes": "1"
-          },
-          "t_bytes32": {
-            "label": "bytes32",
-            "numberOfBytes": "32"
-          },
-          "t_contract(IERC20Upgradeable)1600": {
-            "label": "contract IERC20Upgradeable",
-            "numberOfBytes": "20"
-          },
-          "t_contract(IERC721)11220": {
-            "label": "contract IERC721",
-            "numberOfBytes": "20"
-          },
-          "t_contract(IRegistration)11339": {
-            "label": "contract IRegistration",
-            "numberOfBytes": "20"
-          },
-          "t_contract(ISubscriptionBalance)11530": {
-            "label": "contract ISubscriptionBalance",
-            "numberOfBytes": "20"
-          },
-          "t_mapping(t_address,t_bool)": {
-            "label": "mapping(address => bool)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_bytes32,t_struct(RoleData)34_storage)": {
-            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(NFTSubnetAttribute)5066_storage))": {
-            "label": "mapping(uint256 => mapping(uint256 => struct Subscription.NFTSubnetAttribute))",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(PriceChangeRequest)5088_storage))": {
-            "label": "mapping(uint256 => mapping(uint256 => struct Subscription.PriceChangeRequest))",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_struct(NFTSubnetAttribute)5066_storage)": {
-            "label": "mapping(uint256 => struct Subscription.NFTSubnetAttribute)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_struct(PriceChangeRequest)5088_storage)": {
-            "label": "mapping(uint256 => struct Subscription.PriceChangeRequest)",
-            "numberOfBytes": "32"
-          },
-          "t_string_storage": {
-            "label": "string",
-            "numberOfBytes": "32"
-          },
-          "t_struct(NFTSubnetAttribute)5066_storage": {
-            "label": "struct Subscription.NFTSubnetAttribute",
-            "members": [
-              {
-                "label": "serviceProviderAddress",
-                "type": "t_string_storage",
-                "offset": 0,
-                "slot": "0"
-              },
-              {
-                "label": "referralAddress",
-                "type": "t_address",
-                "offset": 0,
-                "slot": "1"
-              },
-              {
-                "label": "r_licenseFee",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "2"
-              },
-              {
-                "label": "computeRequired",
-                "type": "t_array(t_uint256)dyn_storage",
-                "offset": 0,
-                "slot": "3"
-              },
-              {
-                "label": "subscribed",
-                "type": "t_bool",
-                "offset": 0,
-                "slot": "4"
-              }
-            ],
-            "numberOfBytes": "160"
-          },
-          "t_struct(PriceChangeRequest)5088_storage": {
-            "label": "struct Subscription.PriceChangeRequest",
-            "members": [
-              {
-                "label": "timestamp",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "0"
-              },
-              {
-                "label": "serviceProviderAddress",
-                "type": "t_string_storage",
-                "offset": 0,
-                "slot": "1"
-              },
-              {
-                "label": "lastPriceChange",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "2"
-              }
-            ],
-            "numberOfBytes": "96"
-          },
-          "t_struct(RoleData)34_storage": {
-            "label": "struct AccessControlUpgradeable.RoleData",
-            "members": [
-              {
-                "label": "members",
-                "type": "t_mapping(t_address,t_bool)",
-                "offset": 0,
-                "slot": "0"
-              },
-              {
-                "label": "adminRole",
-                "type": "t_bytes32",
-                "offset": 0,
-                "slot": "1"
-              }
-            ],
-            "numberOfBytes": "64"
           },
           "t_uint256": {
             "label": "uint256",
@@ -54452,254 +53988,9 @@
         }
       }
     },
-    "ffba9e7171a7283cde58f5607b657d5e5ec81f3eeb615c7ca8765fdf8570af41": {
-      "address": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
-      "txHash": "0x1a6a894af1f135698851694895824891f6825e1b0d331734d3bf7d735bd985f3",
-      "layout": {
-        "storage": [
-          {
-            "label": "_initialized",
-            "offset": 0,
-            "slot": "0",
-            "type": "t_uint8",
-            "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
-            "retypedFrom": "bool"
-          },
-          {
-            "label": "_initializing",
-            "offset": 1,
-            "slot": "0",
-            "type": "t_bool",
-            "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "1",
-            "type": "t_array(t_uint256)50_storage",
-            "contract": "ContextUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
-          },
-          {
-            "label": "_owner",
-            "offset": 0,
-            "slot": "51",
-            "type": "t_address",
-            "contract": "OwnableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "52",
-            "type": "t_array(t_uint256)49_storage",
-            "contract": "OwnableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
-          },
-          {
-            "label": "_paused",
-            "offset": 0,
-            "slot": "101",
-            "type": "t_bool",
-            "contract": "PausableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "102",
-            "type": "t_array(t_uint256)49_storage",
-            "contract": "PausableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:102"
-          },
-          {
-            "label": "RegistrationContract",
-            "offset": 0,
-            "slot": "151",
-            "type": "t_contract(IRegistration)11339",
-            "contract": "SubscriptionBalance",
-            "src": "contracts/SubscriptionBalance.sol:19"
-          },
-          {
-            "label": "ApplicationNFT",
-            "offset": 0,
-            "slot": "152",
-            "type": "t_contract(IERC721)11220",
-            "contract": "SubscriptionBalance",
-            "src": "contracts/SubscriptionBalance.sol:20"
-          },
-          {
-            "label": "XCTToken",
-            "offset": 0,
-            "slot": "153",
-            "type": "t_contract(IERC20Upgradeable)1600",
-            "contract": "SubscriptionBalance",
-            "src": "contracts/SubscriptionBalance.sol:21"
-          },
-          {
-            "label": "SubscriptionContract",
-            "offset": 0,
-            "slot": "154",
-            "type": "t_contract(ISubscription)11400",
-            "contract": "SubscriptionBalance",
-            "src": "contracts/SubscriptionBalance.sol:22"
-          },
-          {
-            "label": "BalanceCalculator",
-            "offset": 0,
-            "slot": "155",
-            "type": "t_contract(IBalanceCalculator)11092",
-            "contract": "SubscriptionBalance",
-            "src": "contracts/SubscriptionBalance.sol:23"
-          },
-          {
-            "label": "ReferralPercent",
-            "offset": 0,
-            "slot": "156",
-            "type": "t_uint256",
-            "contract": "SubscriptionBalance",
-            "src": "contracts/SubscriptionBalance.sol:24"
-          },
-          {
-            "label": "ReferralRevExpirySecs",
-            "offset": 0,
-            "slot": "157",
-            "type": "t_uint256",
-            "contract": "SubscriptionBalance",
-            "src": "contracts/SubscriptionBalance.sol:25"
-          },
-          {
-            "label": "nftBalances",
-            "offset": 0,
-            "slot": "158",
-            "type": "t_mapping(t_uint256,t_struct(NFTBalance)6253_storage)",
-            "contract": "SubscriptionBalance",
-            "src": "contracts/SubscriptionBalance.sol:37"
-          },
-          {
-            "label": "creditsExpiry",
-            "offset": 0,
-            "slot": "159",
-            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
-            "contract": "SubscriptionBalance",
-            "src": "contracts/SubscriptionBalance.sol:39"
-          }
-        ],
-        "types": {
-          "t_address": {
-            "label": "address",
-            "numberOfBytes": "20"
-          },
-          "t_array(t_uint256)3_storage": {
-            "label": "uint256[3]",
-            "numberOfBytes": "96"
-          },
-          "t_array(t_uint256)49_storage": {
-            "label": "uint256[49]",
-            "numberOfBytes": "1568"
-          },
-          "t_array(t_uint256)50_storage": {
-            "label": "uint256[50]",
-            "numberOfBytes": "1600"
-          },
-          "t_array(t_uint256)dyn_storage": {
-            "label": "uint256[]",
-            "numberOfBytes": "32"
-          },
-          "t_bool": {
-            "label": "bool",
-            "numberOfBytes": "1"
-          },
-          "t_contract(IBalanceCalculator)11092": {
-            "label": "contract IBalanceCalculator",
-            "numberOfBytes": "20"
-          },
-          "t_contract(IERC20Upgradeable)1600": {
-            "label": "contract IERC20Upgradeable",
-            "numberOfBytes": "20"
-          },
-          "t_contract(IERC721)11220": {
-            "label": "contract IERC721",
-            "numberOfBytes": "20"
-          },
-          "t_contract(IRegistration)11339": {
-            "label": "contract IRegistration",
-            "numberOfBytes": "20"
-          },
-          "t_contract(ISubscription)11400": {
-            "label": "contract ISubscription",
-            "numberOfBytes": "20"
-          },
-          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
-            "label": "mapping(address => mapping(uint256 => uint256))",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_struct(NFTBalance)6253_storage)": {
-            "label": "mapping(uint256 => struct SubscriptionBalance.NFTBalance)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_uint256)": {
-            "label": "mapping(uint256 => uint256)",
-            "numberOfBytes": "32"
-          },
-          "t_struct(NFTBalance)6253_storage": {
-            "label": "struct SubscriptionBalance.NFTBalance",
-            "members": [
-              {
-                "label": "lastBalanceUpdateTime",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "0"
-              },
-              {
-                "label": "prevBalance",
-                "type": "t_array(t_uint256)3_storage",
-                "offset": 0,
-                "slot": "1"
-              },
-              {
-                "label": "subnetIds",
-                "type": "t_array(t_uint256)dyn_storage",
-                "offset": 0,
-                "slot": "4"
-              },
-              {
-                "label": "NFTMinter",
-                "type": "t_address",
-                "offset": 0,
-                "slot": "5"
-              },
-              {
-                "label": "mintTime",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "6"
-              },
-              {
-                "label": "endOfXCTBalance",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "7"
-              }
-            ],
-            "numberOfBytes": "256"
-          },
-          "t_uint256": {
-            "label": "uint256",
-            "numberOfBytes": "32"
-          },
-          "t_uint8": {
-            "label": "uint8",
-            "numberOfBytes": "1"
-          }
-        }
-      }
-    },
     "2a0de329233df3bd531acafb8e92a17a944d7aba43a223600015e1f92caa16dd": {
       "address": "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
-      "txHash": "0xdef1c5f1f2dfb6c2487e558c237e940e5435967ef4c7befae9e3ed1ae2e9e52b",
+      "txHash": "0x94d6efeefbd9459a3d819b1095dc40db99e6a024365c712d5804a28713ec38d3",
       "layout": {
         "storage": [
           {
@@ -54723,7 +54014,7 @@
             "label": "RoleControl",
             "offset": 2,
             "slot": "0",
-            "type": "t_contract(IRoleControl)11355",
+            "type": "t_contract(IRoleControl)12459",
             "contract": "ContractBasedDeployment",
             "src": "contracts/ContractBasedDeployment.sol:17"
           },
@@ -54731,7 +54022,7 @@
             "label": "entries",
             "offset": 0,
             "slot": "1",
-            "type": "t_mapping(t_string_memory_ptr,t_struct(Multihash)2861_storage)",
+            "type": "t_mapping(t_string_memory_ptr,t_struct(Multihash)2920_storage)",
             "contract": "ContractBasedDeployment",
             "src": "contracts/ContractBasedDeployment.sol:27"
           }
@@ -54745,11 +54036,11 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(IRoleControl)11355": {
+          "t_contract(IRoleControl)12459": {
             "label": "contract IRoleControl",
             "numberOfBytes": "20"
           },
-          "t_mapping(t_string_memory_ptr,t_struct(Multihash)2861_storage)": {
+          "t_mapping(t_string_memory_ptr,t_struct(Multihash)2920_storage)": {
             "label": "mapping(string => struct ContractBasedDeployment.Multihash)",
             "numberOfBytes": "32"
           },
@@ -54757,7 +54048,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(Multihash)2861_storage": {
+          "t_struct(Multihash)2920_storage": {
             "label": "struct ContractBasedDeployment.Multihash",
             "members": [
               {
@@ -55674,8 +54965,8 @@
       }
     },
     "6ccf6b41b02157a549d6fe9735285fd9b6c6a11f3822ee52adae44777bd6e1f2": {
-      "address": "0x1B25157F05B25438441bF7CDe38A95A55ccf8E50",
-      "txHash": "0x13d7f2d7aa3e5e1a7fe17bb6ada89a931234b5d088bd112b1454d8094674057c",
+      "address": "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
+      "txHash": "0xb37ebe6527b474bb3c9ed1d36c40b7413c09eb1ee633b310a87ecb83220ba192",
       "layout": {
         "storage": [
           {
@@ -55747,7 +55038,7 @@
             "label": "RegistrationContract",
             "offset": 0,
             "slot": "201",
-            "type": "t_contract(IRegistration)11378",
+            "type": "t_contract(IRegistration)12443",
             "contract": "Subscription",
             "src": "contracts/Subscription.sol:17"
           },
@@ -55755,7 +55046,7 @@
             "label": "ApplicationNFT",
             "offset": 0,
             "slot": "202",
-            "type": "t_contract(IERC721)11259",
+            "type": "t_contract(IERC721)12324",
             "contract": "Subscription",
             "src": "contracts/Subscription.sol:18"
           },
@@ -55763,7 +55054,7 @@
             "label": "SubscriptionBalance",
             "offset": 0,
             "slot": "203",
-            "type": "t_contract(ISubscriptionBalance)11569",
+            "type": "t_contract(ISubscriptionBalance)12634",
             "contract": "Subscription",
             "src": "contracts/Subscription.sol:19"
           },
@@ -55771,7 +55062,7 @@
             "label": "XCT",
             "offset": 0,
             "slot": "204",
-            "type": "t_contract(IERC20Upgradeable)1600",
+            "type": "t_contract(IERC20Upgradeable)1659",
             "contract": "Subscription",
             "src": "contracts/Subscription.sol:20"
           },
@@ -55787,7 +55078,7 @@
             "label": "userSubscription",
             "offset": 0,
             "slot": "206",
-            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(NFTSubnetAttribute)5066_storage))",
+            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(NFTSubnetAttribute)5125_storage))",
             "contract": "Subscription",
             "src": "contracts/Subscription.sol:37"
           },
@@ -55827,7 +55118,7 @@
             "label": "requestPriceChange",
             "offset": 0,
             "slot": "211",
-            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(PriceChangeRequest)5088_storage))",
+            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(PriceChangeRequest)5147_storage))",
             "contract": "Subscription",
             "src": "contracts/Subscription.sol:53"
           }
@@ -55857,19 +55148,19 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(IERC20Upgradeable)1600": {
+          "t_contract(IERC20Upgradeable)1659": {
             "label": "contract IERC20Upgradeable",
             "numberOfBytes": "20"
           },
-          "t_contract(IERC721)11259": {
+          "t_contract(IERC721)12324": {
             "label": "contract IERC721",
             "numberOfBytes": "20"
           },
-          "t_contract(IRegistration)11378": {
+          "t_contract(IRegistration)12443": {
             "label": "contract IRegistration",
             "numberOfBytes": "20"
           },
-          "t_contract(ISubscriptionBalance)11569": {
+          "t_contract(ISubscriptionBalance)12634": {
             "label": "contract ISubscriptionBalance",
             "numberOfBytes": "20"
           },
@@ -55881,19 +55172,19 @@
             "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(NFTSubnetAttribute)5066_storage))": {
+          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(NFTSubnetAttribute)5125_storage))": {
             "label": "mapping(uint256 => mapping(uint256 => struct Subscription.NFTSubnetAttribute))",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(PriceChangeRequest)5088_storage))": {
+          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(PriceChangeRequest)5147_storage))": {
             "label": "mapping(uint256 => mapping(uint256 => struct Subscription.PriceChangeRequest))",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(NFTSubnetAttribute)5066_storage)": {
+          "t_mapping(t_uint256,t_struct(NFTSubnetAttribute)5125_storage)": {
             "label": "mapping(uint256 => struct Subscription.NFTSubnetAttribute)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(PriceChangeRequest)5088_storage)": {
+          "t_mapping(t_uint256,t_struct(PriceChangeRequest)5147_storage)": {
             "label": "mapping(uint256 => struct Subscription.PriceChangeRequest)",
             "numberOfBytes": "32"
           },
@@ -55901,7 +55192,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(NFTSubnetAttribute)5066_storage": {
+          "t_struct(NFTSubnetAttribute)5125_storage": {
             "label": "struct Subscription.NFTSubnetAttribute",
             "members": [
               {
@@ -55937,7 +55228,7 @@
             ],
             "numberOfBytes": "160"
           },
-          "t_struct(PriceChangeRequest)5088_storage": {
+          "t_struct(PriceChangeRequest)5147_storage": {
             "label": "struct Subscription.PriceChangeRequest",
             "members": [
               {
@@ -55978,6 +55269,398 @@
               }
             ],
             "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "369a2215445df47b921c2ac8025a0b8eb1ce2abd0245d891e12d02d439f9bbc6": {
+      "address": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
+      "txHash": "0x961c1023b647664f04e682561fa2ce6e90c462d9c5f8c7b395109e5c0c015bf2",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
+          },
+          {
+            "label": "RegistrationContract",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_contract(IRegistration)12443",
+            "contract": "SubscriptionBalanceCalculator",
+            "src": "contracts/SubscriptionBalanceCalculator.sol:16"
+          },
+          {
+            "label": "ApplicationNFT",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_contract(IERC721)12324",
+            "contract": "SubscriptionBalanceCalculator",
+            "src": "contracts/SubscriptionBalanceCalculator.sol:17"
+          },
+          {
+            "label": "SubscriptionContract",
+            "offset": 0,
+            "slot": "103",
+            "type": "t_contract(ISubscription)12504",
+            "contract": "SubscriptionBalanceCalculator",
+            "src": "contracts/SubscriptionBalanceCalculator.sol:18"
+          },
+          {
+            "label": "SubscriptionBalance",
+            "offset": 0,
+            "slot": "104",
+            "type": "t_contract(ISubscriptionBalance)12634",
+            "contract": "SubscriptionBalanceCalculator",
+            "src": "contracts/SubscriptionBalanceCalculator.sol:19"
+          },
+          {
+            "label": "XCTToken",
+            "offset": 0,
+            "slot": "105",
+            "type": "t_contract(IERC20Upgradeable)1659",
+            "contract": "SubscriptionBalanceCalculator",
+            "src": "contracts/SubscriptionBalanceCalculator.sol:20"
+          },
+          {
+            "label": "balanceOfRev",
+            "offset": 0,
+            "slot": "106",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "SubscriptionBalanceCalculator",
+            "src": "contracts/SubscriptionBalanceCalculator.sol:21"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IERC20Upgradeable)1659": {
+            "label": "contract IERC20Upgradeable",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC721)12324": {
+            "label": "contract IERC721",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IRegistration)12443": {
+            "label": "contract IRegistration",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ISubscription)12504": {
+            "label": "contract ISubscription",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ISubscriptionBalance)12634": {
+            "label": "contract ISubscriptionBalance",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "9467066d6abe4a896dee0ad8c0c37f87ea117d047c585841e9b1e295fee18e5a": {
+      "address": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+      "txHash": "0xc124ca7ae762c86f00e81cbcc1e844b577516ba6a8529d9197bcb146c1fe02fa",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:102"
+          },
+          {
+            "label": "RegistrationContract",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_contract(IRegistration)12443",
+            "contract": "SubscriptionBalance",
+            "src": "contracts/SubscriptionBalance.sol:19"
+          },
+          {
+            "label": "ApplicationNFT",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_contract(IERC721)12324",
+            "contract": "SubscriptionBalance",
+            "src": "contracts/SubscriptionBalance.sol:20"
+          },
+          {
+            "label": "XCTToken",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_contract(IERC20Upgradeable)1659",
+            "contract": "SubscriptionBalance",
+            "src": "contracts/SubscriptionBalance.sol:21"
+          },
+          {
+            "label": "SubscriptionContract",
+            "offset": 0,
+            "slot": "154",
+            "type": "t_contract(ISubscription)12504",
+            "contract": "SubscriptionBalance",
+            "src": "contracts/SubscriptionBalance.sol:22"
+          },
+          {
+            "label": "BalanceCalculator",
+            "offset": 0,
+            "slot": "155",
+            "type": "t_contract(IBalanceCalculator)12176",
+            "contract": "SubscriptionBalance",
+            "src": "contracts/SubscriptionBalance.sol:23"
+          },
+          {
+            "label": "ReferralPercent",
+            "offset": 0,
+            "slot": "156",
+            "type": "t_uint256",
+            "contract": "SubscriptionBalance",
+            "src": "contracts/SubscriptionBalance.sol:24"
+          },
+          {
+            "label": "ReferralRevExpirySecs",
+            "offset": 0,
+            "slot": "157",
+            "type": "t_uint256",
+            "contract": "SubscriptionBalance",
+            "src": "contracts/SubscriptionBalance.sol:25"
+          },
+          {
+            "label": "nftBalances",
+            "offset": 0,
+            "slot": "158",
+            "type": "t_mapping(t_uint256,t_struct(NFTBalance)6327_storage)",
+            "contract": "SubscriptionBalance",
+            "src": "contracts/SubscriptionBalance.sol:37"
+          },
+          {
+            "label": "creditsExpiry",
+            "offset": 0,
+            "slot": "159",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "contract": "SubscriptionBalance",
+            "src": "contracts/SubscriptionBalance.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)3_storage": {
+            "label": "uint256[3]",
+            "numberOfBytes": "96"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IBalanceCalculator)12176": {
+            "label": "contract IBalanceCalculator",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Upgradeable)1659": {
+            "label": "contract IERC20Upgradeable",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC721)12324": {
+            "label": "contract IERC721",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IRegistration)12443": {
+            "label": "contract IRegistration",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ISubscription)12504": {
+            "label": "contract ISubscription",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
+            "label": "mapping(address => mapping(uint256 => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(NFTBalance)6327_storage)": {
+            "label": "mapping(uint256 => struct SubscriptionBalance.NFTBalance)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(NFTBalance)6327_storage": {
+            "label": "struct SubscriptionBalance.NFTBalance",
+            "members": [
+              {
+                "label": "lastBalanceUpdateTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "prevBalance",
+                "type": "t_array(t_uint256)3_storage",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "subnetIds",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "NFTMinter",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "mintTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "endOfXCTBalance",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "7"
+              }
+            ],
+            "numberOfBytes": "256"
           },
           "t_uint256": {
             "label": "uint256",

@@ -380,4 +380,6 @@ setPercentStack(
 for setting 1% use -> 1000
 ```
 
-6. `totalXCTMints()` view function gives total XCT minted by this smart contract.
+6. `totalXCTMintedByContract()` view function gives total XCT minted by this smart contract.
+
+7. Refer script `deployXCT.js` for deploying this smart contract.

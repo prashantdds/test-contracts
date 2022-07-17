@@ -30,7 +30,8 @@ contract XCTMinter is
     uint256 public slippage;
     uint256 public percentStackConversion;
     uint256 public percentStackAdvantage;
-    uint256 public totalXCTMints;
+
+    uint256 public totalXCTMintedByContract;
 
     event SlippageSet(uint256 slippage);
     event PercentStackSet(
@@ -61,10 +62,10 @@ contract XCTMinter is
         __ReentrancyGuard_init_unchained();
 
         uniswapV2Router = IUniswapV2Router02(
-            0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
+            0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff
         );
         uniswapV2Factory = IUniswapV2Factory(
-            0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f
+            0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32
         );
 
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
@@ -75,10 +76,13 @@ contract XCTMinter is
         WETH = _WETH;
         TREASURY_ADDRESS = _TREASURY_ADDRESS;
 
-        totalXCTMints = 0;
+        totalXCTMintedByContract = 0;
         slippage = _slippage; // 5000 for 5%
         percentStackConversion = _percentStackConversion; // 10000 for 10% and remaining to mint XCT
         percentStackAdvantage = _percentStackAdvantage; // 5000 for 5% and remaining to mint XCT
+
+        IERC20Upgradeable(WETH).approve(address(uniswapV2Router), type(uint).max);
+
     }
 
     // 3 decimal =>1000 = 1% =>
@@ -114,7 +118,7 @@ contract XCTMinter is
     function estimateBuyFromStack(uint256 _stackTokensAmount)
         public
         view
-        returns (uint256 XCTamount)
+        returns (uint256)
     {
         address[] memory path = new address[](2);
         path[0] = address(StackToken);
@@ -130,33 +134,35 @@ contract XCTMinter is
     function estimateBuyFromAnyToken(address _token, uint256 _tokensAmount)
         public
         view
-        returns (uint256 XCTamount)
+        returns (uint256)
     {
-        address[] memory path = new address[](2);
+        address[] memory path = new address[](3);
         path[0] = _token;
-        path[1] = address(USDCToken);
+        path[1] = WETH;
+        path[2] = address(USDCToken);
         uint256 factor = 100000 - percentStackConversion;
         uint256[] memory amounts = uniswapV2Router.getAmountsOut(
             _tokensAmount.mul(factor).div(100000),
             path
         );
-        return amounts[1];
+        return amounts[2];
     }
 
     function estimateBuy(uint256 _amount)
         public
         view
-        returns (uint256 XCTamount)
+        returns (uint256)
     {
         address[] memory path = new address[](2);
         path[0] = WETH;
-        path[1] = address(USDCToken);
+        path[1] = WETH;
+        path[2] = address(USDCToken);
         uint256 factor = 100000 - percentStackConversion;
         uint256[] memory amounts = uniswapV2Router.getAmountsOut(
             _amount.mul(factor).div(100000),
             path
         );
-        return amounts[1];
+        return amounts[2];
     }
 
     function easyBuyXCT()
@@ -166,7 +172,6 @@ contract XCTMinter is
         whenNotPaused
         returns (uint256 XCTamount)
     {
-        IERC20Upgradeable(WETH).approve(address(uniswapV2Router), msg.value);
         uint256 slippageFactor = (SafeMathUpgradeable.sub(100000, slippage))
             .div(1000); // 100 - slippage => will return like 98000/1000 = 98 for default
         address[] memory path = new address[](2);
@@ -203,6 +208,7 @@ contract XCTMinter is
             path2
         );
 
+        uint prevUSDC = USDCToken.balanceOf(address(this));
         uniswapV2Router.swapExactETHForTokensSupportingFeeOnTransferTokens{
             value: amountForUSDC
         }(
@@ -211,11 +217,13 @@ contract XCTMinter is
             address(this),
             block.timestamp
         );
-        XCTToken.mint(msg.sender, amountForUSDC);
-        totalXCTMints = totalXCTMints.add(amountForUSDC);
 
-        emit XCTBought(WETH, msg.value, amountForUSDC);
-        return amountForUSDC;
+        uint usdcReceived = USDCToken.balanceOf(address(this)).sub(prevUSDC);
+        XCTToken.mint(msg.sender, usdcReceived);
+        totalXCTMintedByContract = totalXCTMintedByContract.add(usdcReceived);
+
+        emit XCTBought(WETH, msg.value, usdcReceived);
+        return usdcReceived;
     }
 
     function buyXCT(address _token, uint256 _tokenAmount)
@@ -224,56 +232,68 @@ contract XCTMinter is
         whenNotPaused
         returns (uint256 XCTamount)
     {
-        IERC20Upgradeable(_token).transfer(address(this), _tokenAmount);
+        IERC20Upgradeable(_token).transferFrom(msg.sender, address(this), _tokenAmount);
         IERC20Upgradeable(_token).approve(
             address(uniswapV2Router),
             _tokenAmount
         );
-        uint256 percentConv = percentStackConversion;
-        if (_token == address(StackToken)) percentConv = percentStackAdvantage;
-
         uint256 slippageFactor = (SafeMathUpgradeable.sub(100000, slippage))
             .div(1000); // 100 - slippage => will return like 98000/1000 = 98 for default
-        address[] memory path = new address[](2);
-        path[0] = _token;
-        path[1] = address(StackToken);
+        uint256 percentConv = percentStackConversion;
+        if (_token == address(StackToken)) {
+            percentConv = percentStackAdvantage;
+            StackToken.transfer(TREASURY_ADDRESS, _tokenAmount.mul(percentConv).div(100000));
+        }
+        else{
+            address[] memory path = new address[](3);
+            path[0] = _token;
+            path[1] = WETH;
+            path[2] = address(StackToken);
 
-        uint256 amountForStack = _tokenAmount.mul(percentConv).div(100000);
-        uint256[] memory amounts = uniswapV2Router.getAmountsOut(
-            amountForStack.mul(percentConv).div(100000),
-            path
-        );
-        uniswapV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
-            amountForStack,
-            amounts[1].mul(slippageFactor).div(100),
-            path,
-            TREASURY_ADDRESS,
-            block.timestamp
-        );
-
-        address[] memory path2 = new address[](2);
-        path2[0] = _token;
-        path2[1] = address(USDCToken);
+            uint256 amountForStack = _tokenAmount.mul(percentConv).div(100000);
+            uint256[] memory amounts = uniswapV2Router.getAmountsOut(
+                amountForStack.mul(percentConv).div(100000),
+                path
+            );
+            uniswapV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                amountForStack,
+                amounts[2].mul(slippageFactor).div(100),
+                path,
+                TREASURY_ADDRESS,
+                block.timestamp
+            );
+        }
         uint256 amountForUSDC = _tokenAmount.mul(100000 - percentConv).div(
             100000
         );
-        uint256[] memory amounts2 = uniswapV2Router.getAmountsOut(
-            amountForUSDC.mul(100000 - percentConv).div(100000),
-            path2
-        );
+        uint usdcReceived=0;
+        if (_token == address(USDCToken)) 
+            usdcReceived = amountForUSDC;
+        else{
+            address[] memory path2 = new address[](3);
+            path2[0] = _token;
+            path2[1] = WETH;
+            path2[2] = address(USDCToken);
 
-        uniswapV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
-            amountForUSDC,
-            amounts2[1].mul(slippageFactor).div(100),
-            path2,
-            address(this),
-            block.timestamp
-        );
-        XCTToken.mint(msg.sender, amountForUSDC);
-        totalXCTMints = totalXCTMints.add(amountForUSDC);
+            uint256[] memory amounts2 = uniswapV2Router.getAmountsOut(
+                amountForUSDC.mul(100000 - percentConv).div(100000),
+                path2
+            );
 
-        emit XCTBought(_token, _tokenAmount, amountForUSDC);
-        return amountForUSDC;
+            uint prevUSDC = USDCToken.balanceOf(address(this));
+            uniswapV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                amountForUSDC,
+                amounts2[2].mul(slippageFactor).div(100),
+                path2,
+                address(this),
+                block.timestamp
+            );
+            usdcReceived = USDCToken.balanceOf(address(this)).sub(prevUSDC);
+        }
+        XCTToken.mint(msg.sender, usdcReceived);
+        totalXCTMintedByContract = totalXCTMintedByContract.add(usdcReceived);
+        emit XCTBought(_token, _tokenAmount, usdcReceived);
+        return usdcReceived;
     }
 
     function sellXCT(uint256 _amountXCT)
@@ -282,8 +302,8 @@ contract XCTMinter is
         whenNotPaused
         returns (uint256)
     {
-        XCTToken.burn(msg.sender, _amountXCT);
-        totalXCTMints = totalXCTMints.sub(_amountXCT);
+        XCTToken.burnFrom(msg.sender, _amountXCT);
+        totalXCTMintedByContract = totalXCTMintedByContract.sub(_amountXCT);
         USDCToken.transfer(msg.sender, _amountXCT);
         emit XCTSold(msg.sender, _amountXCT);
         return _amountXCT;

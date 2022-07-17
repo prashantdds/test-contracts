@@ -19,6 +19,14 @@
       }
     }},
     {
+      version:"0.7.0",
+      settings:{
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }},
+    {
       version:"0.6.2",
       settings:{
       optimizer: {
@@ -36,21 +44,17 @@
    defaultNetwork: "hardhat",
  
    networks:{
-    bsctest: {
-      url: "https://speedy-nodes-nyc.moralis.io/ad50d28e8c2ae467e994cf74/bsc/testnet",
-      accounts: [`${process.env.PKEY}`]
-    },
     matictest: {
-      url: "https://speedy-nodes-nyc.moralis.io/ad50d28e8c2ae467e994cf74/polygon/mumbai",
+      url: "https://rpc-mumbai.matic.today",
       accounts: [`${process.env.PKEY}`]
     },
-    bscmain: {
-      url: "https://speedy-nodes-nyc.moralis.io/ad50d28e8c2ae467e994cf74/bsc/mainnet",
+    maticmain: {
+      url: "https://polygon-rpc.com/",
       accounts: [`${process.env.PKEY}`]
     },
    },
    etherscan: {
-    apiKey: 'S1PFEYDQ5SXJSKTB2UE6YXAKF2XDV2Y4EV'
+    apiKey: 'WGAQCNUDQCFRQJH9D72G94BZ83STGRJCX6'
   },
   bscscan: {
     apiKey: 'S1PFEYDQ5SXJSKTB2UE6YXAKF2XDV2Y4EV'
