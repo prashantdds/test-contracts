@@ -1693,7 +1693,6 @@ contract TestAppNFT is ERC721 {
         gov = msg.sender;
     }
 
-
     function getCurrentTokenId() public view returns(uint){
         return _tokenIds.current();
     }
@@ -1708,7 +1707,6 @@ contract TestAppNFT is ERC721 {
         _mint(user, newItemId);
         _setTokenURI(newItemId, "https://ipfs.io/ipfs/QmX3PG8VAkaRcgLvV96NCrFgGQAjtR4FbbvKm9h49c6yRL");
         return newItemId;
-
     }
 
     function awardTitle() public returns (uint256) {

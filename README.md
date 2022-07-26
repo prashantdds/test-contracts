@@ -27,6 +27,7 @@ Sections below describes the following :
 |RoleControl| [`RoleControl.sol`](./contracts/RoleControl.sol) | Upgradeable RoleControl contract for each NFT to add roles - `READ, DEPLOYER, ACCESS_MANAGER, BILLING_MANAGER and CONTRACT_BASED_DEPLOYER` by NFT owner.|
 |ContractBasedDeployment| [`ContractBasedDeployment.sol`](./contracts/ContractBasedDeployment.sol) | Upgradeable ContractBasedDeployment contract is used to store IPFS hash linked to app name, update it or delete it for particular NFT by `CONTRACT_BASED_DEPLOYER` role defined in `RoleControl` contract.|
 |XCTMinter| [`XCTMinter.sol`](./contracts/XCTMinter.sol) | Upgradeable XCTMinter contract has rights to mint XCT token. This contract is used by anyone to buy XCT from any token. If token is Stack token, there is benefits on fees paid for minting XCT. XCT can be sold anytime to receive USDC token back. |
+|LinkNFTs| [`LinkNFTs.sol`](./contracts/LinkNFTs.sol) | Upgradeable LinkNFTs contract links custom NFT to Application NFT and locks the Application NFT in smart contract. Multiple App NFTs can be locked in same Custom NFT but not vice versa. 1 Application NFT can only be used once for linking.|
 
 
 ## Deployment
@@ -43,6 +44,7 @@ Solidity files that need auditing
 [`RoleControl.sol`](./contracts/RoleControl.sol) |
 [`ContractBasedDeployment.sol`](./contracts/ContractBasedDeployment.sol) |
 [`XCTMinter.sol`](./contracts/XCTMinter.sol) |
+[`LinkNFTs.sol`](./contracts/LinkNFTs.sol) |
 
 ## Rationale
 ### Registration
@@ -222,7 +224,7 @@ Calculation:
 
 6. `getRealtimeBalances()` view function is used to fetch realtime balances calculating the unsettled balances also. To get total costs unsettled for NFT id, use view function `getRealtimeCostIncurredUnsettled()`.
 
-7. To withdraw some owner's NFT subscription balance, call `withdrawBalance` or to withdraw all balance, call `withdrawAllOwnerBalance`. 
+7. To withdraw some owner's NFT subscription balance, call `withdrawBalance` or to withdraw all balance, call `withdrawAllOwnerBalance`. If App NFT is linked to some custom NFT, call `withdrawBalanceLinked` provided account owns the custom NFT.
 
 8.  `nftBalances[NFT id]` mapping is present to get NFT Balance details in general.
     ```
@@ -383,3 +385,22 @@ for setting 1% use -> 1000
 6. `totalXCTMintedByContract()` view function gives total XCT minted by this smart contract.
 
 7. Refer script `deployXCT.js` for deploying this smart contract.
+
+### LinkNFTs
+
+1. Main function is to link custom NFT to Application NFT and locks the Application NFT in smart contract. Multiple App NFTs can be locked in same Custom NFT but not vice versa. 1 Application NFT can only be used once for linking.
+
+2. Call `linkTo` to link Custom NFT to Appliation NFT.
+```
+        uint256 AppNFTid,
+        address CustomNFTAddress,
+        uint256 CustomNFTid
+```
+
+3. To get all links of particular Custom NFT, call `getAllLinks` with Custom NFT address and id.
+
+4. To check if particular App NFT is linked T/F - call `isLinked(App NFT id)`
+
+5. Refer script `deployLinkNFT.js` for deploying this smart contract.
+
+6. Make sure to change chain id for StackOS before deploying to mainnets in smart contract function `linkTo`.
