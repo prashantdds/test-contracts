@@ -1689,11 +1689,11 @@ contract TestDarkMatter is ERC721 {
 
     mapping(address => bool) public listedAddresses;
 
-    constructor() public ERC721("Dark Genesis Knight", "DGK") {
+    constructor() public ERC721("Dark Matter tst", "DMT") {
         gov = msg.sender;
 
         // ONLY done below to testing by Jas so that NFT is minted always
-        for(uint i=0;i<100;i++){
+        for(uint i=0;i<5;i++){
             _tokenIds.increment();
 
             uint256 newItemId = _tokenIds.current();

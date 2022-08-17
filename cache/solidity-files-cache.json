@@ -2183,8 +2183,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/TestDarkMatter.sol": {
-      "lastModificationDate": 1657186942227,
-      "contentHash": "f975d412f7b05117b232c8ecb3755934",
+      "lastModificationDate": 1660719567846,
+      "contentHash": "94235c55ef5eb9ad15ae74cbfcb1f334",
       "sourceName": "contracts/TestDarkMatter.sol",
       "solcConfig": {
         "version": "0.6.2",

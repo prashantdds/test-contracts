@@ -36,7 +36,7 @@
     }}
     ],
     //  gas:7000000,
-    //  gasMultiplier:1,
+     gasMultiplier:2,
     //  gasPrice:7.3,
     
 
@@ -45,7 +45,7 @@
  
    networks:{
     matictest: {
-      url: "https://rpc-mumbai.matic.today",
+      url: "https://rpc-mumbai.maticvigil.com/v1/b254fedd6b302bc5dffcb58541c433e6df0b734a",
       accounts: [`${process.env.PKEY}`]
     },
     maticmain: {
