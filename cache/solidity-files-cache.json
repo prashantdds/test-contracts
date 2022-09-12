@@ -2285,8 +2285,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/XCTMinter.sol": {
-      "lastModificationDate": 1658038578660,
-      "contentHash": "c03074e3928737f7c90494d1ac9b8793",
+      "lastModificationDate": 1662961382365,
+      "contentHash": "e6cd13780a079cf11ae9c0e5cbf7e302",
       "sourceName": "contracts/XCTMinter.sol",
       "solcConfig": {
         "version": "0.8.2",

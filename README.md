@@ -385,6 +385,7 @@ for setting 1% use -> 1000
 6. `totalXCTMintedByContract()` view function gives total XCT minted by this smart contract.
 
 7. Refer script `deployXCT.js` for deploying this smart contract.
+8. Admin can change StackToken address by calling `changeStackTokenAddress()` with new address.
 
 ### LinkNFTs
 

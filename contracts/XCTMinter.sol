@@ -43,6 +43,7 @@ contract XCTMinter is
         uint256 tokenAmount,
         uint256 XCTAmount
     );
+    event ChangedStackTokenAddress(IERC20Upgradeable oldStackAddress, IERC20Upgradeable newStackAddress);
     event XCTSold(address account, uint256 tokens);
     event TreasuryAddressChanged(address treasury_address);
 
@@ -83,6 +84,11 @@ contract XCTMinter is
 
         IERC20Upgradeable(WETH).approve(address(uniswapV2Router), type(uint).max);
 
+    }
+
+    function changeStackTokenAddress(IERC20Upgradeable _newStackToken) external onlyRole(DEFAULT_ADMIN_ROLE){
+        emit ChangedStackTokenAddress(StackToken, _newStackToken);
+        StackToken = _newStackToken;
     }
 
     // 3 decimal =>1000 = 1% =>
