@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./TokensRecoverable.sol";
+import "./interfaces/ISubnetDAODistributor.sol";
 
 contract Registration is
     AccessControlUpgradeable,
@@ -18,6 +19,7 @@ contract Registration is
 
     IERC721Upgradeable public DarkMatterNFT;
     IERC20Upgradeable public StackToken;
+    ISubnetDAODistributor public SubnetDAODistributor;
 
     bytes32 public constant CLUSTER_LIST_ROLE = keccak256("CLUSTER_LIST_ROLE");
     bytes32 public constant SUBNET_ATTR_ROLE = keccak256("SUBNET_ATTR_ROLE");
@@ -31,6 +33,7 @@ contract Registration is
 
     uint256 public daoRate; // 1000 = 1%
     uint256 public REQD_STACK_FEES_FOR_SUBNET;
+    uint public DefaultWhitelistedClusterWeight;
 
     struct SubnetAttributes {
         uint256 subnetType;
@@ -164,7 +167,8 @@ contract Registration is
         address _GlobalDAO,
         uint256 _coolDownTimeForPriceChange,
         uint256 _daoRate,
-        uint256 _REQD_STACK_FEES_FOR_SUBNET
+        uint256 _REQD_STACK_FEES_FOR_SUBNET,
+        uint256 _DefaultWhitelistedClusterWeight
     ) public initializer {
         __AccessControl_init_unchained();
         __Pausable_init_unchained();
@@ -186,6 +190,7 @@ contract Registration is
         coolDownTimeForPriceChange = _coolDownTimeForPriceChange;
         daoRate = _daoRate;
         REQD_STACK_FEES_FOR_SUBNET = _REQD_STACK_FEES_FOR_SUBNET;
+        DefaultWhitelistedClusterWeight = _DefaultWhitelistedClusterWeight;
     }
 
     function getSubnetAttributes(uint256 subnetId)
@@ -233,6 +238,11 @@ contract Registration is
             subnetClusters[_subnetId][_clusterId].listed,
             subnetClusters[_subnetId][_clusterId].NFTidLocked
         );
+    }
+
+    function set_SubnetDAODistributorContract(ISubnetDAODistributor _SubnetDAODistributor) external onlyRole(DEFAULT_ADMIN_ROLE){
+        require(address(SubnetDAODistributor) == address(0), "Already set");
+        SubnetDAODistributor = _SubnetDAODistributor;
     }
 
     function createSubnet(
@@ -288,6 +298,7 @@ contract Registration is
         emit NFTLockedForSubnet(_msgSender(), totalSubnets, nftId);
 
         whiteListedClusters[totalSubnets] = _whiteListedClusters;
+
         totalSubnets = totalSubnets.add(1);
     }
 
@@ -325,6 +336,13 @@ contract Registration is
             subnetAttributes[subnetId],
             _msgSender()
         );
+    }
+
+    function hasPermissionToClusterList(uint256 subnetId, address user) external view returns(bool){
+        if(hasRole(CLUSTER_LIST_ROLE, user) ||
+                subnetLocalDAO[subnetId] == user)
+                return true;
+        return false;
     }
 
     function addClusterToWhitelisted(
@@ -445,6 +463,13 @@ contract Registration is
         
         totalClustersSigned[subnetId] = totalClustersSigned[subnetId].add(1);
 
+        for(uint i=0;i<whiteListedClusters[subnetId].length;i++)
+            if(whiteListedClusters[subnetId][i]==_clusterDAO){
+                subnetClusters[subnetId][clusterId].listed = 2; // whitelisted clusters are approved as they signup
+                SubnetDAODistributor.addWeight(subnetId, _clusterDAO, DefaultWhitelistedClusterWeight);
+                break;
+            }
+
         emit ClusterSignedUp(
             subnetId,
             clusterId,
@@ -488,9 +513,12 @@ contract Registration is
 
     function approveListingCluster(
         uint256 subnetId,
-        uint256 clusterId
+        uint256 clusterId,
+        uint256 _weight
     ) external onlyRole(CLUSTER_LIST_ROLE) {
+        require(subnetClusters[subnetId][clusterId].listed!=2,"Already approved either by whitelisting or by calling this function");
         subnetClusters[subnetId][clusterId].listed = 2;
+        SubnetDAODistributor.addWeight(subnetId, subnetClusters[subnetId][clusterId].ClusterDAO, _weight);
         emit ChangedListingCluster(subnetId, clusterId, _msgSender(), 2);
     }
 

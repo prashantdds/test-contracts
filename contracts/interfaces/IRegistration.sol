@@ -41,5 +41,7 @@ interface IRegistration {
 
     function daoRate() external view returns (uint256);
 
+    function hasPermissionToClusterList(uint256 subnetId, address user) external view returns (bool);
+
     function GLOBAL_DAO_ADDRESS() external view returns (address);
 }

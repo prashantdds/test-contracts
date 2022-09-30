@@ -1693,14 +1693,13 @@ contract TestDarkMatter is ERC721 {
         gov = msg.sender;
 
         // ONLY done below to testing by Jas so that NFT is minted always
-        for(uint i=0;i<5;i++){
+        // for(uint i=0;i<7;i++){
             _tokenIds.increment();
 
             uint256 newItemId = _tokenIds.current();
             _mint(msg.sender, newItemId);
             _setTokenURI(newItemId, "https://ipfs.io/ipfs/QmX3PG8VAkaRcgLvV96NCrFgGQAjtR4FbbvKm9h49c6yRL");
-        }
-        
+        // }
 
     }
 

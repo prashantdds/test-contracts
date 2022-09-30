@@ -4,6 +4,7 @@ pragma solidity 0.8.2;
 
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./interfaces/ISubscriptionBalance.sol";
+import "./interfaces/ISubnetDAODistributor.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "./interfaces/IRegistration.sol";
@@ -18,6 +19,8 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     ISubscription public SubscriptionContract;
     ISubscriptionBalance public SubscriptionBalance;
     IERC20Upgradeable public XCTToken;
+    ISubnetDAODistributor public SubnetDAODistributor;
+
     mapping(address => uint256) public balanceOfRev;
 
     event ReceivedRevenue(address benficiary, uint256 bal);
@@ -46,6 +49,13 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         SubscriptionBalance = ISubscriptionBalance(_SubscriptionBalance);
     }
 
+    function setSubnetDAODistributor(
+        ISubnetDAODistributor _SubnetDAODistributor
+    ) external onlyOwner {
+        require(address(SubnetDAODistributor) == address(0), "Already set");
+        SubnetDAODistributor = _SubnetDAODistributor;
+    }
+
     function t_supportFeeAddress(uint256 _tokenId)
         public
         view
@@ -58,15 +68,8 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         return RegistrationContract.GLOBAL_DAO_ADDRESS();
     }
 
+    // 1 part is SubnetDAODistributor smart contract
     // r address is NFT minter address => nftBalances[_nftId].nftMinter
-
-    function subnetDAOWalletFor1(uint256 _subnetId)
-        public
-        view
-        returns (address)
-    {
-        return RegistrationContract.subnetLocalDAO(_subnetId);
-    }
 
     function r_licenseFee(uint256 _nftId, uint256 _subnetId)
         public
@@ -165,7 +168,6 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         emit ReceivedRevenue(_userAddress, bal);
     }
 
-
     function getRealtimeBalance(
         uint256 nftId,
         uint256[] memory subnetIds,
@@ -187,30 +189,25 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
 
         for (uint256 i = 0; i < subnetIds.length; i++) {
             costIncurredArr[0] = costIncurredArr[0].add(
-                r_licenseFee(nftId, subnetIds[i])
-                    .mul(computeCost)
-                    .div(100000)
+                r_licenseFee(nftId, subnetIds[i]).mul(computeCost).div(100000)
             );
             costIncurredArr[2] = costIncurredArr[2].add(
-                t_SupportFeeRate(subnetIds[i]).mul(computeCost).div(
-                    100000
-                )
+                t_SupportFeeRate(subnetIds[i]).mul(computeCost).div(100000)
             );
         }
 
-        return calculateUpdatedPrevBal(
-            (
-                costIncurredArr[0] // r
-                .add(costIncurredArr[1]) // s
-                .add(costIncurredArr[2]) // t
-                .add
-                (costIncurredArr[3]).add(computeCost) // u
-            ), // 1
-            prevBalance
-        );
-
+        return
+            calculateUpdatedPrevBal(
+                (
+                    costIncurredArr[0] // r
+                    .add(costIncurredArr[1]) // s
+                    .add(costIncurredArr[2]).add(costIncurredArr[3]).add( // t
+                            computeCost
+                        ) // u
+                ), // 1
+                prevBalance
+            );
     }
-
 
     function getRealtimeCostIncurred(
         uint256 nftId,
@@ -232,27 +229,19 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
 
         for (uint256 i = 0; i < subnetIds.length; i++) {
             costIncurredArr[0] = costIncurredArr[0].add(
-                r_licenseFee(nftId, subnetIds[i])
-                    .mul(computeCost)
-                    .div(100000)
+                r_licenseFee(nftId, subnetIds[i]).mul(computeCost).div(100000)
             );
             costIncurredArr[2] = costIncurredArr[2].add(
-                t_SupportFeeRate(subnetIds[i]).mul(computeCost).div(
-                    100000
-                )
+                t_SupportFeeRate(subnetIds[i]).mul(computeCost).div(100000)
             );
         }
 
         return (
-                costIncurredArr[0] // r
-                .add(costIncurredArr[1]) // s
-                .add(costIncurredArr[2]) // t
-                .add
-                (costIncurredArr[3]).add(computeCost) // u
-            );
-
+            costIncurredArr[0] // r
+            .add(costIncurredArr[1]) // s
+            .add(costIncurredArr[2]).add(costIncurredArr[3]).add(computeCost) // t // u
+        );
     }
-
 
     function getUpdatedBalance(
         uint256 nftId,
@@ -298,10 +287,19 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                     )
                 );
 
-                // update (1)(for subnetDAOWallet) of (1+R+S+T+U) revenue
-                balanceOfRev[
-                    subnetDAOWalletFor1(subnetIdsCopy[i])
-                ] = balanceOfRev[subnetDAOWalletFor1(subnetIdsCopy[i])].add(
+                // LOGIC removed, now using SubnetDAODistributor contract
+                // balanceOfRev[
+                //     subnetDAOWalletFor1(subnetIdsCopy[i])
+                // ] = balanceOfRev[subnetDAOWalletFor1(subnetIdsCopy[i])].add(
+                //     computeCost
+                // );
+
+                // update (1)(for subnetDAOWallet to SubnetDAODistributor contract) of (1+R+S+T+U) revenue
+                balanceOfRev[address(SubnetDAODistributor)] = balanceOfRev[
+                    address(SubnetDAODistributor)
+                ].add(computeCost);
+                SubnetDAODistributor.commitAssignedFor(
+                    subnetIdsCopy[i],
                     computeCost
                 );
 
@@ -331,15 +329,17 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                 t_supportFeeAddress(nftIdCopy)
             ].add(costIncurredArr[2]);
 
-            return calculateUpdatedPrevBal(
-                (
-                    costIncurredArr[0] // r
-                    .add(costIncurredArr[1]) // s
-                    .add(costIncurredArr[2]) // t
-                    .add(costIncurredArr[3]).add(computeCost) // u
-                ), // 1
-                prevBalance
-            );
+            return
+                calculateUpdatedPrevBal(
+                    (
+                        costIncurredArr[0] // r
+                        .add(costIncurredArr[1]) // s
+                        .add(costIncurredArr[2]).add(costIncurredArr[3]).add( // t
+                                computeCost
+                            ) // u
+                    ), // 1
+                    prevBalance
+                );
         }
         return prevBalance;
     }

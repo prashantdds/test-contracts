@@ -35,7 +35,8 @@ async function main(){
     const bal=await deployer.getBalance();
     console.log('bal: '+bal);
 
-    
+    const otherAddress = "0x7E8C8E4Bc41910b11a43Ed83a65dE328afC9705e"
+
     // deploy XCT Token
     ERC20=await ethers.getContractFactory('TestERC20');
     xct = await upgrades.deployProxy(ERC20, [], { initializer: 'initialize' });
@@ -52,14 +53,20 @@ async function main(){
     nftToken = await NFT.deploy();
     console.log(`const nftToken = "${nftToken.address}"`); // 0x527e794667Cb9958E058A824d991a3cf595039C0
 
+    console.log("Mint 8 NFT ids, 6 for subnets, 2 for clusters");
+    for (let ind = 1; ind <= 8; ind++)
+        await nftToken.mint(deployer.address);
+
     // IERC721Upgradeable _DarkMatterNFT,
     // IERC20Upgradeable _StackToken,
     // address _GlobalDAO,
     // uint256 _coolDownTimeForPriceChange,
     // uint256 _daoRate, - 5%
     // uint256 _REQD_STACK_FEES_FOR_SUBNET
+    // default weight for whitelisted = 10
+
     RegistrationContract=await ethers.getContractFactory('Registration');
-    Registration = await upgrades.deployProxy(RegistrationContract, [nftToken.address, stack.address, deployer.address, 300, 5000, ethers.utils.parseEther("0.1") ], { initializer: 'initialize' });
+    Registration = await upgrades.deployProxy(RegistrationContract, [nftToken.address, stack.address, deployer.address, 300, 5000, ethers.utils.parseEther("0.1"), 20], { initializer: 'initialize' });
     await Registration.deployed();
 
     console.log(`const Registration = "${Registration.address}"`); // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
@@ -82,12 +89,14 @@ async function main(){
     // uint256 _stackFeesReqd
     console.log("Registration create subnets");
     for (let index = 1; index <= 6; index++) {
-        await Registration.createSubnet(index,deployer.address, 1,true,1,true,[ethers.utils.parseEther("1"),ethers.utils.parseEther("2"),ethers.utils.parseEther("3"),ethers.utils.parseEther("4")],[],3,[],5000,ethers.utils.parseEther("0.01"));
+        await Registration.createSubnet(index,deployer.address, 1,true,1,true,[ethers.utils.parseEther("1"),ethers.utils.parseEther("2"),ethers.utils.parseEther("3"),ethers.utils.parseEther("4")],[],3,[deployer.address],5000,ethers.utils.parseEther("0.01"));
     }
+    
     // await Registration.createSubnet(2,deployer.address, 1,true,1,true,[1,2,3],[],3,[],1000,ethers.utils.parseEther("0.01"));
     // await Registration.createSubnet(3,deployer.address, 1,true,1,true,[1,2,3],[],3,[],1000,ethers.utils.parseEther("0.01"));
     // await Registration.createSubnet(4,deployer.address, 1,true,1,true,[1,2,3],[],3,[],1000,ethers.utils.parseEther("0.01"));
     // await Registration.createSubnet(5,deployer.address, 1,true,1,true,[1,2,3],[],3,[],1000,ethers.utils.parseEther("0.01"));
+
 
     AppNFTContract=await ethers.getContractFactory('TestAppNFT');
     appNFT = await AppNFTContract.deploy();
@@ -109,6 +118,7 @@ async function main(){
 
     SubscriptionBalanceContract=await ethers.getContractFactory('SubscriptionBalance');
     
+
     // IRegistration _RegistrationContract,
     // IERC721 _ApplicationNFT,
     // IERC20Upgradeable _XCTToken,
@@ -119,6 +129,16 @@ async function main(){
     SubscriptionBalance = await upgrades.deployProxy(SubscriptionBalanceContract, [ Registration.address, appNFT.address, xct.address, SubscriptionBalanceCalculator.address, 5000, 63072000 ], { initializer: 'initialize' });
     await SubscriptionBalance.deployed();
     console.log(`const SubscriptionBalance = "${SubscriptionBalance.address}"`); // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
+
+    // IERC20Upgradeable _XCTToken, IBalanceCalculator _SubscriptionBalanceCalculator, IRegistration _Registration
+    SubnetDAODistributorContract=await ethers.getContractFactory('SubnetDAODistributor');
+    SubnetDAODistributor = await upgrades.deployProxy(SubnetDAODistributorContract, [ xct.address, SubscriptionBalanceCalculator.address, Registration.address ], { initializer: 'initialize' });
+    await SubnetDAODistributor.deployed();
+    console.log(`const SubnetDAODistributor = "${SubnetDAODistributor.address}"`); // 
+
+    // for testing ONLY lets give weight to some other address as well
+    await SubnetDAODistributor.addWeight(1, otherAddress, 5);
+
 
     // DAO
     // uint256 _LIMIT_NFT_SUBNETS,
@@ -133,11 +153,12 @@ async function main(){
     await Subscription.deployed();
     console.log(`const Subscription = "${Subscription.address}"`); // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
 
+    console.log("Set contracts and point to subscription contracts");
     await SubscriptionBalance.setSubscriptionContract(Subscription.address);
-
     await SubscriptionBalanceCalculator.setSubscriptionContract(Subscription.address);
     await SubscriptionBalanceCalculator.setSubscriptionBalanceContract(SubscriptionBalance.address);
-
+    await SubscriptionBalanceCalculator.setSubnetDAODistributor(SubnetDAODistributor.address);
+    await Registration.set_SubnetDAODistributorContract(SubnetDAODistributor.address);
 
     console.log("approve xct to subscription contract");
     await xct.approve(Subscription.address, ethers.utils.parseEther("100000000"));
@@ -148,6 +169,14 @@ async function main(){
     console.log("Mint NFT id: "+ mintId);
 
 
+    console.log("Cluster sign up 1 for subnet 1..")
+    await Registration.clusterSignUp(1,"sovereignsubnetcannothaveempty",deployer.address,7);
+    console.log("Cluster sign up 2 for subnet 1..")
+    await Registration.clusterSignUp(1,"sovereignsubnetcannothaveempty",deployer.address,8);
+    // console.log("Approve cluster 1 sign up and change weight to 5");
+    // await Registration.approveListingCluster(1,1,5);
+
+    console.log("Cluster 1 attributes:" + await Registration.getClusterAttributes(1,1));
     // uint256 _balanceToAdd,
     // uint256 subnetId,
     // string memory _serviceProviderAddress,
@@ -290,6 +319,54 @@ async function main(){
 
     console.log("receiveRevenueForAddress");
     await SubscriptionBalanceCalculator.receiveRevenueForAddress(deployer.address);
+
+    console.log("SubnetDAODistributor:::");
+
+    revCollected = await SubscriptionBalanceCalculator.balanceOfRev(SubnetDAODistributor.address);
+    console.log("revenue assigned to SubnetDAODistributor contract by calculator: "+ ethers.utils.formatEther(revCollected) +" tokens");
+
+    committedRev = await SubnetDAODistributor.commitAssigned(1);
+    console.log("committedRevenue : "+ ethers.utils.formatEther(committedRev) +" tokens");
+
+    console.log("collectAndAssignRevenues for subnet id 1:");
+    await SubnetDAODistributor.collectAndAssignRevenues(1);
+
+    weight = await SubnetDAODistributor.getWeightsFor(1, deployer.address);
+    console.log("weight 1: "+ weight);
+    weight2 = await SubnetDAODistributor.getWeightsFor(1, otherAddress);
+    console.log("weight 2: "+ weight2);
+    totalwt = await SubnetDAODistributor.totalWeights(1);
+    console.log("total weights: "+totalwt);
+
+    // for testing ONLY change  weight 
+    console.log("change weight from 20 to 1");
+    await SubnetDAODistributor.addWeight(1, deployer.address, 1);
+
+    rev = await SubnetDAODistributor.balanceOfAssignedRevenue(deployer.address);
+    console.log("assigned revenue: " + ethers.utils.formatEther(rev) +" tokens");
+
+    rev2 = await SubnetDAODistributor.balanceOfAssignedRevenue(otherAddress);
+    console.log("assigned revenue for otherAddress as per weights: " + ethers.utils.formatEther(rev2) +" tokens");
+
+    console.log("claim revenue:");
+    await SubnetDAODistributor.claimAllRevenue();
+    
+    rev3 = await SubnetDAODistributor.balanceOfAssignedRevenue(deployer.address);
+    console.log("assigned revenue after claim: " + ethers.utils.formatEther(rev3) +" tokens");
+
+    weight = await SubnetDAODistributor.getWeightsFor(1, deployer.address);
+    console.log("weight 1: "+ weight);
+    weight2 = await SubnetDAODistributor.getWeightsFor(1, otherAddress);
+    console.log("weight 2: "+ weight2);
+    totalwt = await SubnetDAODistributor.totalWeights(1);
+    console.log("total weights: "+totalwt);
+
+    
+    console.log("reset weights");
+    await SubnetDAODistributor.resetWeights(1);
+
+    weightnew = await SubnetDAODistributor.getWeightsFor(1, deployer.address);
+    console.log("after reset weights: "+ weightnew);
 
 }
 

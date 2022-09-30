@@ -24,6 +24,7 @@ Sections below describes the following :
 |Subscription| [`Subscription.sol`](./contracts/Subscription.sol) | Upgradeable Subscription contract for subscribing to subnets and minting NFTs to subscriber address.|
 |SubscriptionBalance| [`SubscriptionBalance.sol`](./contracts/SubscriptionBalance.sol) | Upgradeable contract for maintaining balances of subscriptions, subnets included in NFTs. Revenue is distributed as per (1+r+s+t+u)*( compute Reqd * Unit Price + ...) formula|
 |SubscriptionBalanceCalculator| [`SubscriptionBalanceCalculator.sol`](./contracts/SubscriptionBalanceCalculator.sol) | Upgradeable contract for calculating balances of subscriptions, subnets included in NFTs internally by `SubscriptionBalance` contract above. Revenue logic for distribution as per (1+r+s+t+u)*( compute Reqd * Unit Price + ...) formula is coded here. Revenue can be claimed by addresses using this smart contract.|
+|SubnetDAODistributor| [`SubnetDAODistributor.sol`](./contracts/SubnetDAODistributor.sol) | Upgradeable contract where the XCT assigned to subnet local DAO (1 - part of (1+r+s+t+u)) goes to clusters based on weights set by `CLUSTER_LIST_ROLE` defined in Registration smart contract. By default, every cluster owner gets weight of 10.|
 |RoleControl| [`RoleControl.sol`](./contracts/RoleControl.sol) | Upgradeable RoleControl contract for each NFT to add roles - `READ, DEPLOYER, ACCESS_MANAGER, BILLING_MANAGER and CONTRACT_BASED_DEPLOYER` by NFT owner.|
 |ContractBasedDeployment| [`ContractBasedDeployment.sol`](./contracts/ContractBasedDeployment.sol) | Upgradeable ContractBasedDeployment contract is used to store IPFS hash linked to app name, update it or delete it for particular NFT by `CONTRACT_BASED_DEPLOYER` role defined in `RoleControl` contract.|
 |XCTMinter| [`XCTMinter.sol`](./contracts/XCTMinter.sol) | Upgradeable XCTMinter contract has rights to mint XCT token. This contract is used by anyone to buy XCT from any token. If token is Stack token, there is benefits on fees paid for minting XCT. XCT can be sold anytime to receive USDC token back. |
@@ -41,6 +42,7 @@ Solidity files that need auditing
 [`Subscription.sol`](./contracts/Subscription.sol) |
 [`SubscriptionBalance.sol`](./contracts/SubscriptionBalance.sol) |
 [`SubscriptionBalanceCalculator.sol`](./contracts/SubscriptionBalanceCalculator.sol) |
+[`SubnetDAODistributor.sol`](./contracts/SubnetDAODistributor.sol) |
 [`RoleControl.sol`](./contracts/RoleControl.sol) |
 [`ContractBasedDeployment.sol`](./contracts/ContractBasedDeployment.sol) |
 [`XCTMinter.sol`](./contracts/XCTMinter.sol) |
@@ -117,6 +119,8 @@ addClusterToWhitelisted(uint256 subnetId, address[] memory _whitelistAddresses)
 removeClusterFromWhitelisted(uint256 subnetId, address _blacklistAddress, uint256 _index)
 resetWhitelistClusters(uint256 subnetId)
 ```
+<b>Please note: whenever you whitelist cluster, also add weights in `SubnetDAODistributor` smart contract calling `addWeight()` function.</b>
+
 9. `daoRate` can only be changed by `DEFAULT_ADMIN_ROLE` by calling `changeDAORate`.
 10. Local DAO ownership can be transferred by `transferClusterDAOOwnership`.
 11. To check STACK tokens locked, use view function `balanceOfStackLocked(ClusterDAO address)`. To fetch ClusterDAO address use `subnetClusters[subnetId][clusterId].ClusterDAO` address.
@@ -171,6 +175,7 @@ Some function roles are defined
 ```
 CHANGE_COMPUTE_ROLE - to call changeComputesOfSubnet()
 WITHDRAW_CREDITS_ROLE - to call withdrawCreditsForNFT() in SubscriptionBalance contract.
+CHANGE_SUBSCRIPTION_ROLE - to call change__CHANGE_SUBSCRIPTION() in Subscription contract.
 ```
 More roles can be added by `addRole()` function. To get bytes32 of role use view function `getBytes32OfRole()`. Admin can revoke the role by calling `revokeRole`.
 
@@ -249,6 +254,15 @@ receiveRevenue() - by owner of wallet address
 receiveRevenueForAddress(address _userAddress) - anyone can call
 receiveRevenueForAddressBulk(address[] memory _userAddresses) - anyone can call
 ```
+
+### SubnetDAODistributor
+1. The XCT assigned to subnet local DAO (1 - part of (1+r+s+t+u)) goes to clusters based on weights set by `CLUSTER_LIST_ROLE` defined in Registration smart contract. Default clusters get `weight = 10` for each CLUSTER_LIST_ROLE DAO.
+2. `CLUSTER_LIST_ROLE` of Registration contract calls `addWeight()` with subnet id, revenue address and weight. Weight can be any uint number, the ratios must be kept in mind. Calling the same function, `CLUSTER_LIST_ROLE`  can also update weights.
+3. Call `collectAndAssignRevenues()` anytime to assign revenues share to addresses whom weights are assigned. It is by default called every time `addWeight()` is called to add/update weights.
+4. Anyone can claim for cluster user after calling `claimAllRevenueFor()` with user address, can be claimed on own by calling `claimAllRevenue()`.
+5. Call `resetWeights()` to reset all weights and do the changes.
+6. View weights for any address by `getWeightsFor(subnetId, revenueAddress)`. To see balance of assigned revenues, call `balanceOfAssignedRevenue(Rev Address)`
+
 
 ### RoleControl
 1. It is deployed for particular NFT id and only the owner of that NFT can grant roles.

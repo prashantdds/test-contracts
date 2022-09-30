@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/jaspreetsingh/Desktop/stackos/contracts/Registration.sol": {
-      "lastModificationDate": 1657520664186,
-      "contentHash": "c4a03b05284055ed95288fc3af6d3628",
+      "lastModificationDate": 1664352104943,
+      "contentHash": "3cdaa7812b752f28ce3fb907e305b124",
       "sourceName": "contracts/Registration.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -35,7 +35,8 @@
         "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol",
         "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol",
         "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol",
-        "./TokensRecoverable.sol"
+        "./TokensRecoverable.sol",
+        "./interfaces/ISubnetDAODistributor.sol"
       ],
       "versionPragmas": [
         "0.8.2"
@@ -1639,8 +1640,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IRegistration.sol": {
-      "lastModificationDate": 1657520401799,
-      "contentHash": "81b5e0e0a86949cbe38aa7037e7e4f52",
+      "lastModificationDate": 1664347039635,
+      "contentHash": "6b985f27ed198f527a01da54ae7c7e3c",
       "sourceName": "contracts/interfaces/IRegistration.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -1863,8 +1864,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/Subscription.sol": {
-      "lastModificationDate": 1657773314280,
-      "contentHash": "efd4a384bae681305890bcd60ee1c166",
+      "lastModificationDate": 1664293452291,
+      "contentHash": "0a19eb5004e4a88df09ed6a7bf59b6c4",
       "sourceName": "contracts/Subscription.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2020,8 +2021,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/SubscriptionBalanceCalculator.sol": {
-      "lastModificationDate": 1657898778187,
-      "contentHash": "0f84579349858d7995072d4966f11067",
+      "lastModificationDate": 1664268626011,
+      "contentHash": "32952305618eb0aea9f87abd08f0b6b1",
       "sourceName": "contracts/SubscriptionBalanceCalculator.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2050,6 +2051,7 @@
       "imports": [
         "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol",
         "./interfaces/ISubscriptionBalance.sol",
+        "./interfaces/ISubnetDAODistributor.sol",
         "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol",
         "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol",
         "./interfaces/IRegistration.sol",
@@ -2103,8 +2105,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IBalanceCalculator.sol": {
-      "lastModificationDate": 1657898815099,
-      "contentHash": "7933bf1aeb9740f837a52eb73f37111e",
+      "lastModificationDate": 1664261989055,
+      "contentHash": "699aea0193eee5437ac766ec75f02694",
       "sourceName": "contracts/interfaces/IBalanceCalculator.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2183,8 +2185,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/TestDarkMatter.sol": {
-      "lastModificationDate": 1660719567846,
-      "contentHash": "94235c55ef5eb9ad15ae74cbfcb1f334",
+      "lastModificationDate": 1664345329524,
+      "contentHash": "170d7e99da3702dc2a793ac9d3c0118e",
       "sourceName": "contracts/TestDarkMatter.sol",
       "solcConfig": {
         "version": "0.6.2",
@@ -2780,6 +2782,86 @@
       ],
       "artifacts": [
         "ILinkContract"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/SubnetDAODistributor.sol": {
+      "lastModificationDate": 1664351868863,
+      "contentHash": "8b849cb92ee59c77e13b8ba6835818e9",
+      "sourceName": "contracts/SubnetDAODistributor.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol",
+        "./interfaces/IBalanceCalculator.sol",
+        "./interfaces/IRegistration.sol",
+        "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol",
+        "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol",
+        "./TokensRecoverable.sol",
+        "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "SubnetDAODistributor"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/ISubnetDAODistributor.sol": {
+      "lastModificationDate": 1664343357083,
+      "contentHash": "ff2ea8fe339312dfa266501833f43aa5",
+      "sourceName": "contracts/interfaces/ISubnetDAODistributor.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "ISubnetDAODistributor"
       ]
     }
   }

@@ -23,6 +23,9 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         keccak256("CHANGE_COMPUTE_ROLE");
     bytes32 public constant WITHDRAW_CREDITS_ROLE =
         keccak256("WITHDRAW_CREDITS_ROLE");
+    bytes32 public constant CHANGE_SUBSCRIPTION_ROLE =
+        keccak256("CHANGE_SUBSCRIPTION_ROLE");
+
     address public GLOBAL_DAO_ADDRESS;
 
     struct NFTSubnetAttribute {
@@ -67,6 +70,12 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 new_limit
     );
 
+    event Changed_CHANGE_SUBSCRIPTION(
+        uint256 nftId,
+        uint256 subnetId,
+        bool allow
+    );
+
     event Subscribed(
         uint256 NFTId,
         uint256 subnetId,
@@ -96,7 +105,11 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         string newServiceProvider
     );
 
-    event Computes_changed(uint256 NFTid, uint256 subnetId, uint256[] computeRequired);
+    event Computes_changed(
+        uint256 NFTid,
+        uint256 subnetId,
+        uint256[] computeRequired
+    );
 
     function initialize(
         address _GlobalDAO,
@@ -115,6 +128,8 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         _grantRole(DEFAULT_ADMIN_ROLE, _GlobalDAO);
         _grantRole(CHANGE_COMPUTE_ROLE, _GlobalDAO);
         _grantRole(WITHDRAW_CREDITS_ROLE, _GlobalDAO);
+        _grantRole(CHANGE_SUBSCRIPTION_ROLE, _GlobalDAO);
+
         GLOBAL_DAO_ADDRESS = _GlobalDAO;
 
         LIMIT_NFT_SUBNETS = _LIMIT_NFT_SUBNETS;
@@ -208,6 +223,15 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         REQD_COOLDOWN_S_PROVIDER = _REQD_COOLDOWN_S_PROVIDER;
     }
 
+    function change__CHANGE_SUBSCRIPTION(
+        uint256 _nftId,
+        uint256 _subnetId,
+        bool allow
+    ) external onlyRole(CHANGE_SUBSCRIPTION_ROLE) {
+        userSubscription[_nftId][_subnetId].subscribed = allow;
+        emit Changed_CHANGE_SUBSCRIPTION(_nftId, _subnetId, allow);
+    }
+
     function changeComputesOfSubnet(
         uint256 _NFTid,
         uint256 _subnetId,
@@ -215,7 +239,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     ) external onlyRole(CHANGE_COMPUTE_ROLE) whenNotPaused {
         userSubscription[_NFTid][_subnetId].computeRequired = _computeRequired;
         SubscriptionBalance.refreshEndOfBalance(_NFTid);
-        emit Computes_changed(_NFTid,_subnetId,_computeRequired);
+        emit Computes_changed(_NFTid, _subnetId, _computeRequired);
     }
 
     function subscribeBatchNew(
@@ -320,8 +344,11 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256[] memory _computeRequired
     ) public whenNotPaused {
         SubscriptionBalance.settleAccountBalance(_nftId);
-        require(SubscriptionBalance.isBalancePresent(_nftId),"Balance for NFT id = 0, so cannot subscribe more subnets");
-        
+        require(
+            SubscriptionBalance.isBalancePresent(_nftId),
+            "Balance for NFT id = 0, so cannot subscribe more subnets"
+        );
+
         SubscriptionBalance.addSubnetToNFT(_nftId, _subnetId);
 
         _subscribeSubnet(

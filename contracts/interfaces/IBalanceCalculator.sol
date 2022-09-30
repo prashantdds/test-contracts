@@ -23,4 +23,7 @@ interface IBalanceCalculator {
         uint256[] memory subnetIds,
         uint256 lastBalanceUpdatedTime
     ) external view returns (uint256);
+
+    function receiveRevenueForAddress(address _userAddress) external;
+
 }
