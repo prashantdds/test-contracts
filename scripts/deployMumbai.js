@@ -128,9 +128,15 @@ async function main(){
     await RoleControl.deployed();
     console.log(`const RoleControl = "${RoleControl.address}"`); // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
 
+    ListenerContract=await ethers.getContractFactory('ListenerContract');
+    Listener = await upgrades.deployProxy(ListenerContract, [], { initializer: 'initialize' });
+    await Listener.deployed();
+    console.log(`const Listener = "${Listener.address}"`); 
+
+    
     console.log("Deploy ContractBasedDeployment...");
     ContractBasedDeploymentContract=await ethers.getContractFactory('ContractBasedDeployment');
-    ContractBasedDeployment = await upgrades.deployProxy(ContractBasedDeploymentContract, [RoleControl.address], { initializer: 'initialize' });
+    ContractBasedDeployment = await upgrades.deployProxy(ContractBasedDeploymentContract, [RoleControl.address, Listener.address], { initializer: 'initialize' });
     await ContractBasedDeployment.deployed();
     console.log(`const ContractBasedDeployment = "${ContractBasedDeployment.address}"`); // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
 

@@ -29,6 +29,7 @@ Sections below describes the following :
 |ContractBasedDeployment| [`ContractBasedDeployment.sol`](./contracts/ContractBasedDeployment.sol) | Upgradeable ContractBasedDeployment contract is used to store IPFS hash linked to app name, update it or delete it for particular NFT by `CONTRACT_BASED_DEPLOYER` role defined in `RoleControl` contract.|
 |XCTMinter| [`XCTMinter.sol`](./contracts/XCTMinter.sol) | Upgradeable XCTMinter contract has rights to mint XCT token. This contract is used by anyone to buy XCT from any token. If token is Stack token, there is benefits on fees paid for minting XCT. XCT can be sold anytime to receive USDC token back. |
 |LinkNFTs| [`LinkNFTs.sol`](./contracts/LinkNFTs.sol) | Upgradeable LinkNFTs contract links custom NFT to Application NFT and locks the Application NFT in smart contract. Multiple App NFTs can be locked in same Custom NFT but not vice versa. 1 Application NFT can only be used once for linking.|
+|ListenerContract| [`ListenerContract.sol`](./contracts/ListenerContract.sol) | Upgradeable ListenerContract contract to listen to events from multiple contract instances at 1 place.|
 
 
 ## Deployment
@@ -47,6 +48,7 @@ Solidity files that need auditing
 [`ContractBasedDeployment.sol`](./contracts/ContractBasedDeployment.sol) |
 [`XCTMinter.sol`](./contracts/XCTMinter.sol) |
 [`LinkNFTs.sol`](./contracts/LinkNFTs.sol) |
+[`ListenerContract.sol`](./contracts/ListenerContract.sol) |
 
 ## Rationale
 ### Registration

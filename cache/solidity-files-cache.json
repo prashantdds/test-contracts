@@ -1944,8 +1944,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/ContractBasedDeployment.sol": {
-      "lastModificationDate": 1657081622255,
-      "contentHash": "5d15b83b0ed63654c32cef445b644b9b",
+      "lastModificationDate": 1668251189457,
+      "contentHash": "5c0d7fa22e3c7971ce9892664e164507",
       "sourceName": "contracts/ContractBasedDeployment.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -1973,6 +1973,7 @@
       },
       "imports": [
         "./interfaces/IRoleControl.sol",
+        "./interfaces/IListener.sol",
         "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol"
       ],
       "versionPragmas": [
@@ -2862,6 +2863,80 @@
       ],
       "artifacts": [
         "ISubnetDAODistributor"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IListener.sol": {
+      "lastModificationDate": 1668250905829,
+      "contentHash": "27f55c56b2a55f2e58dcd39299514e17",
+      "sourceName": "contracts/interfaces/IListener.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "IListener"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/ListenerContract.sol": {
+      "lastModificationDate": 1668251000856,
+      "contentHash": "66fd6b939acffb578a5c719d43b5bdc3",
+      "sourceName": "contracts/ListenerContract.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "ListenerContract"
       ]
     }
   }

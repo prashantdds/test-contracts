@@ -48,6 +48,12 @@ async function main(){
     await stack.deployed();
     console.log(`const stack = "${stack.address}"`); 
     
+    ListenerContract=await ethers.getContractFactory('ListenerContract');
+    Listener = await upgrades.deployProxy(ListenerContract, [], { initializer: 'initialize' });
+    await Listener.deployed();
+    console.log(`const Listener = "${Listener.address}"`); 
+
+    
     // deploy NFT Token
     NFT=await ethers.getContractFactory('TestDarkMatter');
     nftToken = await NFT.deploy();
@@ -278,7 +284,7 @@ async function main(){
 
     console.log("Deploy ContractBasedDeployment...");
     ContractBasedDeploymentContract=await ethers.getContractFactory('ContractBasedDeployment');
-    ContractBasedDeployment = await upgrades.deployProxy(ContractBasedDeploymentContract, [RoleControl.address], { initializer: 'initialize' });
+    ContractBasedDeployment = await upgrades.deployProxy(ContractBasedDeploymentContract, [RoleControl.address, Listener.address], { initializer: 'initialize' });
     await ContractBasedDeployment.deployed();
     console.log(`const ContractBasedDeployment = "${ContractBasedDeployment.address}"`); // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
 
@@ -293,8 +299,9 @@ async function main(){
     console.log("hashFunction = "+ hashFunction);
     console.log("size = "+size);
     
-    await ContractBasedDeployment.createData("app1", digest, hashFunction, size);
+    await ContractBasedDeployment.createData("app1", digest, hashFunction, size,[1,2,3]);
     console.log(`data created`);
+    console.log(await ContractBasedDeployment.getFullData("app1"));
     data = await ContractBasedDeployment.getData("app1");
     console.log(`data fetched`);
     console.log("Hash retrieved: "+getMultihashFromBytes32(data));

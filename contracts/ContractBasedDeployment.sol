@@ -3,6 +3,7 @@
 pragma solidity 0.8.2;
 
 import "./interfaces/IRoleControl.sol";
+import "./interfaces/IListener.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
@@ -18,6 +19,8 @@ contract ContractBasedDeployment is Initializable {
     bytes32 public constant CONTRACT_BASED_DEPLOYER =
         keccak256("CONTRACT_BASED_DEPLOYER");
 
+    IListener public ListenerContract;
+
     struct Multihash {
         bytes32 digest;
         uint8 hashFunction;
@@ -25,18 +28,21 @@ contract ContractBasedDeployment is Initializable {
     }
 
     mapping(string => Multihash) private entries;
+    mapping(string => uint[]) private resourceArray;
 
     event EntrySet(
         string indexed appName,
         bytes32 digest,
         uint8 hashFunction,
-        uint8 size
+        uint8 size,
+        uint[] resourceArray
     );
 
     event EntryDeleted(string indexed appName);
 
-    function initialize(IRoleControl _RoleControl) public initializer {
+    function initialize(IRoleControl _RoleControl, IListener _ListenerContract) public initializer {
         RoleControl = _RoleControl;
+        ListenerContract = _ListenerContract;
     }
 
     function getNFTAddress() external view returns (address) {
@@ -57,12 +63,15 @@ contract ContractBasedDeployment is Initializable {
         string memory appName,
         bytes32 _digest,
         uint8 _hashFunction,
-        uint8 _size
+        uint8 _size,
+        uint[] memory _resourceArray
     ) external hasPermission {
         require(entries[appName].digest == 0, "Already set");
         Multihash memory entry = Multihash(_digest, _hashFunction, _size);
         entries[appName] = entry;
-        emit EntrySet(appName, _digest, _hashFunction, _size);
+        resourceArray[appName] = _resourceArray;
+        emit EntrySet(appName, _digest, _hashFunction, _size, _resourceArray);
+        ListenerContract.listen("ContractBasedDeployment", address(this), "createData", appName, _digest, _hashFunction, _size, _resourceArray);
     }
 
     /**
@@ -75,12 +84,15 @@ contract ContractBasedDeployment is Initializable {
         string memory appName,
         bytes32 _digest,
         uint8 _hashFunction,
-        uint8 _size
+        uint8 _size,
+        uint[] memory _resourceArray
     ) external hasPermission {
         require(entries[appName].digest != 0, "Already no data");
         Multihash memory entry = Multihash(_digest, _hashFunction, _size);
         entries[appName] = entry;
-        emit EntrySet(appName, _digest, _hashFunction, _size);
+        resourceArray[appName] = _resourceArray;
+        emit EntrySet(appName, _digest, _hashFunction, _size, _resourceArray);
+        ListenerContract.listen("ContractBasedDeployment", address(this), "updateData", appName, _digest, _hashFunction, _size, _resourceArray);
     }
 
     /**
@@ -89,7 +101,9 @@ contract ContractBasedDeployment is Initializable {
     function deleteData(string memory appName) external hasPermission {
         require(entries[appName].digest != 0, "Already no data");
         delete entries[appName];
+        delete resourceArray[appName];
         emit EntryDeleted(appName);
+        ListenerContract.listen("ContractBasedDeployment", address(this), "deleteData", appName);
     }
 
     /**
@@ -105,8 +119,26 @@ contract ContractBasedDeployment is Initializable {
             uint8 size
         )
     {
-        Multihash storage entry = entries[appName];
+        Multihash memory entry = entries[appName];
         return (entry.digest, entry.hashFunction, entry.size);
+    }
+
+    /**
+     * @dev retrieve full data with an appName
+     * @param appName name of app used as key
+     */
+    function getFullData(string memory appName)
+        public
+        view
+        returns (
+            bytes32 digest,
+            uint8 hashfunction,
+            uint8 size,
+            uint[] memory _resourceArray
+        )
+    {
+        Multihash memory entry = entries[appName];
+        return (entry.digest, entry.hashFunction, entry.size, resourceArray[appName]);
     }
 
     modifier hasPermission() {
