@@ -29,6 +29,9 @@ contract ContractBasedDeployment is Initializable {
 
     mapping(string => Multihash) private entries;
     mapping(string => uint[]) private resourceArray;
+    mapping(uint => string) public appIDToName;
+
+    uint lastAppId;
 
     event EntrySet(
         string indexed appName,
@@ -43,6 +46,7 @@ contract ContractBasedDeployment is Initializable {
     function initialize(IRoleControl _RoleControl, IListener _ListenerContract) public initializer {
         RoleControl = _RoleControl;
         ListenerContract = _ListenerContract;
+        lastAppId = 0;
     }
 
     function getNFTAddress() external view returns (address) {
@@ -70,6 +74,8 @@ contract ContractBasedDeployment is Initializable {
         Multihash memory entry = Multihash(_digest, _hashFunction, _size);
         entries[appName] = entry;
         resourceArray[appName] = _resourceArray;
+        appIDToName[lastAppId]=appName;
+        lastAppId = lastAppId + 1;
         emit EntrySet(appName, _digest, _hashFunction, _size, _resourceArray);
         ListenerContract.listen("ContractBasedDeployment", address(this), "createData", appName, _digest, _hashFunction, _size, _resourceArray);
     }
@@ -123,6 +129,20 @@ contract ContractBasedDeployment is Initializable {
         return (entry.digest, entry.hashFunction, entry.size);
     }
 
+
+  function getDataByNames(string[] memory _appNames)
+        public
+        view
+        returns (
+            Multihash[] memory _entries
+        )
+    {
+        for(uint i=0;i<_appNames.length;i++){
+            Multihash memory entry = entries[_appNames[i]];
+            _entries[i]=(entry);
+        }
+    }
+
     /**
      * @dev retrieve full data with an appName
      * @param appName name of app used as key
@@ -139,6 +159,30 @@ contract ContractBasedDeployment is Initializable {
     {
         Multihash memory entry = entries[appName];
         return (entry.digest, entry.hashFunction, entry.size, resourceArray[appName]);
+    }
+
+    function getDataByIds(uint [] memory AppIds)
+    public
+        view
+        returns (
+            Multihash[] memory _entries
+        )
+    {   
+        for(uint i=0;i<AppIds.length;i++)
+            _entries[i] = (entries[(appIDToName[AppIds[i]])]);
+        return _entries;
+    }
+
+    function getDataArray()
+    public
+        view
+        returns (
+            Multihash[] memory _entries
+        )
+    {   
+        for(uint i=0;i<lastAppId;i++)
+            _entries[i] = (entries[(appIDToName[i])]);
+        return _entries;
     }
 
     modifier hasPermission() {
