@@ -201,9 +201,9 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                 (
                     costIncurredArr[0] // r
                     .add(costIncurredArr[1]) // s
-                    .add(costIncurredArr[2]).add(costIncurredArr[3]).add( // t
-                            computeCost
-                        ) // u
+                        .add(costIncurredArr[2])
+                        .add(costIncurredArr[3])
+                        .add(computeCost) // t // u
                 ), // 1
                 prevBalance
             );
@@ -239,7 +239,9 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         return (
             costIncurredArr[0] // r
             .add(costIncurredArr[1]) // s
-            .add(costIncurredArr[2]).add(costIncurredArr[3]).add(computeCost) // t // u
+                .add(costIncurredArr[2])
+                .add(costIncurredArr[3])
+                .add(computeCost) // t // u
         );
     }
 
@@ -334,9 +336,9 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                     (
                         costIncurredArr[0] // r
                         .add(costIncurredArr[1]) // s
-                        .add(costIncurredArr[2]).add(costIncurredArr[3]).add( // t
-                                computeCost
-                            ) // u
+                            .add(costIncurredArr[2])
+                            .add(costIncurredArr[3])
+                            .add(computeCost) // t // u
                     ), // 1
                     prevBalance
                 );

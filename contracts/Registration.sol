@@ -27,14 +27,15 @@ contract Registration is
     bytes32 public constant PRICE_ROLE = keccak256("PRICE_ROLE");
     bytes32 public constant WHITELIST_ROLE = keccak256("WHITELIST_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    bytes32 public constant WITHDRAW_STACK_ROLE = keccak256("WITHDRAW_STACK_ROLE");
-    
+    bytes32 public constant WITHDRAW_STACK_ROLE =
+        keccak256("WITHDRAW_STACK_ROLE");
+
     address public GLOBAL_DAO_ADDRESS;
-    mapping(address=>bool) public approvedDarkMatterNFTTypes;
+    mapping(address => bool) public approvedDarkMatterNFTTypes;
 
     uint256 public daoRate; // 1000 = 1%
     uint256 public REQD_STACK_FEES_FOR_SUBNET;
-    uint public DefaultWhitelistedClusterWeight;
+    uint256 public DefaultWhitelistedClusterWeight;
 
     struct SubnetAttributes {
         uint256 subnetType;
@@ -52,8 +53,8 @@ contract Registration is
     struct Cluster {
         address ClusterDAO;
         string DNSIP;
-        uint8 listed;//uint8 [1,2,3] if in 1st state, should be able to withdraw
-        uint NFTidLocked;
+        uint8 listed; //uint8 [1,2,3] if in 1st state, should be able to withdraw
+        uint256 NFTidLocked;
     }
 
     struct PriceChangeRequest {
@@ -183,7 +184,7 @@ contract Registration is
         _grantRole(WHITELIST_ROLE, _GlobalDAO);
         _grantRole(PAUSER_ROLE, _GlobalDAO);
         _grantRole(WITHDRAW_STACK_ROLE, _GlobalDAO);
-        
+
         GLOBAL_DAO_ADDRESS = _GlobalDAO;
 
         DarkMatterNFT = _DarkMatterNFT;
@@ -198,12 +199,10 @@ contract Registration is
     function getAllSubnetAttributes()
         external
         view
-        returns (
-           SubnetAttributes[] memory _subnetAttributesArr
-        )
+        returns (SubnetAttributes[] memory _subnetAttributesArr)
     {
-        for(uint i=0;i<totalSubnets;i++){
-            _subnetAttributesArr[i]= (subnetAttributes[i]);        
+        for (uint256 i = 0; i < totalSubnets; i++) {
+            _subnetAttributesArr[i] = (subnetAttributes[i]);
         }
     }
 
@@ -222,7 +221,7 @@ contract Registration is
             uint256
         )
     {
-        uint _subnetId = subnetId;
+        uint256 _subnetId = subnetId;
         return (
             subnetAttributes[_subnetId].subnetType,
             subnetAttributes[_subnetId].sovereignStatus,
@@ -235,8 +234,6 @@ contract Registration is
             subnetAttributes[_subnetId].stackFeesReqd
         );
     }
-
-
 
     function getClusterAttributes(uint256 _subnetId, uint256 _clusterId)
         external
@@ -256,15 +253,16 @@ contract Registration is
         );
     }
 
-    function set_SubnetDAODistributorContract(ISubnetDAODistributor _SubnetDAODistributor) external onlyRole(DEFAULT_ADMIN_ROLE){
+    function set_SubnetDAODistributorContract(
+        ISubnetDAODistributor _SubnetDAODistributor
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(address(SubnetDAODistributor) == address(0), "Already set");
         SubnetDAODistributor = _SubnetDAODistributor;
     }
 
-
     // to change _DarkMatterNFTType call changeSubnetAttributes() with index 9
     function createSubnet(
-        uint256 _nftid,
+        uint256 nftId,
         address _subnetLocalDAO,
         uint256 _subnetType,
         bool _sovereignStatus,
@@ -276,20 +274,16 @@ contract Registration is
         address[] memory _whiteListedClusters,
         uint256 _supportFeeRate,
         uint256 _stackFeesReqd
-        // ,address  _DarkMatterNFTType
     ) external whenNotPaused {
-        uint nftid = _nftid;
-        subnetAttributes[totalSubnets].DarkMatterNFTType.transferFrom(_msgSender(), address(this), nftid);
-        emit NFTLockedForSubnet(_msgSender(), totalSubnets, nftid);
-    
+        DarkMatterNFT.transferFrom(_msgSender(), address(this), nftId);
         StackToken.transferFrom(
             _msgSender(),
             GLOBAL_DAO_ADDRESS,
             REQD_STACK_FEES_FOR_SUBNET
         );
 
-        whiteListedClusters[totalSubnets] = _whiteListedClusters;
         subnetLocalDAO[totalSubnets] = _subnetLocalDAO;
+
         SubnetAttributes memory _subnetAttributes;
         _subnetAttributes.subnetType = _subnetType;
         _subnetAttributes.sovereignStatus = _sovereignStatus;
@@ -300,27 +294,29 @@ contract Registration is
         _subnetAttributes.maxClusters = _maxClusters;
         _subnetAttributes.supportFeeRate = _supportFeeRate;
         _subnetAttributes.stackFeesReqd = _stackFeesReqd;
-        _subnetAttributes.DarkMatterNFTType = DarkMatterNFT; // used default DarkMatterNFT
-        subnetAttributes[totalSubnets] = _subnetAttributes;
+        _subnetAttributes.DarkMatterNFTType = DarkMatterNFT;
 
+        subnetAttributes[totalSubnets] = _subnetAttributes;
         emit SubnetCreated(
             totalSubnets,
-            subnetLocalDAO[totalSubnets],
-            subnetAttributes[totalSubnets].subnetType,
-            subnetAttributes[totalSubnets].sovereignStatus,
-            subnetAttributes[totalSubnets].cloudProviderType,
-            subnetAttributes[totalSubnets].subnetStatusListed,
-            subnetAttributes[totalSubnets].unitPrices,
-            subnetAttributes[totalSubnets].otherAttributes,
-            subnetAttributes[totalSubnets].maxClusters,
-            whiteListedClusters[totalSubnets],
-            subnetAttributes[totalSubnets].supportFeeRate,
+            _subnetLocalDAO,
+            _subnetType,
+            _sovereignStatus,
+            _cloudProviderType,
+            _subnetStatusListed,
+            _unitPrices,
+            _otherAttributes,
+            _maxClusters,
+            _whiteListedClusters,
+            _supportFeeRate,
             _msgSender(),
-            subnetAttributes[totalSubnets].stackFeesReqd
+            _stackFeesReqd
         );
+        emit NFTLockedForSubnet(_msgSender(), totalSubnets, nftId);
+
+        whiteListedClusters[totalSubnets] = _whiteListedClusters;
 
         totalSubnets = totalSubnets.add(1);
-
     }
 
     function changeSubnetAttributes(
@@ -334,7 +330,7 @@ contract Registration is
         uint256 _maxClusters, // 6
         uint256 _supportFeeRate, // 7
         uint256 _stackFeesReqd, // 8
-        IERC721Upgradeable  _DarkMatterNFTType //9
+        IERC721Upgradeable _DarkMatterNFTType //9
     ) external onlyRole(SUBNET_ATTR_ROLE) {
         if (_attributeNo == 1)
             subnetAttributes[subnetId].subnetType = _subnetType;
@@ -352,8 +348,11 @@ contract Registration is
             subnetAttributes[subnetId].supportFeeRate = _supportFeeRate;
         else if (_attributeNo == 8)
             subnetAttributes[subnetId].stackFeesReqd = _stackFeesReqd;
-        else if (_attributeNo == 9){
-            require(approvedDarkMatterNFTTypes[address(_DarkMatterNFTType)],"Not approved Dark Matter NFT");
+        else if (_attributeNo == 9) {
+            require(
+                approvedDarkMatterNFTTypes[address(_DarkMatterNFTType)],
+                "Not approved Dark Matter NFT"
+            );
             subnetAttributes[subnetId].DarkMatterNFTType = _DarkMatterNFTType;
         }
 
@@ -364,10 +363,14 @@ contract Registration is
         );
     }
 
-    function hasPermissionToClusterList(uint256 subnetId, address user) external view returns(bool){
-        if(hasRole(CLUSTER_LIST_ROLE, user) ||
-                subnetLocalDAO[subnetId] == user)
-                return true;
+    function hasPermissionToClusterList(uint256 subnetId, address user)
+        external
+        view
+        returns (bool)
+    {
+        if (
+            hasRole(CLUSTER_LIST_ROLE, user) || subnetLocalDAO[subnetId] == user
+        ) return true;
         return false;
     }
 
@@ -390,16 +393,15 @@ contract Registration is
         emit AddedToWhitelistCluster(subnetId, _whitelistAddresses);
     }
 
-    function addApprovedDarkMatterNFTTypes(
-        address _NFTTypes,
-        bool allow
-    ) external {
+    function addApprovedDarkMatterNFTTypes(address _NFTTypes, bool allow)
+        external
+    {
         require(
             hasRole(WHITELIST_ROLE, _msgSender()),
             "Only WHITELIST_ROLE can edit whitelisted addresses"
         );
         approvedDarkMatterNFTTypes[_NFTTypes] = allow;
-    }    
+    }
 
     function removeClusterFromWhitelisted(
         uint256 subnetId,
@@ -456,7 +458,7 @@ contract Registration is
         uint256 totalDelisted = 0;
 
         for (uint256 i = 0; i < totalSignedIn; i++) {
-            if (subnetClusters[subnetId][i].listed==2)
+            if (subnetClusters[subnetId][i].listed == 2)
                 totalDelisted = totalDelisted.add(1);
         }
 
@@ -483,7 +485,11 @@ contract Registration is
             "No spots available, maxSlots reached for subnet"
         );
 
-        subnetAttributes[subnetId].DarkMatterNFTType.transferFrom(_msgSender(), address(this), nftId);
+        subnetAttributes[subnetId].DarkMatterNFTType.transferFrom(
+            _msgSender(),
+            address(this),
+            nftId
+        );
         StackToken.transferFrom(
             _msgSender(),
             address(this),
@@ -497,13 +503,17 @@ contract Registration is
         subnetClusters[subnetId][clusterId].DNSIP = _DNSIP;
         subnetClusters[subnetId][clusterId].listed = 1;
         subnetClusters[subnetId][clusterId].NFTidLocked = nftId;
-        
+
         totalClustersSigned[subnetId] = totalClustersSigned[subnetId].add(1);
 
-        for(uint i=0;i<whiteListedClusters[subnetId].length;i++)
-            if(whiteListedClusters[subnetId][i]==_clusterDAO){
+        for (uint256 i = 0; i < whiteListedClusters[subnetId].length; i++)
+            if (whiteListedClusters[subnetId][i] == _clusterDAO) {
                 subnetClusters[subnetId][clusterId].listed = 2; // whitelisted clusters are approved as they signup
-                SubnetDAODistributor.addWeight(subnetId, _clusterDAO, DefaultWhitelistedClusterWeight);
+                SubnetDAODistributor.addWeight(
+                    subnetId,
+                    _clusterDAO,
+                    DefaultWhitelistedClusterWeight
+                );
                 break;
             }
 
@@ -553,16 +563,20 @@ contract Registration is
         uint256 clusterId,
         uint256 _weight
     ) external onlyRole(CLUSTER_LIST_ROLE) {
-        require(subnetClusters[subnetId][clusterId].listed!=2,"Already approved either by whitelisting or by calling this function");
+        require(
+            subnetClusters[subnetId][clusterId].listed != 2,
+            "Already approved either by whitelisting or by calling this function"
+        );
         subnetClusters[subnetId][clusterId].listed = 2;
-        SubnetDAODistributor.addWeight(subnetId, subnetClusters[subnetId][clusterId].ClusterDAO, _weight);
+        SubnetDAODistributor.addWeight(
+            subnetId,
+            subnetClusters[subnetId][clusterId].ClusterDAO,
+            _weight
+        );
         emit ChangedListingCluster(subnetId, clusterId, _msgSender(), 2);
     }
 
-    function delistCluster(
-        uint256 subnetId,
-        uint256 clusterId
-    ) external {
+    function delistCluster(uint256 subnetId, uint256 clusterId) external {
         require(
             hasRole(CLUSTER_LIST_ROLE, _msgSender()) ||
                 subnetClusters[subnetId][clusterId].ClusterDAO == _msgSender(),
@@ -613,7 +627,9 @@ contract Registration is
         uint256 clusterId,
         uint256 _amount
     ) external onlyRole(WITHDRAW_STACK_ROLE) {
-        balanceOfStackLocked[subnetClusters[subnetId][clusterId].ClusterDAO] = balanceOfStackLocked[subnetClusters[subnetId][clusterId].ClusterDAO]
+        balanceOfStackLocked[
+            subnetClusters[subnetId][clusterId].ClusterDAO
+        ] = balanceOfStackLocked[subnetClusters[subnetId][clusterId].ClusterDAO]
             .sub(_amount);
         StackToken.transferFrom(address(this), _msgSender(), _amount);
 
@@ -645,9 +661,18 @@ contract Registration is
         subnetClusters[subnetId][clusterId].listed = 2; // delisted cluster as withdrawn
 
         StackToken.transferFrom(address(this), _msgSender(), bal);
-        DarkMatterNFT.transferFrom(address(this), _msgSender(), subnetClusters[subnetId][clusterId].NFTidLocked);
+        DarkMatterNFT.transferFrom(
+            address(this),
+            _msgSender(),
+            subnetClusters[subnetId][clusterId].NFTidLocked
+        );
 
-        emit WithdrawnNFTFromCluster(subnetId, clusterId, _msgSender(), subnetClusters[subnetId][clusterId].NFTidLocked);
+        emit WithdrawnNFTFromCluster(
+            subnetId,
+            clusterId,
+            _msgSender(),
+            subnetClusters[subnetId][clusterId].NFTidLocked
+        );
         emit WithdrawnStackFromCluster(subnetId, clusterId, _msgSender(), bal);
     }
 

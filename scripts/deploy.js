@@ -48,10 +48,10 @@ async function main(){
     await stack.deployed();
     console.log(`const stack = "${stack.address}"`); 
     
-    ListenerContract=await ethers.getContractFactory('ListenerContract');
-    Listener = await upgrades.deployProxy(ListenerContract, [], { initializer: 'initialize' });
-    await Listener.deployed();
-    console.log(`const Listener = "${Listener.address}"`); 
+    // ListenerContract=await ethers.getContractFactory('ListenerContract');
+    // Listener = await upgrades.deployProxy(ListenerContract, [], { initializer: 'initialize' });
+    // await Listener.deployed();
+    // console.log(`const Listener = "${Listener.address}"`); 
 
     
     // deploy NFT Token
@@ -268,23 +268,26 @@ async function main(){
         
     // delisting subnet
     console.log("Delisting and changing subnet");
-    await Registration.changeSubnetAttributes(1,4,0,true,0,false,[],0,0,0);
+    await Registration.changeSubnetAttributes(1,4,0,true,0,false,[],0,0,0,deployer.address); // last param can be any address if index is not 9
     await Subscription.changeSubnetSubscription(mintId,0,1);
 
     userSubscription2 = await Subscription.userSubscription(mintId,1);
     console.log("userSubscription for subnet 1:" +userSubscription2);
 
-    console.log("Deploy RoleControl...");
+    console.log("Deploy RoleControl V2...");
     nftToken2 = await NFT.deploy();
     console.log(`const NFT = "${nftToken2.address}"`); // 0x527e794667Cb9958E058A824d991a3cf595039C0
-    RoleControlContract=await ethers.getContractFactory('RoleControl');
-    RoleControl = await upgrades.deployProxy(RoleControlContract, [nftToken2.address, 1, deployer.address], { initializer: 'initialize' });
+    RoleControlContract=await ethers.getContractFactory('RoleControlV2');
+    RoleControl = await upgrades.deployProxy(RoleControlContract, [nftToken2.address], { initializer: 'initialize' });
     await RoleControl.deployed();
     console.log(`const RoleControl = "${RoleControl.address}"`); // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
 
-    console.log("Deploy ContractBasedDeployment...");
-    ContractBasedDeploymentContract=await ethers.getContractFactory('ContractBasedDeployment');
-    ContractBasedDeployment = await upgrades.deployProxy(ContractBasedDeploymentContract, [RoleControl.address, Listener.address], { initializer: 'initialize' });
+    CONTRACT_DEPLOYER_BYTES32 = await RoleControl.CONTRACT_BASED_DEPLOYER();
+    await RoleControl.grantRole(1,CONTRACT_DEPLOYER_BYTES32, deployer.address);
+
+    console.log("Deploy ContractBasedDeployment V2...");
+    ContractBasedDeploymentContract=await ethers.getContractFactory('ContractBasedDeploymentV2');
+    ContractBasedDeployment = await upgrades.deployProxy(ContractBasedDeploymentContract, [RoleControl.address], { initializer: 'initialize' });
     await ContractBasedDeployment.deployed();
     console.log(`const ContractBasedDeployment = "${ContractBasedDeployment.address}"`); // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
 
@@ -299,10 +302,10 @@ async function main(){
     console.log("hashFunction = "+ hashFunction);
     console.log("size = "+size);
     
-    await ContractBasedDeployment.createData("app1", digest, hashFunction, size,[1,2,3]);
+    await ContractBasedDeployment.createData(1, "app1", digest, hashFunction, size,[1,2,3]);
     console.log(`data created`);
-    console.log(await ContractBasedDeployment.getFullData("app1"));
-    data = await ContractBasedDeployment.getData("app1");
+    console.log(await ContractBasedDeployment.getFullData(1, "app1"));
+    data = await ContractBasedDeployment.getData(1, "app1");
     console.log(`data fetched`);
     console.log("Hash retrieved: "+getMultihashFromBytes32(data));
 

@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/jaspreetsingh/Desktop/stackos/contracts/Registration.sol": {
-      "lastModificationDate": 1668846509387,
-      "contentHash": "0199315890f17f0a63e8f563e1204387",
+      "lastModificationDate": 1668928474883,
+      "contentHash": "72272b5cb22e1ffdfb8da2f55c61f835",
       "sourceName": "contracts/Registration.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -1943,46 +1943,6 @@
         "ISubscriptionBalance"
       ]
     },
-    "/Users/jaspreetsingh/Desktop/stackos/contracts/ContractBasedDeployment.sol": {
-      "lastModificationDate": 1668840780712,
-      "contentHash": "326987aec3a55b08158cd61a597c5aba",
-      "sourceName": "contracts/ContractBasedDeployment.sol",
-      "solcConfig": {
-        "version": "0.8.2",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata",
-                "storageLayout"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "./interfaces/IRoleControl.sol",
-        "./interfaces/IListener.sol",
-        "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol"
-      ],
-      "versionPragmas": [
-        "0.8.2"
-      ],
-      "artifacts": [
-        "ContractBasedDeployment"
-      ]
-    },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IRoleControl.sol": {
       "lastModificationDate": 1656813722068,
       "contentHash": "ec5efecce08dba4ae56fc79e221f3a7a",
@@ -2064,45 +2024,6 @@
       ],
       "artifacts": [
         "SubscriptionBalanceCalculator"
-      ]
-    },
-    "/Users/jaspreetsingh/Desktop/stackos/contracts/RoleControl.sol": {
-      "lastModificationDate": 1657081237175,
-      "contentHash": "c7a293af33f4d157720bfa89e70a24ca",
-      "sourceName": "contracts/RoleControl.sol",
-      "solcConfig": {
-        "version": "0.8.2",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata",
-                "storageLayout"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol",
-        "./interfaces/IERC721.sol"
-      ],
-      "versionPragmas": [
-        "0.8.2"
-      ],
-      "artifacts": [
-        "RoleControl"
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IBalanceCalculator.sol": {
@@ -2901,10 +2822,163 @@
         "IListener"
       ]
     },
-    "/Users/jaspreetsingh/Desktop/stackos/contracts/ListenerContract.sol": {
-      "lastModificationDate": 1668251920006,
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/ContractBasedDeploymentV2.sol": {
+      "lastModificationDate": 1668927532500,
+      "contentHash": "373f360ac59934bde99a4b7cee4c14c3",
+      "sourceName": "contracts/ContractBasedDeploymentV2.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./interfaces/IRoleControlV2.sol",
+        "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "ContractBasedDeploymentV2"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/MultiAccessControlUpgradeable.sol": {
+      "lastModificationDate": 1668925514322,
+      "contentHash": "98d92f1e7b3d8d23321400f8f49d1713",
+      "sourceName": "contracts/MultiAccessControlUpgradeable.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol",
+        "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.2"
+      ],
+      "artifacts": [
+        "MultiAccessControlUpgradeable"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/RoleControlV2.sol": {
+      "lastModificationDate": 1668931345459,
+      "contentHash": "66243c51a18b8eaee0fd77d0b23481c1",
+      "sourceName": "contracts/RoleControlV2.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./interfaces/IERC721.sol",
+        "./MultiAccessControlUpgradeable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "RoleControlV2"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/interfaces/IRoleControlV2.sol": {
+      "lastModificationDate": 1668926946424,
+      "contentHash": "3142b4df5cbfd291316872417e863413",
+      "sourceName": "contracts/interfaces/IRoleControlV2.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "IRoleControlV2"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/deprecated/ListenerContract.sol": {
+      "lastModificationDate": 1668931475675,
       "contentHash": "0e1c8db3ae6c152603c99ac34e5ba70b",
-      "sourceName": "contracts/ListenerContract.sol",
+      "sourceName": "contracts/deprecated/ListenerContract.sol",
       "solcConfig": {
         "version": "0.8.2",
         "settings": {
@@ -2937,6 +3011,85 @@
       ],
       "artifacts": [
         "ListenerContract"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/deprecated/ContractBasedDeployment.sol": {
+      "lastModificationDate": 1668931465283,
+      "contentHash": "4efc26c916f6893f841d528ec174269c",
+      "sourceName": "contracts/deprecated/ContractBasedDeployment.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../interfaces/IRoleControl.sol",
+        "../interfaces/IListener.sol",
+        "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "ContractBasedDeployment"
+      ]
+    },
+    "/Users/jaspreetsingh/Desktop/stackos/contracts/deprecated/RoleControl.sol": {
+      "lastModificationDate": 1668931471361,
+      "contentHash": "ce093f9407892377d1d94b8ccf0d0596",
+      "sourceName": "contracts/deprecated/RoleControl.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol",
+        "../interfaces/IERC721.sol"
+      ],
+      "versionPragmas": [
+        "0.8.2"
+      ],
+      "artifacts": [
+        "RoleControl"
       ]
     }
   }

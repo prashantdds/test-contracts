@@ -41,9 +41,9 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         public userSubscription;
 
     // NFT ids => subnetids for view purpose only
-    mapping (uint=>uint[]) public subscribedSubnetsOfNFT;
+    mapping(uint256 => uint256[]) public subscribedSubnetsOfNFT;
     // NFT ids => subnetids for view purpose only
-    mapping (uint=>uint[]) public unsubscribedSubnetsOfNFT;
+    mapping(uint256 => uint256[]) public unsubscribedSubnetsOfNFT;
 
     uint256 public LIMIT_NFT_SUBNETS;
     uint256 public MIN_TIME_FUNDS;
@@ -374,7 +374,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 _licenseFee,
         uint256[] memory _computeRequired
     ) internal {
-
         subscribedSubnetsOfNFT[_nftId].push(_subnetId);
         require(
             !userSubscription[_nftId][_subnetId].subscribed,
