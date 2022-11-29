@@ -305,6 +305,14 @@ async function main(){
     await ContractBasedDeployment.createData(1, "app1", digest, hashFunction, size,[1,2,3]);
     console.log(`data created`);
     console.log(await ContractBasedDeployment.getFullData(1, "app1"));
+    
+    console.log("getDataByIds:");
+    console.log(await ContractBasedDeployment.getDataByIds(1,[0]));
+
+
+    console.log("getDataArray:");
+    console.log(await ContractBasedDeployment.getDataArray(1));
+
     data = await ContractBasedDeployment.getData(1, "app1");
     console.log(`data fetched`);
     console.log("Hash retrieved: "+getMultihashFromBytes32(data));

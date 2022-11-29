@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/jaspreetsingh/Desktop/stackos/contracts/Registration.sol": {
-      "lastModificationDate": 1668928474883,
-      "contentHash": "72272b5cb22e1ffdfb8da2f55c61f835",
+      "lastModificationDate": 1668931586841,
+      "contentHash": "808586edbb8ca8c31d324d336d43e281",
       "sourceName": "contracts/Registration.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -237,7 +237,7 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/TokensRecoverable.sol": {
-      "lastModificationDate": 1654848342108,
+      "lastModificationDate": 1669547162398,
       "contentHash": "35ddfcdcdef66e5823e4785d316646cc",
       "sourceName": "contracts/TokensRecoverable.sol",
       "solcConfig": {
@@ -650,7 +650,7 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/TestERC20.sol": {
-      "lastModificationDate": 1657187882188,
+      "lastModificationDate": 1669547162398,
       "contentHash": "8b5e493857d7a2b0f748693c778550ce",
       "sourceName": "contracts/TestERC20.sol",
       "solcConfig": {
@@ -1864,8 +1864,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/Subscription.sol": {
-      "lastModificationDate": 1668841052878,
-      "contentHash": "f36d07dfcecad64be2b4d795dde96883",
+      "lastModificationDate": 1668931593362,
+      "contentHash": "69d216807f19457227cc1f49eb1119f1",
       "sourceName": "contracts/Subscription.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -1982,8 +1982,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/SubscriptionBalanceCalculator.sol": {
-      "lastModificationDate": 1664268626011,
-      "contentHash": "32952305618eb0aea9f87abd08f0b6b1",
+      "lastModificationDate": 1668931608692,
+      "contentHash": "4a491014cf996b72de67f262b1589860",
       "sourceName": "contracts/SubscriptionBalanceCalculator.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2823,8 +2823,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/ContractBasedDeploymentV2.sol": {
-      "lastModificationDate": 1668927532500,
-      "contentHash": "373f360ac59934bde99a4b7cee4c14c3",
+      "lastModificationDate": 1669703902861,
+      "contentHash": "86d726dbcbc0f2a2b5fa9e54fa83f2a8",
       "sourceName": "contracts/ContractBasedDeploymentV2.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -2901,8 +2901,8 @@
       ]
     },
     "/Users/jaspreetsingh/Desktop/stackos/contracts/RoleControlV2.sol": {
-      "lastModificationDate": 1668931345459,
-      "contentHash": "66243c51a18b8eaee0fd77d0b23481c1",
+      "lastModificationDate": 1668931562065,
+      "contentHash": "5db684b29fc8ce0c2c103fcaf544f441",
       "sourceName": "contracts/RoleControlV2.sol",
       "solcConfig": {
         "version": "0.8.2",

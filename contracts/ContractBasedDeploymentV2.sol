@@ -190,21 +190,27 @@ contract ContractBasedDeploymentV2 is Initializable {
     function getDataByIds(uint256 _nftId, uint256[] memory AppIds)
         public
         view
-        returns (Multihash[] memory _entries)
+        returns (Multihash[] memory)
     {
-        for (uint256 i = 0; i < AppIds.length; i++)
-            _entries[i] = (entries[_nftId][(appIDToName[_nftId][AppIds[i]])]);
-        return _entries;
+        Multihash[] memory _entriesArr = new Multihash[](AppIds.length);
+        for (uint256 i = 0; i < AppIds.length; i++){
+            string memory appName = appIDToName[_nftId][AppIds[i]];
+            _entriesArr[i] = entries[_nftId][appName];
+        }
+        return _entriesArr;
     }
 
     function getDataArray(uint256 _nftId)
         public
         view
-        returns (Multihash[] memory _entries)
+        returns (Multihash[] memory)
     {
-        for (uint256 i = 0; i < lastAppId[_nftId]; i++)
-            _entries[i] = (entries[_nftId][(appIDToName[_nftId][i])]);
-        return _entries;
+        Multihash[] memory _entriesArr = new Multihash[](lastAppId[_nftId]);
+        for (uint256 i = 0; i < lastAppId[_nftId]; i++){
+            string memory appName = appIDToName[_nftId][i];
+            _entriesArr[i] = entries[_nftId][appName];
+        }
+        return _entriesArr;
     }
 
     modifier hasPermission(uint256 _nftId) {
