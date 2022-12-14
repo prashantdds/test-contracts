@@ -1,6 +1,5 @@
 node_modules
-artifacts/@openzeppelin
-artifacts/*
-node_modules
+artifacts
 .openzeppelin
 .env
+cache
