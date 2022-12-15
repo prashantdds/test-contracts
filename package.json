@@ -20,6 +20,8 @@
     "dotenv": "^8.2.0",
     "hardhat": "^2.8.0",
     "mathjs": "^9.4.0",
+    "prettier": "^2.8.1",
+    "prettier-plugin-solidity": "^1.1.0",
     "solc": "^0.8.4",
     "solhint": "^3.3.4"
   }
