@@ -3,3 +3,4 @@ artifacts
 .openzeppelin
 .env
 cache
+package-lock.json

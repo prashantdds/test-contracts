@@ -1,4 +1,5 @@
 const { ethers } = require("hardhat")
+const helper = require("./helper")
 
 // sleep time expects milliseconds
 function sleep(time) {
@@ -101,33 +102,6 @@ const getContractBasedDeployment = async () => {
     )
 }
 
-const deployXCT = async () => {
-    const ERC20 = await ethers.getContractFactory("TestERC20")
-    const xct = await upgrades.deployProxy(ERC20, [], {
-        initializer: "initialize"
-    })
-    await xct.deployed()
-    console.log(`const xct = "${xct.address}"`)
-    return xct.address
-}
-
-const deployStack = async () => {
-    const ERC20 = await ethers.getContractFactory("TestERC20")
-    const stack = await upgrades.deployProxy(ERC20, [], {
-        initializer: "initialize"
-    })
-    await stack.deployed()
-    console.log(`const stack = "${stack.address}"`)
-    return stack.address
-}
-
-const deployDarkNFT = async () => {
-    const NFT = await ethers.getContractFactory("TestDarkMatter")
-    const nftToken = await NFT.deploy()
-    console.log(`const nftToken = "${nftToken.address}"`) // 0x527e794667Cb9958E058A824d991a3cf595039C0
-    return nftToken.address
-}
-
 const mintDarkNFT = async () => {
     const [deployer] = await ethers.getSigners()
     console.log("deploy by acct: " + deployer.address)
@@ -140,48 +114,6 @@ const mintDarkNFT = async () => {
     // console.log("nftToken: ", nftToken);
     const count = await nftToken.totalSupply()
     console.log("count: ", count)
-}
-
-const deployReg = async () => {
-    const [deployer] = await ethers.getSigners()
-    console.log("deploy by acct: " + deployer.address)
-
-    RegistrationContract = await ethers.getContractFactory("Registration")
-    Registration = await upgrades.deployProxy(
-        RegistrationContract,
-        [
-            addresses.nftToken,
-            addresses.stack,
-            deployer.address,
-            300,
-            5000,
-            ethers.utils.parseEther("0.1"),
-            20
-        ],
-        { initializer: "initialize" }
-    )
-    await Registration.deployed()
-
-    console.log(`const Registration = "${Registration.address}"`) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
-    return Registration.address
-}
-
-const callStackApprove = async () => {
-    const stack = await getStack()
-
-    const op = await stack.approve(
-        addresses.Registration,
-        ethers.utils.parseEther("1000000000")
-    )
-    console.log("op: ", op.hash)
-}
-
-const callNftApprove = async () => {
-    const nftContract = await ethers.getContractFactory("TestERC20")
-    const nftToken = await getNFTToken()
-
-    const op = await nftToken.setApprovalForAll(addresses.Registration, true)
-    console.log("op: ", op.hash)
 }
 
 const createSubnet = async index => {
@@ -209,195 +141,6 @@ const createSubnet = async index => {
         5000,
         ethers.utils.parseEther("0.01")
     )
-}
-
-const deployAppNFT = async () => {
-    AppNFTContract = await ethers.getContractFactory("TestAppNFT")
-    appNFT = await AppNFTContract.deploy()
-    console.log(`const appNFT = "${appNFT.address}"`)
-    return appNFT.address
-}
-
-const deploySubscriptionBalanceCalculator = async () => {
-    console.log(addresses.Registration, addresses.appNFT, addresses.xct)
-    SubscriptionBalanceCalculatorContract = await ethers.getContractFactory(
-        "SubscriptionBalanceCalculator"
-    )
-    SubscriptionBalanceCalculator = await upgrades.deployProxy(
-        SubscriptionBalanceCalculatorContract,
-        [addresses.Registration, addresses.appNFT, addresses.xct],
-        { initializer: "initialize" }
-    )
-    await SubscriptionBalanceCalculator.deployed()
-    console.log(
-        `const SubscriptionBalanceCalculator = "${SubscriptionBalanceCalculator.address}"`
-    ) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
-
-    return SubscriptionBalanceCalculator.address
-}
-
-const deploySubscriptionBalance = async () => {
-    console.log(
-        addresses.Registration,
-        addresses.appNFT,
-        addresses.xct,
-        addresses.SubscriptionBalanceCalculator
-    )
-    SubscriptionBalanceContract = await ethers.getContractFactory(
-        "SubscriptionBalance"
-    )
-
-    // IRegistration _RegistrationContract,
-    // IERC721 _ApplicationNFT,
-    // IERC20Upgradeable _XCTToken,
-    // IBalanceCalculator _BalanceCalculator,
-    // uint256 _ReferralPercent, - 5%
-    // uint256 _ReferralRevExpirySecs - 63072000 - 2 yrs
-
-    SubscriptionBalance = await upgrades.deployProxy(
-        SubscriptionBalanceContract,
-        [
-            addresses.Registration,
-            addresses.appNFT,
-            addresses.xct,
-            addresses.SubscriptionBalanceCalculator,
-            5000,
-            63072000
-        ],
-        { initializer: "initialize" }
-    )
-    await SubscriptionBalance.deployed()
-    console.log(`const SubscriptionBalance = "${SubscriptionBalance.address}"`) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
-
-    return SubscriptionBalance.address
-}
-
-const deploySubnetDAODistributor = async () => {
-    // IERC20Upgradeable _XCTToken, IBalanceCalculator _SubscriptionBalanceCalculator, IRegistration _Registration
-    console.log(
-        addresses.xct,
-        addresses.SubscriptionBalanceCalculator,
-        addresses.Registration
-    )
-    SubnetDAODistributorContract = await ethers.getContractFactory(
-        "SubnetDAODistributor"
-    )
-    SubnetDAODistributor = await upgrades.deployProxy(
-        SubnetDAODistributorContract,
-        [
-            addresses.xct,
-            addresses.SubscriptionBalanceCalculator,
-            addresses.Registration
-        ],
-        { initializer: "initialize" }
-    )
-    await SubnetDAODistributor.deployed()
-    console.log(
-        `const SubnetDAODistributor = "${SubnetDAODistributor.address}"`
-    ) //
-    return SubnetDAODistributor.address
-}
-
-const deploySubscription = async () => {
-    console.log(
-        addresses.deployer,
-        600,
-        300,
-        addresses.Registration,
-        addresses.appNFT,
-        addresses.SubscriptionBalance,
-        addresses.xct
-    )
-    SubscriptionContract = await ethers.getContractFactory("Subscription")
-    Subscription = await upgrades.deployProxy(
-        SubscriptionContract,
-        [
-            addresses.deployer,
-            600,
-            300,
-            addresses.Registration,
-            addresses.appNFT,
-            addresses.SubscriptionBalance,
-            addresses.xct,
-            2592000,
-            1296000
-        ],
-        { initializer: "initialize" }
-    )
-    await Subscription.deployed()
-    console.log(`const Subscription = "${Subscription.address}"`) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
-
-    return Subscription.address
-}
-
-const connectSubBalToSub = async () => {
-    console.log("connect SubscriptionBalance to Subscription")
-    const SubscriptionBalance = await getSubscriptionBalance()
-
-    const op = await SubscriptionBalance.setSubscriptionContract(
-        addresses.Subscription
-    )
-    console.log(op.hash)
-    // await SubscriptionBalanceCalculator.setSubscriptionContract(addresses.Subscription);
-    // await SubscriptionBalanceCalculator.setSubscriptionBalanceContract(addresses.SubscriptionBalance);
-    // await SubscriptionBalanceCalculator.setSubnetDAODistributor(addresses.SubnetDAODistributor);
-    // await Registration.set_SubnetDAODistributorContract(addresses.SubnetDAODistributor);
-}
-
-const connectSubCalcToSub = async () => {
-    console.log("connect SubscriptionBalanceCalculator to Subscription")
-    const SubscriptionBalanceCalculator = await getSubscriptionBalanceCalculator()
-    const op = await SubscriptionBalanceCalculator.setSubscriptionContract(
-        addresses.Subscription
-    )
-    console.log(op.hash)
-}
-
-const connectSubCalcToSubBal = async () => {
-    console.log("connect SubscriptionBalanceCalculator to SubscriptionBalance")
-    const SubscriptionBalanceCalculator = await getSubscriptionBalanceCalculator()
-    const op = await SubscriptionBalanceCalculator.setSubscriptionBalanceContract(
-        addresses.SubscriptionBalance
-    )
-    console.log(op.hash)
-}
-
-const connectSubCalcToSubDAO = async () => {
-    console.log("connect SubscriptionBalanceCalculator to SubnetDAODistributor")
-    const SubscriptionBalanceCalculator = await getSubscriptionBalanceCalculator()
-    const op = await SubscriptionBalanceCalculator.setSubnetDAODistributor(
-        addresses.SubnetDAODistributor
-    )
-    console.log(op.hash)
-}
-
-const connectRegToSubDAO = async () => {
-    console.log("connect Registration to SubnetDAODistributor")
-    const Registration = await getRegistration()
-    const op = await Registration.set_SubnetDAODistributorContract(
-        addresses.SubnetDAODistributor
-    )
-    console.log(op.hash)
-}
-
-const xctApproveSub = async () => {
-    console.log("approve xct to subscription contract")
-    const xct = await getXCT()
-    const op = await xct.approve(
-        addresses.Subscription,
-        ethers.utils.parseEther("100000000")
-    )
-    console.log(op.hash)
-}
-
-const xctApproveSubBal = async () => {
-    console.log("approve xct to subscription bal")
-    const xct = await getXCT()
-    const op = await xct.approve(
-        addresses.SubscriptionBalance,
-        ethers.utils.parseEther("100000000")
-    )
-    console.log(op.hash)
 }
 
 const signupCluster1 = async () => {
@@ -854,34 +597,6 @@ const ConDepCreateData = async () => {
     console.log(await ContractBasedDeployment.getFullData(1, "app1"))
 }
 
-// Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (10000 ETH)
-// Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-
-const deployContracts = async () => {
-    addresses = {
-        deployer: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
-    }
-
-    addresses.xct = await deployXCT()
-    addresses.stack = await deployStack()
-    addresses.nftToken = await deployDarkNFT()
-    addresses.Registration = await deployReg()
-    addresses.appNFT = await deployAppNFT()
-    addresses.SubscriptionBalanceCalculator = await deploySubscriptionBalanceCalculator()
-    addresses.SubscriptionBalance = await deploySubscriptionBalance()
-    addresses.SubnetDAODistributor = await deploySubnetDAODistributor()
-    addresses.Subscription = await deploySubscription()
-    await connectSubBalToSub()
-    await connectSubCalcToSub()
-    await connectSubCalcToSubBal()
-    await connectSubCalcToSubDAO()
-    await connectRegToSubDAO()
-    console.log(addresses)
-}
-
-// Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (10000 ETH)
-// Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-
 const getSubnetAttributes = async () => {
     const reg = await getRegistration()
     const subAttr = await reg.getSubnetAttributes(0)
@@ -889,22 +604,23 @@ const getSubnetAttributes = async () => {
 }
 
 async function main() {
-    addresses = {
-        deployer: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-        xct: "0x59b670e9fA9D0A427751Af201D676719a970857b",
-        stack: "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
-        nftToken: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
-        Registration: "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f",
-        appNFT: "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
-        SubscriptionBalanceCalculator:
-            "0x7a2088a1bFc9d81c55368AE168C2C02570cB814F",
-        SubscriptionBalance: "0x09635F643e140090A9A8Dcd712eD6285858ceBef",
-        SubnetDAODistributor: "0xc5a5C42992dECbae36851359345FE25997F5C42d",
-        Subscription: "0x67d269191c92Caf3cD7723F116c85e6E9bf55933"
-    }
+    helper.setAddresses({
+        deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+        xct: '0x59b670e9fA9D0A427751Af201D676719a970857b',
+        stack: '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1',
+        nftToken: '0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44',
+        Registration: '0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f',
+        appNFT: '0x4A679253410272dd5232B3Ff7cF5dbB88f295319',
+        SubscriptionBalanceCalculator: '0x7a2088a1bFc9d81c55368AE168C2C02570cB814F',
+        SubscriptionBalance: '0x09635F643e140090A9A8Dcd712eD6285858ceBef',
+        SubnetDAODistributor: '0xc5a5C42992dECbae36851359345FE25997F5C42d',
+        Subscription: '0x67d269191c92Caf3cD7723F116c85e6E9bf55933'
+      });
 
     // await getSubnetAttributes();
-    // await deployContracts();
+    // await helper.deployContracts();
+    await helper.callStackApprove();
+    await helper.callNftApprove();
     // await deployXCT();
     // await deployStack();
     // await deployDarkNFT();
@@ -912,7 +628,7 @@ async function main() {
     // await deployReg();
     // await callStackApprove();
     // await callNftApprove();
-    await createSubnet(1) // call 6 times, change the param to index
+    // await createSubnet(1) // call 6 times, change the param to index
     // await deployAppNFT();
     // await deploySubscriptionBalanceCalculator();
     // await deploySubscriptionBalance();
@@ -945,11 +661,11 @@ async function main() {
     // await getIPFS();
 }
 
-// main().then(()=>process.exit(0))
-// .catch(err=>{
-//     console.error(err);
-//     process.exit(1);
-// })
+main().then(()=>process.exit(0))
+.catch(err=>{
+    console.error(err);
+    process.exit(1);
+})
 
 // addresses = {
 //     deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
@@ -978,5 +694,4 @@ module.exports = {
     getSubscriptionBalance,
     getSubscriptionBalanceCalculator,
     getSubnetDAODistributor,
-    deployContracts
 }
