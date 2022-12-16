@@ -3,7 +3,7 @@ const helper = require("./helper")
 
 // sleep time expects milliseconds
 function sleep(time) {
-    return new Promise(resolve => setTimeout(resolve, time))
+    return new Promise((resolve) => setTimeout(resolve, time))
 }
 
 function getMultihashFromBytes32(multihash) {
@@ -116,7 +116,7 @@ const mintDarkNFT = async () => {
     console.log("count: ", count)
 }
 
-const createSubnet = async index => {
+const createSubnet = async (index) => {
     const [deployer] = await ethers.getSigners()
     console.log("deploy by acct: " + deployer.address)
 
@@ -133,7 +133,7 @@ const createSubnet = async index => {
             ethers.utils.parseEther("0.0001"),
             ethers.utils.parseEther("0.0002"),
             ethers.utils.parseEther("0.0003"),
-            ethers.utils.parseEther("0.0004")
+            ethers.utils.parseEther("0.0004"),
         ],
         [],
         3,
@@ -232,9 +232,8 @@ const checkBalances = async () => {
     totalPrevBalance = await SubscriptionBalance.totalPrevBalance(mintId)
     console.log("totalPrevBalance: " + totalPrevBalance)
 
-    getRealtimeCostIncurredUnsettled = await SubscriptionBalance.getRealtimeCostIncurredUnsettled(
-        mintId
-    )
+    getRealtimeCostIncurredUnsettled =
+        await SubscriptionBalance.getRealtimeCostIncurredUnsettled(mintId)
     console.log(
         "getRealtimeCostIncurredUnsettled: " + getRealtimeCostIncurredUnsettled
     )
@@ -281,7 +280,7 @@ const subToExistingNFT = async () => {
             "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
             "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
             "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
-            "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7"
+            "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
         ],
         [10000, 10000, 10000, 10000, 10000],
         [
@@ -289,7 +288,7 @@ const subToExistingNFT = async () => {
             [1, 1, 1, 1],
             [1, 1, 1, 1],
             [1, 1, 1, 1],
-            [1, 1, 1, 1]
+            [1, 1, 1, 1],
         ]
     )
     // await Subscription.subscribeBatchToExistingNFT(mintId,[7,8,9,10,11],["ddf","ddf","ddf","ddf","ddf"],["0x4B0dFd6fC48690f82479D2586bcaCb696Ab8F152","0x4B0dFd6fC48690f82479D2586bcaCb696Ab8F152","0x4B0dFd6fC48690f82479D2586bcaCb696Ab8F152","0x4B0dFd6fC48690f82479D2586bcaCb696Ab8F152","0x4B0dFd6fC48690f82479D2586bcaCb696Ab8F152"],[10000,10000,10000,10000,10000],[[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1]]);
@@ -336,9 +335,8 @@ const getTotalSubnets = async () => {
     isBalancePresent = await SubscriptionBalance.isBalancePresent(mintId)
     console.log("isBalancePresent: " + isBalancePresent)
 
-    getRealtimeCostIncurredUnsettled = await SubscriptionBalance.getRealtimeCostIncurredUnsettled(
-        mintId
-    )
+    getRealtimeCostIncurredUnsettled =
+        await SubscriptionBalance.getRealtimeCostIncurredUnsettled(mintId)
     console.log(
         "getRealtimeCostIncurredUnsettled: " + getRealtimeCostIncurredUnsettled
     )
@@ -409,7 +407,8 @@ const deployRoleControlV2 = async () => {
 const grantRole = async () => {
     console.log("granting Role to deployer")
     const RoleControl = await getRoleControl()
-    const CONTRACT_DEPLOYER_BYTES32 = await RoleControl.CONTRACT_BASED_DEPLOYER()
+    const CONTRACT_DEPLOYER_BYTES32 =
+        await RoleControl.CONTRACT_BASED_DEPLOYER()
     console.log("CONTRACT_DEPLOYER_BYTES32", CONTRACT_DEPLOYER_BYTES32)
     console.log("deployer addresses", addresses.deployer)
     const op = await RoleControl.grantRole(
@@ -470,9 +469,8 @@ const getIPFS = async () => {
     console.log(`data fetched`)
     console.log("Hash retrieved: " + getMultihashFromBytes32(data))
 
-    getRealtimeCostIncurredUnsettled = await SubscriptionBalance.getRealtimeCostIncurredUnsettled(
-        mintId
-    )
+    getRealtimeCostIncurredUnsettled =
+        await SubscriptionBalance.getRealtimeCostIncurredUnsettled(mintId)
     console.log(
         "getRealtimeCostIncurredUnsettled: " +
             ethers.utils.formatEther(getRealtimeCostIncurredUnsettled) +
@@ -576,14 +574,8 @@ const getIPFS = async () => {
 }
 
 const ConDepCreateData = async () => {
-    const {
-        bs58,
-        multihash,
-        decoded,
-        digest,
-        hashFunction,
-        size
-    } = await getIPFS()
+    const { bs58, multihash, decoded, digest, hashFunction, size } =
+        await getIPFS()
     const ContractBasedDeployment = await getContractBasedDeployment()
     await ContractBasedDeployment.createData(
         1,
@@ -605,22 +597,23 @@ const getSubnetAttributes = async () => {
 
 async function main() {
     helper.setAddresses({
-        deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-        xct: '0x59b670e9fA9D0A427751Af201D676719a970857b',
-        stack: '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1',
-        nftToken: '0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44',
-        Registration: '0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f',
-        appNFT: '0x4A679253410272dd5232B3Ff7cF5dbB88f295319',
-        SubscriptionBalanceCalculator: '0x7a2088a1bFc9d81c55368AE168C2C02570cB814F',
-        SubscriptionBalance: '0x09635F643e140090A9A8Dcd712eD6285858ceBef',
-        SubnetDAODistributor: '0xc5a5C42992dECbae36851359345FE25997F5C42d',
-        Subscription: '0x67d269191c92Caf3cD7723F116c85e6E9bf55933'
-      });
+        deployer: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        xct: "0x59b670e9fA9D0A427751Af201D676719a970857b",
+        stack: "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
+        nftToken: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
+        Registration: "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f",
+        appNFT: "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
+        SubscriptionBalanceCalculator:
+            "0x7a2088a1bFc9d81c55368AE168C2C02570cB814F",
+        SubscriptionBalance: "0x09635F643e140090A9A8Dcd712eD6285858ceBef",
+        SubnetDAODistributor: "0xc5a5C42992dECbae36851359345FE25997F5C42d",
+        Subscription: "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
+    })
 
     // await getSubnetAttributes();
     // await helper.deployContracts();
-    await helper.callStackApprove();
-    await helper.callNftApprove();
+    await helper.callStackApprove()
+    await helper.callNftApprove()
     // await deployXCT();
     // await deployStack();
     // await deployDarkNFT();
@@ -661,11 +654,12 @@ async function main() {
     // await getIPFS();
 }
 
-main().then(()=>process.exit(0))
-.catch(err=>{
-    console.error(err);
-    process.exit(1);
-})
+main()
+    .then(() => process.exit(0))
+    .catch((err) => {
+        console.error(err)
+        process.exit(1)
+    })
 
 // addresses = {
 //     deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
