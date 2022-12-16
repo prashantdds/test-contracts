@@ -1,8 +1,6 @@
 const { expect } = require("chai")
 const helper = require("../scripts/helper.js")
 
-let totalDarkMatterNFTs = 0
-
 // For testing specifically this file uncomment below code and use "npx hardhat test test/subscription.js" command
 before(async () => {
     await helper.deployContracts()
@@ -59,48 +57,30 @@ describe("Subscription contract", async function () {
         expect(NumbersOfclustersInsideSubnet).to.equal(1)
     })
 
-    it("Fetching all subnets Inside of NFT", async function () {
-        const Registration = await helper.getRegistration()
-        const totalSubnets = Number(await Registration.totalSubnets())
-        let subnetsAttributes = []
-        const nftOwners = []
-        for (let i = 0; i < totalSubnets; i++) {
-            const attr = await Registration.subnetAttributes(i)
-            subnetsAttributes.push(attr)
-        }
-        console.log(subnetsAttributes.length)
-        const Subscription = await helper.getSubscription()
-        let count1 = 0
-        let count2 = 0
-        while (nftOwners.length == totalSubnets) {
-            while (nftOwners.length == totalSubnets) {
-                const data = await Subscription.subscribedSubnetsOfNFT(
-                    count1,
-                    count2
-                )
-            }
-            count1++
-        }
-    })
+    // it("Fetching all subnets Inside of NFT", async function () {
+    // //  can use only after Subscribing
+    //     let OwnerOf = []
+    //     const AppNFT = await helper.getAppNFT()
+    //     const Registration = await helper.getRegistration()
 
-    // it("get total DarkMatterNFTs", async function () {
-    //     const nftToken = await helper.getNFTToken()
-    //     const totalNFTs = Number(await nftToken.totalSupply())
-    //     console.log(totalNFTs)
-    //     expect(totalNFTs).to.be.above(0)
+    //     const totalSubnets = Number(await Registration.totalSubnets())
+    //     const totalAppNFTsMintedAtSubnetCreation = Number(
+    //         await AppNFT.totalSupply()
+    //     )
+    //     expect(totalAppNFTsMintedAtSubnetCreation).to.equal(totalSubnets)
+    //     for (let i = 1; i <= totalSubnets; i++) {
+    //         try {
+    //             const data = await AppNFT.ownerOf(i)
+    //             if (data) {
+    //                 OwnerOf.push({ nftId: i, wallet: data })
+    //             }
+    //         } catch (err) {
+    //             console.log("err : ", err.message)
+    //         }
+    //     }
+    //     expect(OwnerOf.length).to.equal(totalSubnets)
     // })
 
-    // it("Creting a subnet with second account", async function () {
-    //     // it("Minting dark matter NFT for second account", async function () {
-    //     const nftToken = await helper.getNFTToken()
-    //     await nftToken.mint(addr1.address)
-    //     // })
-    //     const NFTOwner = await nftToken.ownerOf(3)
-    //     // const Subscription = await helper.getSubscription()
-    //     // const subnetId = await Subscription.subscribedSubnetsOfNFT(1, 1)
-    //     // console.log(subnetId)
-    //     expect(NFTOwner).to.equal(addr1.address)
-    // })
     // it("Subscribing to existing subnet with second account", async function () {
     //     // can use only after XCTminter cause user have to buy some XCTs
     //     const nftToken = await helper.getNFTToken()
@@ -118,10 +98,4 @@ describe("Subscription contract", async function () {
     //     )
     //     console.log(op)
     // })
-
-    // it("joining existing subnet", async function() {
-    //   const op = await subscribeNew(1);
-    //   console.log("----> ", op);
-    //   console.log("---> ", op.hash);
-    // });
 })
