@@ -291,6 +291,55 @@ const deployXctMinter = async () => {
     return appNFT.address
 }
 
+const deployRoleControl = async () => {
+    const RoleControlContract = await ethers.getContractFactory("RoleControlV2")
+    // console.log("appNFT : ", addresses.appNFT)
+    const RoleControl = await upgrades.deployProxy(
+        RoleControlContract,
+        [addresses.appNFT],
+        { initializer: "initialize" }
+    )
+    await RoleControl.deployed()
+    // console.log(`const RoleControl = "${RoleControl.address}"`)
+    return RoleControl.address
+}
+
+const deployContractBasedDeployment = async () => {
+    // console.log("Deploy ContractBasedDeployment V2...")
+    ContractBasedDeploymentContract = await ethers.getContractFactory(
+        "ContractBasedDeploymentV2"
+    )
+    ContractBasedDeployment = await upgrades.deployProxy(
+        ContractBasedDeploymentContract,
+        [addresses.RoleControl],
+        { initializer: "initialize" }
+    )
+    await ContractBasedDeployment.deployed()
+    // console.log(
+    //     `const ContractBasedDeployment = "${ContractBasedDeployment.address}"`
+    // )
+    return ContractBasedDeployment.address
+}
+
+const grantRoleForContractBasedDeployment = async (
+    nft_id,
+    address,
+    Role32Bytes
+) => {
+    // console.log("granting Role to deployer")
+    const RoleControl = await getRoleControl()
+    let CONTRACT_DEPLOYER_BYTES32
+    if (Role32Bytes) CONTRACT_DEPLOYER_BYTES32 = Role32Bytes
+    else CONTRACT_DEPLOYER_BYTES32 = await RoleControl.CONTRACT_BASED_DEPLOYER()
+    const op = await RoleControl.grantRole(
+        nft_id,
+        CONTRACT_DEPLOYER_BYTES32,
+        address
+    )
+    await op.wait()
+    // console.log(op.hash)
+}
+
 const connectSubBalToSub = async () => {
     console.log("connect SubscriptionBalance to Subscription")
     const SubscriptionBalance = await getSubscriptionBalance()
@@ -383,6 +432,8 @@ const deployContracts = async () => {
     addresses.SubnetDAODistributor = await deploySubnetDAODistributor()
     addresses.Subscription = await deploySubscription()
     addresses.xctMinter = await deployXctMinter()
+    addresses.RoleControl = await deployRoleControl()
+    addresses.ContractBasedDeployment = await deployContractBasedDeployment()
     await connectSubBalToSub()
     await connectSubCalcToSub()
     await connectSubCalcToSubBal()
@@ -405,6 +456,9 @@ module.exports = {
     getSubscriptionBalance,
     getSubscriptionBalanceCalculator,
     getSubnetDAODistributor,
+    getRoleControl,
+    getContractBasedDeployment,
+    grantRoleForContractBasedDeployment,
     xctApproveSub,
     xctApproveSubBal,
     // deployXCT,

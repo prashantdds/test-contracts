@@ -12,7 +12,7 @@ describe("Subscription contract", async function () {
     })
 
     let owner, addr1
-    it("Creating a Subnet and cluster inside subnet", async function () {
+    it("Creating a Subnet", async function () {
         ;[owner, addr1] = await ethers.getSigners()
         const Registration = await helper.getRegistration()
         await Registration.createSubnet(
@@ -102,9 +102,46 @@ describe("Subscription contract", async function () {
         expect(OwnerOfLastNFT).to.equal(owner.address)
     })
 
-    // it("a) Only Subnet Subscriber can deploy Apps", async function () {
+    it("a) Only defined Role can deploy Apps", async function () {
+        const appNFT = await helper.getAppNFT()
+        let lastNFTId = Number(await appNFT.totalSupply())
+        const ContractBasedDeployment =
+            await helper.getContractBasedDeployment()
 
-    // })
+        await expect(
+            ContractBasedDeployment.connect(addr1).createData(
+                lastNFTId,
+                "a2",
+                "0xf61957f163f248caa72485b5edf6c0114872a64a074bfc2019c3b45581020dcc",
+                18,
+                32,
+                [1, 2, 3]
+            )
+        ).to.be.revertedWith(
+            "CONTRACT_BASED_DEPLOYER permission not there in RoleControlV2"
+        )
+    })
+    it("a) Only Subnet Subscriber can deploy Apps", async function () {
+        const appNFT = await helper.getAppNFT()
+        let lastNFTId = Number(await appNFT.totalSupply())
+        const ContractBasedDeployment =
+            await helper.getContractBasedDeployment()
+
+        await helper.grantRoleForContractBasedDeployment(
+            lastNFTId,
+            addr1.address
+        )
+        await expect(
+            ContractBasedDeployment.connect(addr1).createData(
+                lastNFTId,
+                "a2",
+                "0xf61957f163f248caa72485b5edf6c0114872a64a074bfc2019c3b45581020dcc",
+                18,
+                32,
+                [1, 2, 3]
+            )
+        ).to.be.reverted
+    })
 
     // it("a) XCT should be locked based on subnet price", async function () {})
 
