@@ -1,16 +1,16 @@
 const { expect } = require("chai")
 const helper = require("../scripts/helper.js")
 
-// For testing specifically this file uncomment below code and use "npx hardhat test test/subscription.js" command
-before(async () => {
-    await helper.deployContracts()
-    await helper.callStackApprove()
-    await helper.callNftApprove()
-    await helper.xctApproveSub()
-    await helper.xctApproveSubBal()
-})
-
 describe("Subscription contract", async function () {
+    // For testing specifically this file uncomment below code and use "npx hardhat test test/subscription.js" command
+    before(async () => {
+        await helper.deployContracts()
+        await helper.callStackApprove()
+        await helper.callNftApprove()
+        await helper.xctApproveSub()
+        await helper.xctApproveSubBal()
+    })
+
     let owner, addr1
     it("Creating a Subnet and cluster inside subnet", async function () {
         ;[owner, addr1] = await ethers.getSigners()
@@ -81,21 +81,35 @@ describe("Subscription contract", async function () {
     //     expect(OwnerOf.length).to.equal(totalSubnets)
     // })
 
-    // it("Subscribing to existing subnet with second account", async function () {
-    //     // can use only after XCTminter cause user have to buy some XCTs
-    //     const nftToken = await helper.getNFTToken()
-    //     await nftToken.mint(addr1.address)
+    it("a) AppNFT should be minted at the time of joining subnet", async function () {
+        const nftToken = await helper.getNFTToken()
+        await nftToken.mint(owner.address) // await nftToken.mint(addr1.address)
+        const Subscription = await helper.getSubscription()
 
-    //     const Subscription = await helper.getSubscription()
+        // can call from addr1
+        const op = await Subscription.subscribeNew(
+            ethers.utils.parseEther("10000"),
+            0,
+            "ddf",
+            "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
+            10000,
+            [1, 1, 1, 1]
+        )
+        await op.wait()
+        const appNFT = await helper.getAppNFT()
+        const lastNFTId = Number(await appNFT.totalSupply())
+        const OwnerOfLastNFT = await appNFT.ownerOf(lastNFTId)
+        expect(OwnerOfLastNFT).to.equal(owner.address)
+    })
 
-    //     const op = await Subscription.connect(addr1).subscribeNew(
-    //         ethers.utils.parseEther("10000"),
-    //         0,
-    //         "ddf",
-    //         "0x9735C1b49Ce22752fC67F83DF79FC6bbe290Da17",
-    //         10000,
-    //         [1, 1, 1, 1]
-    //     )
-    //     console.log(op)
+    // it("a) Only Subnet Subscriber can deploy Apps", async function () {
+
     // })
+
+    // it("a) XCT should be locked based on subnet price", async function () {})
+
+    // it("c) Deployer only can change service provider after 15 days of notice", async function () {})
+
+    // it("d) Subnet must check for max limit", async function () {})
+    // it("f) Subscribe more than one cluster at same time", async function () {})
 })
