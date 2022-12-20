@@ -417,6 +417,7 @@ const deployContracts = async () => {
 
 module.exports = {
     accounts,
+    parameters,
     addresses,
     setAddresses,
     getAddresses,
