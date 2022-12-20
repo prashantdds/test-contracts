@@ -143,9 +143,45 @@ describe("Subscription contract", async function () {
         ).to.be.reverted
     })
 
-    // it("a) XCT should be locked based on subnet price", async function () {})
+    // it("a) XCT should be locked based on subnet price", async function () {
 
-    // it("c) Deployer only can change service provider after 15 days of notice", async function () {})
+    // })
+
+    it("Deployer can change cooldown and Notice time for service provider", async function () {
+        const Subscription = await helper.getSubscription()
+        await Subscription.change__REQD_COOLDOWN_S_PROVIDER(3)
+        await Subscription.change__REQD_NOTICE_TIME_S_PROVIDER(4)
+        expect(await Subscription.REQD_COOLDOWN_S_PROVIDER()).to.equal(3)
+        expect(await Subscription.REQD_NOTICE_TIME_S_PROVIDER()).to.equal(4)
+    })
+
+    it("c) Deployer only can change service provider after cooldown time", async function () {
+        const Subscription = await helper.getSubscription()
+        const tx = await Subscription.requestServiceProviderChange(1, 0, "ffd")
+        await tx.wait()
+
+        await expect(
+            Subscription.applyServiceProviderChange(1, 0)
+        ).to.be.revertedWith("Cannot apply before cooldown")
+
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        const tx1 = await Subscription.applyServiceProviderChange(1, 0)
+        const ev1 = await tx1.wait()
+        expect(ev1).to.not.be.empty
+    })
+    it("Deployer can request to change service provider after of notice", async function () {
+        const Subscription = await helper.getSubscription()
+        await expect(
+            Subscription.requestServiceProviderChange(1, 0, "f1fd")
+        ).to.be.revertedWith(
+            "Cannot request before REQD_NOTICE_TIME_S_PROVIDER passed"
+        )
+
+        await new Promise((resolve) => setTimeout(resolve, 4000))
+        const tx = await Subscription.requestServiceProviderChange(1, 0, "f1fd")
+        const ev = await tx.wait()
+        expect(ev).to.not.be.empty
+    })
 
     // it("d) Subnet must check for max limit", async function () {})
     // it("f) Subscribe more than one cluster at same time", async function () {})
