@@ -458,7 +458,7 @@ contract Registration is
         uint256 totalDelisted = 0;
 
         for (uint256 i = 0; i < totalSignedIn; i++) {
-            if (subnetClusters[subnetId][i].listed == 2)
+            if (subnetClusters[subnetId][i].listed == 3)
                 totalDelisted = totalDelisted.add(1);
         }
 
@@ -472,7 +472,7 @@ contract Registration is
         address _clusterDAO,
         uint256 nftId
     ) external whenNotPaused {
-        if (subnetAttributes[subnetId].sovereignStatus) {
+        if (!subnetAttributes[subnetId].sovereignStatus) {
             string memory empty = "";
             require(
                 keccak256(bytes(_DNSIP)) != keccak256(bytes(empty)),
@@ -567,6 +567,10 @@ contract Registration is
             subnetClusters[subnetId][clusterId].listed != 2,
             "Already approved either by whitelisting or by calling this function"
         );
+        require(
+            subnetClusters[subnetId][clusterId].listed !=3 || totalClusterSpotsAvailable(subnetId) > 0,
+            "No spots available, maxSlots reached for subnet"
+        );
         subnetClusters[subnetId][clusterId].listed = 2;
         SubnetDAODistributor.addWeight(
             subnetId,
@@ -582,7 +586,7 @@ contract Registration is
                 subnetClusters[subnetId][clusterId].ClusterDAO == _msgSender(),
             "Sender is not Cluster owner or has CLUSTER_LIST_ROLE"
         );
-        subnetClusters[subnetId][clusterId].listed = 2;
+        subnetClusters[subnetId][clusterId].listed = 3;
         emit ChangedListingCluster(subnetId, clusterId, _msgSender(), 2);
     }
 
