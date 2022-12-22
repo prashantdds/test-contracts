@@ -25,11 +25,11 @@ const parameters = {
         limitNFTSubnets: 600,
         minTimeFunds: 300,
         reqdNoticeTimeSProvider: 2592000,
-        reqdCooldownSProvider: 1296000
+        reqdCooldownSProvider: 1296000,
     },
     subscriptionBalance: {
         referralPercent: 5000,
-        referralRevExpirySecs: 63072000
+        referralRevExpirySecs: 63072000,
     },
 }
 
@@ -163,7 +163,7 @@ const callNftApprove = async () => {
 }
 
 const deployReg = async () => {
-    const registration = parameters.registration;
+    const registration = parameters.registration
 
     RegistrationContract = await ethers.getContractFactory("Registration")
     Registration = await upgrades.deployProxy(
@@ -228,7 +228,7 @@ const deploySubscriptionBalance = async () => {
     // uint256 _ReferralPercent, - 5%
     // uint256 _ReferralRevExpirySecs - 63072000 - 2 yrs
 
-    const subscriptionBalance = parameters.subscriptionBalance;
+    const subscriptionBalance = parameters.subscriptionBalance
 
     SubscriptionBalance = await upgrades.deployProxy(
         SubscriptionBalanceContract,
@@ -284,7 +284,7 @@ const deploySubscription = async () => {
     // IERC20Upgradeable _XCT,
     // uint256 _REQD_NOTICE_TIME_S_PROVIDER,
     // uint256 _REQD_COOLDOWN_S_PROVIDER
-    const subscription = parameters.subscription;
+    const subscription = parameters.subscription
 
     SubscriptionContract = await ethers.getContractFactory("Subscription")
     Subscription = await upgrades.deployProxy(
@@ -313,6 +313,47 @@ const deployXctMinter = async () => {
     appNFT = await AppNFTContract.deploy()
     // console.log(`const appNFT = "${appNFT.address}"`)
     return appNFT.address
+}
+
+const deployRoleControl = async () => {
+    // console.log("deploy role control v2")
+    const RoleControlContract = await ethers.getContractFactory("RoleControlV2")
+    // console.log("nftToken2 ", addresses.NFT)
+    const RoleControl = await upgrades.deployProxy(
+        RoleControlContract,
+        [addresses.appNFT],
+        { initializer: "initialize" }
+    )
+    await RoleControl.deployed()
+    return RoleControl.address
+}
+
+const grantRoleForContractBasedDeployment = async (nftId, address, role32) => {
+    // console.log("granting Role to deployer")
+    const RoleControl = await getRoleControl()
+    let RoleInBytes32
+    if (role32) RoleInBytes32 = role32
+    else RoleInBytes32 = await RoleControl.CONTRACT_BASED_DEPLOYER()
+
+    const op = await RoleControl.grantRole(nftId, RoleInBytes32, address)
+    // console.log(op.hash)
+}
+
+const deployContractBasedDeployment = async () => {
+    // console.log("Deploy ContractBasedDeployment V2...")
+    const ContractBasedDeploymentContract = await ethers.getContractFactory(
+        "ContractBasedDeploymentV2"
+    )
+    const ContractBasedDeployment = await upgrades.deployProxy(
+        ContractBasedDeploymentContract,
+        [addresses.RoleControl],
+        { initializer: "initialize" }
+    )
+    await ContractBasedDeployment.deployed()
+    // console.log(
+    //     `const ContractBasedDeployment = "${ContractBasedDeployment.address}"`
+    // )
+    return ContractBasedDeployment.address
 }
 
 const connectSubBalToSub = async () => {
@@ -407,6 +448,8 @@ const deployContracts = async () => {
     addresses.SubnetDAODistributor = await deploySubnetDAODistributor()
     addresses.Subscription = await deploySubscription()
     addresses.xctMinter = await deployXctMinter()
+    addresses.RoleControl = await deployRoleControl()
+    addresses.ContractBasedDeployment = await deployContractBasedDeployment()
     await connectSubBalToSub()
     await connectSubCalcToSub()
     await connectSubCalcToSubBal()
@@ -430,6 +473,9 @@ module.exports = {
     getSubscriptionBalance,
     getSubscriptionBalanceCalculator,
     getSubnetDAODistributor,
+    getRoleControl,
+    grantRoleForContractBasedDeployment,
+    getContractBasedDeployment,
     xctApproveSub,
     xctApproveSubBal,
     // deployXCT,

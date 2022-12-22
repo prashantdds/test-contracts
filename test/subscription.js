@@ -9,12 +9,28 @@ describe("Subscription contract", async function () {
         await helper.callNftApprove()
         await helper.xctApproveSub()
         await helper.xctApproveSubBal()
+        Registration = await helper.getRegistration()
+        Subscription = await helper.getSubscription()
+        xct = await helper.getXCT()
+        stack = await helper.getStack()
+        nftToken = await helper.getNFTToken()
+        appNFT = await helper.getAppNFT()
+        ContractBasedDeployment = await helper.getContractBasedDeployment()
     })
 
-    let owner, addr1
+    let owner,
+        addr1,
+        addr2,
+        Registration,
+        Subscription,
+        xct,
+        stack,
+        nftToken,
+        appNFT,
+        ContractBasedDeployment
+
     it("Creating a Subnet", async function () {
-        ;[owner, addr1] = await ethers.getSigners()
-        const Registration = await helper.getRegistration()
+        ;[owner, addr1, addr2] = await ethers.getSigners()
         await Registration.createSubnet(
             1,
             owner.address,
@@ -29,7 +45,7 @@ describe("Subscription contract", async function () {
                 ethers.utils.parseEther("0.0004"),
             ],
             [],
-            3,
+            1,
             [owner.address],
             5000,
             ethers.utils.parseEther("0.01")
@@ -39,10 +55,8 @@ describe("Subscription contract", async function () {
     })
 
     it("Creating Cluster inside first Subnet", async function () {
-        const nftToken = await helper.getNFTToken()
         await nftToken.mint(owner.address)
 
-        const Registration = await helper.getRegistration()
         const op = await Registration.clusterSignUp(
             0,
             "sovereignsubnetcannothaveempty",
@@ -60,8 +74,6 @@ describe("Subscription contract", async function () {
     // it("Fetching all subnets Inside of NFT", async function () {
     // //  can use only after Subscribing
     //     let OwnerOf = []
-    //     const AppNFT = await helper.getAppNFT()
-    //     const Registration = await helper.getRegistration()
 
     //     const totalSubnets = Number(await Registration.totalSubnets())
     //     const totalAppNFTsMintedAtSubnetCreation = Number(
@@ -82,10 +94,6 @@ describe("Subscription contract", async function () {
     // })
 
     it("a) AppNFT should be minted at the time of joining subnet", async function () {
-        const nftToken = await helper.getNFTToken()
-        await nftToken.mint(owner.address) // await nftToken.mint(addr1.address)
-        const Subscription = await helper.getSubscription()
-
         // can call from addr1
         const op = await Subscription.subscribeNew(
             ethers.utils.parseEther("10000"),
@@ -96,17 +104,13 @@ describe("Subscription contract", async function () {
             [1, 1, 1, 1]
         )
         await op.wait()
-        const appNFT = await helper.getAppNFT()
         const lastNFTId = Number(await appNFT.totalSupply())
         const OwnerOfLastNFT = await appNFT.ownerOf(lastNFTId)
         expect(OwnerOfLastNFT).to.equal(owner.address)
     })
 
     it("a) Only defined Role can deploy Apps", async function () {
-        const appNFT = await helper.getAppNFT()
         let lastNFTId = Number(await appNFT.totalSupply())
-        const ContractBasedDeployment =
-            await helper.getContractBasedDeployment()
 
         await expect(
             ContractBasedDeployment.connect(addr1).createData(
@@ -122,10 +126,7 @@ describe("Subscription contract", async function () {
         )
     })
     it("a) Only Subnet Subscriber can deploy Apps", async function () {
-        const appNFT = await helper.getAppNFT()
         let lastNFTId = Number(await appNFT.totalSupply())
-        const ContractBasedDeployment =
-            await helper.getContractBasedDeployment()
 
         await helper.grantRoleForContractBasedDeployment(
             lastNFTId,
@@ -148,7 +149,6 @@ describe("Subscription contract", async function () {
     // })
 
     it("Deployer can change cooldown and Notice time for service provider", async function () {
-        const Subscription = await helper.getSubscription()
         await Subscription.change__REQD_COOLDOWN_S_PROVIDER(3)
         await Subscription.change__REQD_NOTICE_TIME_S_PROVIDER(4)
         expect(await Subscription.REQD_COOLDOWN_S_PROVIDER()).to.equal(3)
@@ -156,7 +156,6 @@ describe("Subscription contract", async function () {
     })
 
     it("c) Deployer only can change service provider after cooldown time", async function () {
-        const Subscription = await helper.getSubscription()
         const tx = await Subscription.requestServiceProviderChange(1, 0, "ffd")
         await tx.wait()
 
@@ -169,8 +168,8 @@ describe("Subscription contract", async function () {
         const ev1 = await tx1.wait()
         expect(ev1).to.not.be.empty
     })
+
     it("Deployer can request to change service provider after of notice", async function () {
-        const Subscription = await helper.getSubscription()
         await expect(
             Subscription.requestServiceProviderChange(1, 0, "f1fd")
         ).to.be.revertedWith(
@@ -183,6 +182,69 @@ describe("Subscription contract", async function () {
         expect(ev).to.not.be.empty
     })
 
-    // it("d) Subnet must check for max limit", async function () {})
-    // it("f) Subscribe more than one cluster at same time", async function () {})
+    it("d) Subnet must check for max limit", async function () {
+        await nftToken.mint(owner.address) //3
+
+        // maxclusters are set to 1 in subnet 0
+        await expect(
+            Registration.clusterSignUp(
+                0,
+                "sovereignsubnetcannothaveempty",
+                owner.address,
+                3
+            )
+        ).to.be.revertedWith("No spots available, maxSlots reached for subnet")
+    })
+
+    // it("f) Subscribe more than one subnet at same time", async function () {
+    //     await xct.transfer(addr1.address, ethers.utils.parseEther("30000"))
+    //     await xct
+    //         .connect(addr1)
+    //         .approve(addr1.address, ethers.utils.parseEther("30000"))
+
+    //     const op = await Subscription.connect(addr1).subscribeNew(
+    //         ethers.utils.parseEther("10000"),
+    //         0,
+    //         "ddf",
+    //         "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
+    //         10000,
+    //         [1, 1, 1, 1]
+    //     )
+    //     await op.wait()
+    //     await nftToken.mint(addr1.address) //4
+
+    //     await Registration.createSubnet(
+    //         3,
+    //         owner.address,
+    //         1,
+    //         true,
+    //         1,
+    //         true,
+    //         [
+    //             ethers.utils.parseEther("0.0001"),
+    //             ethers.utils.parseEther("0.0002"),
+    //             ethers.utils.parseEther("0.0003"),
+    //             ethers.utils.parseEther("0.0004"),
+    //         ],
+    //         [],
+    //         1,
+    //         [owner.address],
+    //         5000,
+    //         ethers.utils.parseEther("0.01")
+    //     )
+    //     const op2 = await Subscription.connect(addr1).subscribeNew(
+    //         ethers.utils.parseEther("10000"),
+    //         1,
+    //         "ddf",
+    //         "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
+    //         10000,
+    //         [1, 1, 1, 1]
+    //     )
+    //     await op2.wait()
+    // })
+
+    it("drip rate calculation", async function () {
+        const subAttr = await Registration.subnetAttributes(0)
+        console.log("subAttr : ", subAttr)
+    })
 })
