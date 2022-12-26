@@ -8,6 +8,7 @@ describe("testing Registration contract", async () => {
         await helper.deployContracts();
         await helper.callStackApprove();
         await helper.callNftApprove();
+
     })
 
     describe("Testing creation of subnet", async () => {
@@ -2257,11 +2258,287 @@ describe("testing Registration contract", async () => {
         })
     })
 
-    describe("Global DAO can change NFT contract and withdraw NFT", async () => {
-        it("An Individual with Dark Matter NFT and stack fees can create a cluster on a subnet", async () => {
+    describe("Admin can change NFT contract and withdraw NFT", async () => {
+
+        it("An admin can withdraw NFTs that was used for creating subnet or cluster", async () => {
             const addrList = await ethers.getSigners();
-    
+            const stack = await helper.getStack();
             const nftToken = await helper.getNFTToken();
+            const adminAddress = addrList[2];
+            const clusterLimit = 3;
+            const nftList = [];
+
+            const DEFAULT_ADMIN_ROLE = await Registration.DEFAULT_ADMIN_ROLE();
+            await Registration.grantRole(DEFAULT_ADMIN_ROLE, adminAddress.address);
+
+            await nftToken.connect(addrList[1]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await stack.connect(addrList[1]).approve(helper.getAddresses().Registration, ethers.utils.parseEther("1000000000"));
+    
+            let tr = await nftToken.mint(addrList[1].address);
+            let rec = await tr.wait();
+            let transferEvent = rec.events.find(event => event.event == "Transfer");
+            const nftID = transferEvent.args[2].toNumber();
+            let nftOwner = await nftToken.ownerOf(nftID);
+            expect(nftOwner).to.be.equal(addrList[1].address);
+    
+            const curBalance = await stack.balanceOf(addrList[1].address);
+            const reqdFees = helper.parameters.registration.reqdStackFeesForSubnet.add(ethers.utils.parseEther("0.01").mul(clusterLimit));
+            if(curBalance.lt(reqdFees)) {
+                await stack.connect(addrList[0]).transfer(addrList[1].address,  reqdFees);
+            }
+
+            tr = await Registration.connect(addrList[1]).createSubnet(
+                nftID,
+                addrList[1].address,
+                1,
+                true,
+                1,
+                true,
+                [ethers.utils.parseEther("0.0001"),ethers.utils.parseEther("0.0002"),ethers.utils.parseEther("0.0003"),ethers.utils.parseEther("0.0004")],
+                [],
+                clusterLimit,
+                [],
+                5000,
+                ethers.utils.parseEther("0.01"));
+            rec = await tr.wait();
+            const subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
+            const subnetID = subnetCreatedEvent.args[0].toNumber();
+
+            for(var i = 0; i < clusterLimit ; i++) {
+                tr = await nftToken.mint(addrList[1].address);
+                rec = await tr.wait();
+                transferEvent = rec.events.find(event => event.event == "Transfer");
+                const clusterNFTID = transferEvent.args[2].toNumber();
+                nftOwner = await nftToken.ownerOf(clusterNFTID);
+                expect(nftOwner).to.be.equal(addrList[1].address);
+
+                tr = await Registration.connect(addrList[1]).clusterSignUp(subnetID, "127.0.0.1", addrList[1].address, clusterNFTID);
+                rec = await tr.wait();
+
+                nftOwner = await nftToken.ownerOf(clusterNFTID);
+                expect(nftOwner).to.be.equal(helper.getAddresses().Registration);
+                nftList.push(clusterNFTID);
+            }
+
+            await Registration.connect(adminAddress).withdrawNFT([nftID]);
+            nftOwner = await nftToken.ownerOf(nftID);
+            expect(nftOwner).to.be.equal(adminAddress.address);
+
+            for(var i = 0; i < clusterLimit; i++) {
+                for(var j = i; j < clusterLimit; j++) {
+                    const clusterNFTID = nftList[j];
+                    nftOwner = await nftToken.ownerOf(clusterNFTID);
+                    expect(nftOwner).to.be.equal(helper.getAddresses().Registration);
+                }
+                const clusterNFTID = nftList[i];
+                await Registration.connect(adminAddress).withdrawNFT([clusterNFTID]);
+                nftOwner = await nftToken.ownerOf(clusterNFTID);
+                expect(nftOwner).to.be.equal(adminAddress.address);
+            }
+        })
+
+        it("An admin can withdraw multiple NFT that was used for creating subnet or cluster", async () => {
+            const addrList = await ethers.getSigners();
+            const stack = await helper.getStack();
+            const nftToken = await helper.getNFTToken();
+            const adminAddress = addrList[2];
+            const clusterLimit = 4;
+            const nftList = [];
+            const withdrawIndexList = [1,3];
+
+            const DEFAULT_ADMIN_ROLE = await Registration.DEFAULT_ADMIN_ROLE();
+            await Registration.grantRole(DEFAULT_ADMIN_ROLE, adminAddress.address);
+
+            await nftToken.connect(addrList[1]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await stack.connect(addrList[1]).approve(helper.getAddresses().Registration, ethers.utils.parseEther("1000000000"));
+    
+            let tr = await nftToken.mint(addrList[1].address);
+            let rec = await tr.wait();
+            let transferEvent = rec.events.find(event => event.event == "Transfer");
+            const subnetNFTID = transferEvent.args[2].toNumber();
+            let nftOwner = await nftToken.ownerOf(subnetNFTID);
+            expect(nftOwner).to.be.equal(addrList[1].address);
+    
+            const curBalance = await stack.balanceOf(addrList[1].address);
+            const reqdFees = helper.parameters.registration.reqdStackFeesForSubnet.add(ethers.utils.parseEther("0.01").mul(clusterLimit));
+            if(curBalance.lt(reqdFees)) {
+                await stack.connect(addrList[0]).transfer(addrList[1].address,  reqdFees);
+            }
+
+            tr = await Registration.connect(addrList[1]).createSubnet(
+                subnetNFTID,
+                addrList[1].address,
+                1,
+                true,
+                1,
+                true,
+                [ethers.utils.parseEther("0.0001"),ethers.utils.parseEther("0.0002"),ethers.utils.parseEther("0.0003"),ethers.utils.parseEther("0.0004")],
+                [],
+                clusterLimit,
+                [],
+                5000,
+                ethers.utils.parseEther("0.01"));
+            rec = await tr.wait();
+            const subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
+            const subnetID = subnetCreatedEvent.args[0].toNumber();
+
+            for(var i = 0; i < clusterLimit ; i++) {
+                tr = await nftToken.mint(addrList[1].address);
+                rec = await tr.wait();
+                transferEvent = rec.events.find(event => event.event == "Transfer");
+                const clusterNFTID = transferEvent.args[2].toNumber();
+                nftOwner = await nftToken.ownerOf(clusterNFTID);
+                expect(nftOwner).to.be.equal(addrList[1].address);
+
+                tr = await Registration.connect(addrList[1]).clusterSignUp(subnetID, "127.0.0.1", addrList[1].address, clusterNFTID);
+                rec = await tr.wait();
+
+                nftOwner = await nftToken.ownerOf(clusterNFTID);
+                expect(nftOwner).to.be.equal(helper.getAddresses().Registration);
+                nftList.push(clusterNFTID);
+            }
+
+            const nftWithdrawList = [subnetNFTID];
+            for(var i = 0; i < withdrawIndexList.length; i++) {
+                nftWithdrawList.push(nftList[withdrawIndexList[i]]);
+            }
+            await Registration.connect(adminAddress).withdrawNFT(nftWithdrawList);
+
+            for(var i = 0; i < nftWithdrawList.length; i++) {
+                const nftID = nftWithdrawList[i];
+                nftOwner = await nftToken.ownerOf(nftID);
+                expect(nftOwner).to.be.equal(adminAddress.address);
+            }
+
+            var k = 0;
+            for(var i = 0; i < nftList.length; i++) {
+                if(i == withdrawIndexList[k]) {
+                    k+=1;
+                    continue;
+                }
+                const nftID = nftList[i];
+                nftOwner = await nftToken.ownerOf(nftID);
+                expect(nftOwner).to.be.equal(helper.getAddresses().Registration);
+            }
+        })
+
+        it("An admin can switch NFT contracts and withdraw NFTs", async () => {
+            const addrList = await ethers.getSigners();
+            const stack = await helper.getStack();
+            const adminAddress = addrList[2];
+            const c1NFTList = [];
+            const c2NFTList = [];
+
+            const nftContract1 = await helper.getNFTToken();
+            
+            const nftContract2Body = await ethers.getContractFactory("TestDarkMatter")
+            const nftContract2 = await nftContract2Body.deploy();
+
+            const DEFAULT_ADMIN_ROLE = await Registration.DEFAULT_ADMIN_ROLE();
+            await Registration.grantRole(DEFAULT_ADMIN_ROLE, adminAddress.address);
+
+            await nftContract1.connect(addrList[1]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await nftContract2.connect(addrList[1]).setApprovalForAll(helper.getAddresses().Registration, true);
+
+            await stack.connect(addrList[1]).approve(helper.getAddresses().Registration, ethers.utils.parseEther("1000000000"));
+            const curBalance = await stack.balanceOf(addrList[1].address);
+            let reqdFees = helper.parameters.registration.reqdStackFeesForSubnet.add(ethers.utils.parseEther("0.01"));
+            reqdFees = reqdFees.mul(2);
+            if(curBalance.lt(reqdFees)) {
+                await stack.connect(addrList[0]).transfer(addrList[1].address,  reqdFees);
+            }
+
+            const addSubnetAndCluster = async (nftContract, nftList) => {
+                let tr = await nftContract.mint(addrList[1].address);
+                let rec = await tr.wait();
+                let transferEvent = rec.events.find(event => event.event == "Transfer");
+                const subnetNFTID = transferEvent.args[2].toNumber();
+                let nftOwner = await nftContract.ownerOf(subnetNFTID);
+                expect(nftOwner).to.be.equal(addrList[1].address);
+                nftList.push(subnetNFTID);
+
+                tr = await Registration.connect(addrList[1]).createSubnet(
+                    subnetNFTID,
+                    addrList[1].address,
+                    1,
+                    true,
+                    1,
+                    true,
+                    [ethers.utils.parseEther("0.0001"),ethers.utils.parseEther("0.0002"),ethers.utils.parseEther("0.0003"),ethers.utils.parseEther("0.0004")],
+                    [],
+                    1,
+                    [],
+                    5000,
+                    ethers.utils.parseEther("0.01"));
+                rec = await tr.wait();
+                const subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
+                const subnetID = subnetCreatedEvent.args[0].toNumber();
+
+                nftOwner = await nftContract.ownerOf(subnetNFTID);
+                expect(nftOwner).to.be.equal(helper.getAddresses().Registration);
+
+                tr = await nftContract.mint(addrList[1].address);
+                rec = await tr.wait();
+                transferEvent = rec.events.find(event => event.event == "Transfer");
+                const clusterNFTID = transferEvent.args[2].toNumber();
+                nftOwner = await nftContract.ownerOf(clusterNFTID);
+                expect(nftOwner).to.be.equal(addrList[1].address);
+
+                tr = await Registration.connect(addrList[1]).clusterSignUp(subnetID, "127.0.0.1", addrList[1].address, clusterNFTID);
+                rec = await tr.wait();
+
+                nftOwner = await nftContract.ownerOf(clusterNFTID);
+                expect(nftOwner).to.be.equal(helper.getAddresses().Registration);
+                nftList.push(clusterNFTID);
+            }
+
+            await addSubnetAndCluster(nftContract1, c1NFTList);
+            await Registration.connect(adminAddress).changeNFT(nftContract2.address);
+            await addSubnetAndCluster(nftContract2, c2NFTList);
+
+            for(var i = 0; i < c1NFTList.length; i++) {
+                let nftOwner = await nftContract1.ownerOf(c1NFTList[i]);
+                expect(nftOwner).to.be.equal(helper.getAddresses().Registration);
+            }
+            for(var i = 0; i < c2NFTList.length; i++) {
+                let nftOwner = await nftContract2.ownerOf(c2NFTList[i]);
+                expect(nftOwner).to.be.equal(helper.getAddresses().Registration);
+            }
+
+            await Registration.connect(adminAddress).changeNFT(nftContract1.address);
+            await Registration.connect(adminAddress).withdrawNFT(c1NFTList);
+            for(var i = 0; i < c1NFTList.length; i++) {
+                let nftOwner = await nftContract1.ownerOf(c1NFTList[i]);
+                expect(nftOwner).to.be.equal(adminAddress.address);
+            }
+            for(var i = 0; i < c2NFTList.length; i++) {
+                let nftOwner = await nftContract2.ownerOf(c2NFTList[i]);
+                expect(nftOwner).to.be.equal(helper.getAddresses().Registration);
+            }
+
+            await Registration.connect(adminAddress).changeNFT(nftContract2.address);
+            await Registration.connect(adminAddress).withdrawNFT(c2NFTList);
+            for(var i = 0; i < c2NFTList.length; i++) {
+                let nftOwner = await nftContract2.ownerOf(c2NFTList[i]);
+                expect(nftOwner).to.be.equal(adminAddress.address);
+            }
+        })
+    })
+
+    describe("each subnet has different stack fees for cluster signup", async () => {
+
+        it("During cluster signup, an x amount of stack is transferred from the signer to Registration", async () => {
+            const addrList = await ethers.getSigners();
+            const clusterFees = ethers.utils.parseEther("0.03");
+            const nftToken = await helper.getNFTToken();
+            const stack = await helper.getStack();
+            
+            await nftToken.connect(addrList[1]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await stack.connect(addrList[1]).approve(
+                helper.getAddresses().Registration,
+                ethers.utils.parseEther("1000000000")
+            );
+            
             let tr = await nftToken.mint(addrList[0].address);
             let rec = await tr.wait();
             let transferEvent = rec.events.find(event => event.event == "Transfer");
@@ -2279,8 +2556,10 @@ describe("testing Registration contract", async () => {
                 3,
                 [],
                 5000,
-                ethers.utils.parseEther("0.01"));
+                clusterFees);
+    
             rec = await tr.wait();
+
             const subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
             const subnetID = subnetCreatedEvent.args[0].toNumber();
     
@@ -2288,56 +2567,557 @@ describe("testing Registration contract", async () => {
             rec = await tr.wait();
             transferEvent = rec.events.find(event => event.event == "Transfer");
             const clusterNFTID = transferEvent.args[2].toNumber();
-    
-            const ownerCheck = await nftToken.ownerOf(clusterNFTID);
-            expect(ownerCheck).to.equal(addrList[1].address);
-    
-            await nftToken.connect(addrList[1]).setApprovalForAll(helper.getAddresses().Registration, true);
-    
-            const stack = await helper.getStack();
-    
+
             const curBalance = await stack.balanceOf(addrList[1].address);
-    
-            if(curBalance.lt(ethers.utils.parseEther("0.01"))) {
-                await stack.transfer(addrList[1].address,  ethers.utils.parseEther("0.01"));
+            if(curBalance.lt(clusterFees)) {
+                await stack.transfer(addrList[1].address,  clusterFees);
             }
+            let beforeSignerStack = await stack.balanceOf(addrList[1].address);
+            let beforeRegStack = await stack.balanceOf(Registration.address);
+
+            tr = await Registration.connect(addrList[1]).clusterSignUp(subnetID, "127.0.0.1", addrList[1].address, clusterNFTID);
+            rec = await tr.wait();
+    
+            let afterSignerStack = await stack.balanceOf(addrList[1].address);
+            let afterRegStack = await stack.balanceOf(Registration.address);
+
+            let deducted = beforeSignerStack.sub(afterSignerStack);
+            expect(deducted.eq( clusterFees)).to.be.true;
+            deducted = afterRegStack.sub(beforeRegStack);
+            expect(deducted.eq(clusterFees));
+        })
+
+        it("Every subnet can have different stack fees required for signup of a cluster", async () => {
+            const addrList = await ethers.getSigners();
+            const subnet1Fees = ethers.utils.parseEther("0.03");
+            const subnet2Fees = ethers.utils.parseEther("0.04");
+            const nftToken = await helper.getNFTToken();
+            const stack = await helper.getStack();
             
+            await nftToken.connect(addrList[1]).setApprovalForAll(helper.getAddresses().Registration, true);
             await stack.connect(addrList[1]).approve(
                 helper.getAddresses().Registration,
                 ethers.utils.parseEther("1000000000")
             );
+            await nftToken.connect(addrList[2]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await stack.connect(addrList[2]).approve(
+                helper.getAddresses().Registration,
+                ethers.utils.parseEther("1000000000")
+            );
+            await nftToken.connect(addrList[3]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await stack.connect(addrList[3]).approve(
+                helper.getAddresses().Registration,
+                ethers.utils.parseEther("1000000000")
+            );
+
+            let tr = await nftToken.mint(addrList[0].address);
+            let rec = await tr.wait();
+            let transferEvent = rec.events.find(event => event.event == "Transfer");
+            let nftID = transferEvent.args[2].toNumber();
     
-            let beforeSupply = await stack.balanceOf(addrList[1].address);
+            tr = await Registration.createSubnet(
+                nftID,
+                addrList[0].address,
+                1,
+                true,
+                1,
+                true,
+                [ethers.utils.parseEther("0.0001"),ethers.utils.parseEther("0.0002"),ethers.utils.parseEther("0.0003"),ethers.utils.parseEther("0.0004")],
+                [],
+                3,
+                [],
+                5000,
+                subnet1Fees);
+            rec = await tr.wait();
+            let subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
+            const subnet1ID = subnetCreatedEvent.args[0].toNumber();
+
+            tr = await nftToken.mint(addrList[0].address);
+            rec = await tr.wait();
+            transferEvent = rec.events.find(event => event.event == "Transfer");
+            nftID = transferEvent.args[2].toNumber();
     
-            tr = await Registration.connect(addrList[1]).clusterSignUp(subnetID, "127.0.0.1", addrList[1].address, clusterNFTID);
+            tr = await Registration.createSubnet(
+                nftID,
+                addrList[0].address,
+                1,
+                true,
+                1,
+                true,
+                [ethers.utils.parseEther("0.0001"),ethers.utils.parseEther("0.0002"),ethers.utils.parseEther("0.0003"),ethers.utils.parseEther("0.0004")],
+                [],
+                3,
+                [],
+                5000,
+                subnet2Fees);
+            rec = await tr.wait();
+            subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
+            const subnet2ID = subnetCreatedEvent.args[0].toNumber();
+    
+            tr = await nftToken.mint(addrList[2].address);
+            rec = await tr.wait();
+            transferEvent = rec.events.find(event => event.event == "Transfer");
+            let clusterNFTID = transferEvent.args[2].toNumber();
+
+            let curBalance = await stack.balanceOf(addrList[2].address);
+            if(curBalance.lt(subnet1Fees)) {
+                await stack.transfer(addrList[2].address,  subnet1Fees);
+            }
+    
+            let beforeSignerStack = await stack.balanceOf(addrList[2].address);
+            let beforeRegStack = await stack.balanceOf(Registration.address);
+    
+            tr = await Registration.connect(addrList[2]).clusterSignUp(subnet1ID, "127.0.0.1", addrList[2].address, clusterNFTID);
             rec = await tr.wait();
     
-            let afterSupply = await stack.balanceOf(addrList[1].address);
-            let deducted = beforeSupply.sub(afterSupply);
-            expect(deducted.eq( ethers.utils.parseEther("0.01"))).to.be.true;
+            let afterSignerStack = await stack.balanceOf(addrList[2].address);
+            let afterRegStack = await stack.balanceOf(Registration.address);
+
+            let cluster1Deducted = beforeSignerStack.sub(afterSignerStack);
+            expect(cluster1Deducted.eq( subnet1Fees)).to.be.true;
+            cluster1Deducted = afterRegStack.sub(beforeRegStack);
+            expect(cluster1Deducted.eq(subnet1Fees));
+
+
+            tr = await nftToken.mint(addrList[3].address);
+            rec = await tr.wait();
+            transferEvent = rec.events.find(event => event.event == "Transfer");
+            clusterNFTID = transferEvent.args[2].toNumber();
+
+            curBalance = await stack.balanceOf(addrList[3].address);
+            if(curBalance.lt(subnet2Fees)) {
+                await stack.transfer(addrList[3].address, subnet2Fees);
+            }
     
-            const clusterSignedUpEvent = rec.events.find(event => event.event == "ClusterSignedUp");
-            const NFTLockedForClusterEvent = rec.events.find(event => event.event == "NFTLockedForCluster");
+            beforeSignerStack = await stack.balanceOf(addrList[3].address);
+            beforeRegStack = await stack.balanceOf(Registration.address);
     
-            expect(clusterSignedUpEvent).to.exist;
-            expect(NFTLockedForClusterEvent).to.exist;
+            tr = await Registration.connect(addrList[3]).clusterSignUp(subnet2ID, "127.0.0.1", addrList[3].address, clusterNFTID);
+            rec = await tr.wait();
     
-            const newNFTOwner = await nftToken.ownerOf(clusterNFTID);
-            expect(newNFTOwner).to.not.equal(addrList[1].address);
-            expect(newNFTOwner).to.equal(helper.getAddresses().Registration);
-    
-    
-            const clusterID = clusterSignedUpEvent.args[1].toNumber();
-    
-            const clusterAttributes = await Registration.getClusterAttributes(subnetID, clusterID);
-    
-            expect(clusterAttributes[0].toString()).to.equal(addrList[1].address);
-            expect(clusterAttributes[1].toString()).to.equal("127.0.0.1");
-            expect(clusterAttributes[2]).to.equal(1);
-            expect(clusterAttributes[3].toNumber()).to.equal(clusterNFTID);
+            afterSignerStack = await stack.balanceOf(addrList[3].address);
+            afterRegStack = await stack.balanceOf(Registration.address);
+
+            let cluster2Deducted = beforeSignerStack.sub(afterSignerStack);
+            expect(cluster2Deducted.eq(subnet2Fees)).to.be.true;
+            cluster2Deducted = afterRegStack.sub(beforeRegStack);
+            expect(cluster2Deducted.eq(subnet2Fees));
         })
-    
     })
 
+    describe("Balance of stack is tracked when an individual signs up", async () => {
+        it("During cluster signup, an x amount of stack is tracked", async () => {
+            const addrList = await ethers.getSigners();
+            const clusterFees = ethers.utils.parseEther("0.03");
+            const nftToken = await helper.getNFTToken();
+            const stack = await helper.getStack();
+            
+            await nftToken.connect(addrList[1]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await stack.connect(addrList[1]).approve(
+                helper.getAddresses().Registration,
+                ethers.utils.parseEther("1000000000")
+            );
+            const curBalance = await stack.balanceOf(addrList[1].address);
+            if(curBalance.lt(clusterFees)) {
+                await stack.transfer(addrList[1].address,  clusterFees);
+            }
+            const beforeBalanceLocked = await Registration.balanceOfStackLocked(addrList[1].address);
 
+            const mintNFT = async (addr) => {
+                let tr = await nftToken.mint(addr.address);
+                let rec = await tr.wait();
+                let transferEvent = rec.events.find(event => event.event == "Transfer");
+                let nftID = transferEvent.args[2].toNumber();
+                return nftID;
+            }
+            
+            let nftID = await mintNFT(addrList[0]);
+            tr = await Registration.createSubnet(
+                nftID,
+                addrList[0].address,
+                1,
+                true,
+                1,
+                true,
+                [ethers.utils.parseEther("0.0001"),ethers.utils.parseEther("0.0002"),ethers.utils.parseEther("0.0003"),ethers.utils.parseEther("0.0004")],
+                [],
+                3,
+                [],
+                5000,
+                clusterFees);
+            rec = await tr.wait();
+            const subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
+            const subnetID = subnetCreatedEvent.args[0].toNumber();
+    
+            nftID = await mintNFT(addrList[1]);
+            let beforeSignerStack = await stack.balanceOf(addrList[1].address);
+            let beforeRegStack = await stack.balanceOf(Registration.address);
+
+            tr = await Registration.connect(addrList[1]).clusterSignUp(subnetID, "127.0.0.1", addrList[1].address, nftID);
+            rec = await tr.wait();
+    
+            let afterSignerStack = await stack.balanceOf(addrList[1].address);
+            let afterRegStack = await stack.balanceOf(Registration.address);
+
+            let deducted = beforeSignerStack.sub(afterSignerStack);
+            expect(deducted.eq( clusterFees)).to.be.true;
+            deducted = afterRegStack.sub(beforeRegStack);
+            expect(deducted.eq(clusterFees));
+
+            let afterBalanceLocked = await Registration.balanceOfStackLocked(addrList[1].address);
+            afterBalanceLocked = afterBalanceLocked.sub(beforeBalanceLocked);
+            expect(afterBalanceLocked.eq(deducted)).to.be.true;
+        })
+
+        it("Balance of stack is tracked for many signups a clusterDAO does", async () => {
+            const addrList = await ethers.getSigners();
+            const subnet1Fees = ethers.utils.parseEther("0.03");
+            const subnet2Fees = ethers.utils.parseEther("0.04");
+            const totalFees = subnet1Fees.add(subnet2Fees);
+            const nftToken = await helper.getNFTToken();
+            const stack = await helper.getStack();
+            
+            await nftToken.connect(addrList[2]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await stack.connect(addrList[2]).approve(
+                helper.getAddresses().Registration,
+                ethers.utils.parseEther("1000000000")
+            );
+            let curBalance = await stack.balanceOf(addrList[2].address);
+            if(curBalance.lt(totalFees)) {
+                await stack.transfer(addrList[2].address,  totalFees);
+            }
+            const beforeStackLocked = await Registration.balanceOfStackLocked(addrList[2].address);
+
+            const mintNFT = async (addr) => {
+                let tr = await nftToken.mint(addr.address);
+                let rec = await tr.wait();
+                let transferEvent = rec.events.find(event => event.event == "Transfer");
+                let nftID = transferEvent.args[2].toNumber();
+                return nftID;
+            }
+
+            let nftID = await mintNFT(addrList[0]);
+
+            tr = await Registration.createSubnet(
+                nftID,
+                addrList[0].address,
+                1,
+                true,
+                1,
+                true,
+                [ethers.utils.parseEther("0.0001"),ethers.utils.parseEther("0.0002"),ethers.utils.parseEther("0.0003"),ethers.utils.parseEther("0.0004")],
+                [],
+                3,
+                [],
+                5000,
+                subnet1Fees);
+            rec = await tr.wait();
+            let subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
+            const subnet1ID = subnetCreatedEvent.args[0].toNumber();
+
+            nftID = await mintNFT(addrList[0]);
+            tr = await Registration.createSubnet(
+                nftID,
+                addrList[0].address,
+                1,
+                true,
+                1,
+                true,
+                [ethers.utils.parseEther("0.0001"),ethers.utils.parseEther("0.0002"),ethers.utils.parseEther("0.0003"),ethers.utils.parseEther("0.0004")],
+                [],
+                3,
+                [],
+                5000,
+                subnet2Fees);
+            rec = await tr.wait();
+            subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
+            const subnet2ID = subnetCreatedEvent.args[0].toNumber();
+    
+            nftID = await mintNFT(addrList[2]);
+    
+            let beforeSignerStack = await stack.balanceOf(addrList[2].address);
+            let beforeRegStack = await stack.balanceOf(Registration.address);
+    
+            tr = await Registration.connect(addrList[2]).clusterSignUp(subnet1ID, "127.0.0.1", addrList[2].address, nftID);
+            rec = await tr.wait();
+    
+            let afterSignerStack = await stack.balanceOf(addrList[2].address);
+            let afterRegStack = await stack.balanceOf(Registration.address);
+
+            let cluster1Deducted = beforeSignerStack.sub(afterSignerStack);
+            expect(cluster1Deducted.eq( subnet1Fees)).to.be.true;
+            cluster1Deducted = afterRegStack.sub(beforeRegStack);
+            expect(cluster1Deducted.eq(subnet1Fees));
+
+
+            nftID = await mintNFT(addrList[2]);
+    
+            beforeSignerStack = await stack.balanceOf(addrList[2].address);
+            beforeRegStack = await stack.balanceOf(Registration.address);
+    
+            tr = await Registration.connect(addrList[2]).clusterSignUp(subnet2ID, "127.0.0.1", addrList[2].address, nftID);
+            rec = await tr.wait();
+    
+            afterSignerStack = await stack.balanceOf(addrList[2].address);
+            afterRegStack = await stack.balanceOf(Registration.address);
+
+            let cluster2Deducted = beforeSignerStack.sub(afterSignerStack);
+            expect(cluster2Deducted.eq(subnet2Fees)).to.be.true;
+            cluster2Deducted = afterRegStack.sub(beforeRegStack);
+            expect(cluster2Deducted.eq(subnet2Fees));
+
+            const totalAmount = cluster1Deducted.add(cluster2Deducted);
+            expect(totalAmount.eq(totalFees)).to.be.true;
+            let stackLocked = await Registration.balanceOfStackLocked(addrList[2].address);
+            stackLocked = stackLocked.sub(beforeStackLocked);
+            expect(totalFees.eq(stackLocked)).to.be.true;
+        })
+
+        it("Balance of stack is tracked for multiple users", async () => {
+            const addrList = await ethers.getSigners();
+            const subnet1Fees = ethers.utils.parseEther("0.03");
+            const subnet2Fees = ethers.utils.parseEther("0.04");
+            const nftToken = await helper.getNFTToken();
+            const stack = await helper.getStack();
+            const deductedList = [0, 0, 0];
+            
+            await nftToken.connect(addrList[1]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await stack.connect(addrList[1]).approve(
+                helper.getAddresses().Registration,
+                ethers.utils.parseEther("1000000000")
+            );
+            let curBalance = await stack.balanceOf(addrList[1].address);
+            if(curBalance.lt(subnet1Fees)) {
+                await stack.transfer(addrList[1].address,  subnet1Fees);
+            }
+            await nftToken.connect(addrList[2]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await stack.connect(addrList[2]).approve(
+                helper.getAddresses().Registration,
+                ethers.utils.parseEther("1000000000")
+            );
+            curBalance = await stack.balanceOf(addrList[2].address);
+            if(curBalance.lt(subnet1Fees)) {
+                await stack.transfer(addrList[2].address,  subnet1Fees);
+            }
+            await nftToken.connect(addrList[3]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await stack.connect(addrList[3]).approve(
+                helper.getAddresses().Registration,
+                ethers.utils.parseEther("1000000000")
+            );
+            curBalance = await stack.balanceOf(addrList[3].address);
+            if(curBalance.lt(subnet2Fees)) {
+                await stack.transfer(addrList[3].address,  subnet2Fees);
+            }
+            let balanceLockedList = [
+                await Registration.balanceOfStackLocked(addrList[1].address),
+                await Registration.balanceOfStackLocked(addrList[2].address),
+                await Registration.balanceOfStackLocked(addrList[3].address),
+            ];
+
+            const mintNFT = async (addr) => {
+                let tr = await nftToken.mint(addr.address);
+                let rec = await tr.wait();
+                let transferEvent = rec.events.find(event => event.event == "Transfer");
+                let nftID = transferEvent.args[2].toNumber();
+                return nftID;
+            }
+
+            let nftID = await mintNFT(addrList[0]);
+            tr = await Registration.createSubnet(
+                nftID,
+                addrList[0].address,
+                1,
+                true,
+                1,
+                true,
+                [ethers.utils.parseEther("0.0001"),ethers.utils.parseEther("0.0002"),ethers.utils.parseEther("0.0003"),ethers.utils.parseEther("0.0004")],
+                [],
+                3,
+                [],
+                5000,
+                subnet1Fees);
+            rec = await tr.wait();
+            let subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
+            const subnet1ID = subnetCreatedEvent.args[0].toNumber();
+    
+            nftID = await mintNFT(addrList[0]);
+            tr = await Registration.createSubnet(
+                nftID,
+                addrList[0].address,
+                1,
+                true,
+                1,
+                true,
+                [ethers.utils.parseEther("0.0001"),ethers.utils.parseEther("0.0002"),ethers.utils.parseEther("0.0003"),ethers.utils.parseEther("0.0004")],
+                [],
+                3,
+                [],
+                5000,
+                subnet2Fees);
+            rec = await tr.wait();
+            subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
+            const subnet2ID = subnetCreatedEvent.args[0].toNumber();
+    
+            nftID = await mintNFT(addrList[1]);
+    
+            let beforeSignerStack = await stack.balanceOf(addrList[1].address);
+            let beforeRegStack = await stack.balanceOf(Registration.address);
+    
+            tr = await Registration.connect(addrList[1]).clusterSignUp(subnet1ID, "127.0.0.1", addrList[1].address, nftID);
+            rec = await tr.wait();
+    
+            let afterSignerStack = await stack.balanceOf(addrList[1].address);
+            let afterRegStack = await stack.balanceOf(Registration.address);
+
+            let deducted = beforeSignerStack.sub(afterSignerStack);
+            expect(deducted.eq(subnet1Fees)).to.be.true;
+            deducted = afterRegStack.sub(beforeRegStack);
+            expect(deducted.eq(subnet1Fees));
+            deductedList[0] = deducted;
+
+            nftID = await mintNFT(addrList[2]);
+
+            beforeSignerStack = await stack.balanceOf(addrList[2].address);
+            beforeRegStack = await stack.balanceOf(Registration.address);
+
+            tr = await Registration.connect(addrList[2]).clusterSignUp(subnet1ID, "127.0.0.1", addrList[2].address, nftID);
+            rec = await tr.wait();
+            
+            afterSignerStack = await stack.balanceOf(addrList[2].address);
+            afterRegStack = await stack.balanceOf(Registration.address);
+
+            deducted = beforeSignerStack.sub(afterSignerStack);
+            expect(deducted.eq(subnet1Fees)).to.be.true;
+            deducted = afterRegStack.sub(beforeRegStack);
+            expect(deducted.eq(subnet1Fees));
+            deductedList[1] = deducted;
+
+            nftID = await mintNFT(addrList[3]);
+
+            beforeSignerStack = await stack.balanceOf(addrList[3].address);
+            beforeRegStack = await stack.balanceOf(Registration.address);
+
+            tr = await Registration.connect(addrList[3]).clusterSignUp(subnet2ID, "127.0.0.1", addrList[3].address, nftID);
+            rec = await tr.wait();
+            
+            afterSignerStack = await stack.balanceOf(addrList[3].address);
+            afterRegStack = await stack.balanceOf(Registration.address);
+
+            deducted = beforeSignerStack.sub(afterSignerStack);
+            expect(deducted.eq(subnet2Fees)).to.be.true;
+            deducted = afterRegStack.sub(beforeRegStack);
+            expect(deducted.eq(subnet2Fees));
+            deductedList[2] = deducted;
+
+            let afterBalanceLockedList = [
+                await Registration.balanceOfStackLocked(addrList[1].address),
+                await Registration.balanceOfStackLocked(addrList[2].address),
+                await Registration.balanceOfStackLocked(addrList[3].address),
+            ];
+            balanceLockedList[0] = afterBalanceLockedList[0].sub(balanceLockedList[0]);
+            balanceLockedList[1] = afterBalanceLockedList[1].sub(balanceLockedList[1]);
+            balanceLockedList[2] = afterBalanceLockedList[2].sub(balanceLockedList[2]);
+
+            expect(deductedList[0].eq(balanceLockedList[0])).to.be.true;
+            expect(deductedList[1].eq(balanceLockedList[1])).to.be.true;
+            expect(deductedList[2].eq(balanceLockedList[2])).to.be.true;
+        })
+
+        it("balanceOFStack() of individual cluster can be slashable by ROLE", async () => {
+            const addrList = await ethers.getSigners();
+            const clusterFees = ethers.utils.parseEther("0.03");
+            const deductAmount = ethers.utils.parseEther("0.001");
+            const nftToken = await helper.getNFTToken();
+            const stack = await helper.getStack();
+            
+            await nftToken.connect(addrList[1]).setApprovalForAll(helper.getAddresses().Registration, true);
+            await stack.connect(addrList[1]).approve(
+                helper.getAddresses().Registration,
+                ethers.utils.parseEther("1000000000")
+            );
+            // await stack.connect(addrList[2]).approve(
+            //     helper.getAddresses().Registration,
+            //     ethers.utils.parseEther("1000000000")
+            // );
+            // await stack.connect(Registration).approve(
+            //     addrList[2].address,
+            //     ethers.utils.parseEther("1000000000")
+            // );
+            const curBalance = await stack.balanceOf(addrList[1].address);
+            if(curBalance.lt(clusterFees)) {
+                await stack.transfer(addrList[1].address,  clusterFees);
+            }
+            let beforeBalanceLocked = await Registration.balanceOfStackLocked(addrList[1].address);
+
+            const mintNFT = async (addr) => {
+                let tr = await nftToken.mint(addr.address);
+                let rec = await tr.wait();
+                let transferEvent = rec.events.find(event => event.event == "Transfer");
+                let nftID = transferEvent.args[2].toNumber();
+                return nftID;
+            }
+            
+            let nftID = await mintNFT(addrList[0]);
+            tr = await Registration.createSubnet(
+                nftID,
+                addrList[0].address,
+                1,
+                true,
+                1,
+                true,
+                [ethers.utils.parseEther("0.0001"),ethers.utils.parseEther("0.0002"),ethers.utils.parseEther("0.0003"),ethers.utils.parseEther("0.0004")],
+                [],
+                3,
+                [],
+                5000,
+                clusterFees);
+            rec = await tr.wait();
+            const subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");    
+            const subnetID = subnetCreatedEvent.args[0].toNumber();
+    
+            nftID = await mintNFT(addrList[0]);
+            let beforeSignerStack = await stack.balanceOf(addrList[1].address);
+            let beforeRegStack = await stack.balanceOf(Registration.address);
+
+            // tr = await Registration.connect(addrList[1]).clusterSignUp(subnetID, "127.0.0.1", addrList[1].address, nftID);
+            tr = await Registration.clusterSignUp(subnetID, "127.0.0.1", addrList[1].address, nftID);
+            rec = await tr.wait();
+            const clusterSignedUpEvent = rec.events.find(event => event.event == "ClusterSignedUp");
+            const clusterID = clusterSignedUpEvent.args[1].toNumber();
+    
+            let afterSignerStack = await stack.balanceOf(addrList[1].address);
+            let afterRegStack = await stack.balanceOf(Registration.address);
+
+            let deducted = beforeSignerStack.sub(afterSignerStack);
+            expect(deducted.eq( clusterFees)).to.be.true;
+            deducted = afterRegStack.sub(beforeRegStack);
+            expect(deducted.eq(clusterFees));
+
+            let afterBalanceLocked = await Registration.balanceOfStackLocked(addrList[1].address);
+            afterBalanceLocked = afterBalanceLocked.sub(beforeBalanceLocked);
+            expect(afterBalanceLocked.eq(deducted)).to.be.true;
+
+            await expect(Registration.connect(addrList[2]).withdrawStackFromClusterByDAO(subnetID, clusterID, deductAmount)).to.be.reverted;
+
+            const WITHDRAW_STACK_ROLE = await Registration.WITHDRAW_STACK_ROLE();
+            await Registration.grantRole(WITHDRAW_STACK_ROLE, addrList[2].address);
+
+            beforeBalanceLocked = await Registration.balanceOfStackLocked(addrList[1].address);
+            beforeSignerStack = await stack.balanceOf(addrList[2].address);
+            beforeRegStack = await stack.balanceOf(Registration.address);
+
+            console.log(beforeRegStack.sub(deductAmount));
+            await Registration.withdrawStackFromClusterByDAO(subnetID, clusterID, deductAmount);
+            
+            afterSignerStack = await stack.balanceOf(addrList[1].address);
+            afterRegStack = await stack.balanceOf(Registration.address);
+            afterBalanceLocked = await Registration.balanceOfStackLocked(addrList[2].address);
+            afterSignerStack = beforeSignerStack.sub(afterSignerStack);
+            afterRegStack = beforeRegStack.sub(afterRegStack);
+            afterBalanceLocked = afterBalanceLocked.sub(beforeBalanceLocked);
+            expect(afterSignerStack.eq(deductAmount)).to.be.true;
+            expect(afterRegStack.eq(deductAMount)).to.be.true;
+            expect(afterBalanceLocked.eq(deductAmount)).to.be.true;
+        })
+    })
 })
