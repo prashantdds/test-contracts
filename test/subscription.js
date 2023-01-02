@@ -16,6 +16,7 @@ describe("Subscription contract", async function () {
         nftToken = await helper.getNFTToken()
         appNFT = await helper.getAppNFT()
         ContractBasedDeployment = await helper.getContractBasedDeployment()
+        SubscriptionBalance = await helper.getSubscriptionBalance()
     })
 
     let owner,
@@ -23,6 +24,7 @@ describe("Subscription contract", async function () {
         addr2,
         Registration,
         Subscription,
+        SubscriptionBalance,
         xct,
         stack,
         nftToken,
@@ -55,7 +57,7 @@ describe("Subscription contract", async function () {
     })
 
     it("Creating Cluster inside first Subnet", async function () {
-        await nftToken.mint(owner.address)
+        await nftToken.mint(owner.address) //2
 
         const op = await Registration.clusterSignUp(
             0,
@@ -196,55 +198,74 @@ describe("Subscription contract", async function () {
         ).to.be.revertedWith("No spots available, maxSlots reached for subnet")
     })
 
-    // it("f) Subscribe more than one subnet at same time", async function () {
-    //     await xct.transfer(addr1.address, ethers.utils.parseEther("30000"))
-    //     await xct
-    //         .connect(addr1)
-    //         .approve(addr1.address, ethers.utils.parseEther("30000"))
+    it("f) Subscribe more than one subnet at same time", async function () {
+        await xct.transfer(addr1.address, ethers.utils.parseEther("30000"))
+        await xct
+            .connect(addr1)
+            .approve(addr1.address, ethers.utils.parseEther("30000"))
 
-    //     const op = await Subscription.connect(addr1).subscribeNew(
-    //         ethers.utils.parseEther("10000"),
-    //         0,
-    //         "ddf",
-    //         "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
-    //         10000,
-    //         [1, 1, 1, 1]
-    //     )
-    //     await op.wait()
-    //     await nftToken.mint(addr1.address) //4
+        await expect(
+            Subscription.connect(addr1).subscribeNew(
+                ethers.utils.parseEther("10000"),
+                0,
+                "ddf",
+                "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
+                10000,
+                [1, 1, 1, 1]
+            )
+        ).to.not.be.reverted
 
-    //     await Registration.createSubnet(
-    //         3,
-    //         owner.address,
-    //         1,
-    //         true,
-    //         1,
-    //         true,
-    //         [
-    //             ethers.utils.parseEther("0.0001"),
-    //             ethers.utils.parseEther("0.0002"),
-    //             ethers.utils.parseEther("0.0003"),
-    //             ethers.utils.parseEther("0.0004"),
-    //         ],
-    //         [],
-    //         1,
-    //         [owner.address],
-    //         5000,
-    //         ethers.utils.parseEther("0.01")
-    //     )
-    //     const op2 = await Subscription.connect(addr1).subscribeNew(
-    //         ethers.utils.parseEther("10000"),
-    //         1,
-    //         "ddf",
-    //         "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
-    //         10000,
-    //         [1, 1, 1, 1]
-    //     )
-    //     await op2.wait()
-    // })
+        await nftToken.mint(addr1.address) //4
+
+        await Registration.createSubnet(
+            4,
+            owner.address,
+            1,
+            true,
+            1,
+            true,
+            [
+                ethers.utils.parseEther("0.0001"),
+                ethers.utils.parseEther("0.0002"),
+                ethers.utils.parseEther("0.0003"),
+                ethers.utils.parseEther("0.0004"),
+            ],
+            [],
+            1,
+            [owner.address],
+            5000,
+            ethers.utils.parseEther("0.01")
+        )
+        // const op2 =
+        await expect(
+            Subscription.connect(addr1).subscribeNew(
+                ethers.utils.parseEther("10000"),
+                1,
+                "ddf",
+                "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
+                10000,
+                [1, 1, 1, 1]
+            )
+        ).to.not.be.reverted
+        // await op2.wait()
+    })
 
     it("drip rate calculation", async function () {
-        const subAttr = await Registration.subnetAttributes(0)
-        console.log("subAttr : ", subAttr)
+        const s = Number(await Registration.daoRate()) // global Dao Rate
+        const t = Number(await SubscriptionBalance.t_SupportFeeRate(0)) // support fees
+        const u = Number(await SubscriptionBalance.ReferralPercent()) // refer fees
+        const r = Number(await Subscription.r_licenseFee(1, 0)) // license fees
+        const computeRequired = await Subscription.getComputesOfSubnet(1, 0)
+        const SubAttr = await Registration.getSubnetAttributes(0)
+        const unitPrices = SubAttr[4]
+        let cost = 0
+        for (let i = 0; i < unitPrices.length; i++) {
+            cost = cost + Number(unitPrices[i]) * Number(computeRequired[i])
+        }
+        const factor = 100000 + r + s + t + u
+        const dripRate = (factor * cost) / 100000
+        expect(
+            Number(await SubscriptionBalance.dripRatePerSecOfSubnet(1, 0))
+        ).to.equal(dripRate)
     })
 })
