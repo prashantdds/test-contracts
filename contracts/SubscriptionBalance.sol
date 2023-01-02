@@ -149,6 +149,26 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         }
     }
 
+    function estimateDripRatePerSecOfSubnet(uint subnetId, uint256 licenseFee, uint256[] memory computeRequired)
+        public
+        view
+        returns (uint256)
+     {
+        uint256 factor = s_GlobalDAORate()
+            .add(licenseFee)
+            .add(t_SupportFeeRate(subnetId))
+            .add(ReferralPercent)
+            .add(100000);
+        (, , , , uint256[] memory prices, , , , ) = RegistrationContract
+            .getSubnetAttributes(subnetId);
+        uint256 cost = 0;
+
+        for (uint256 i = 0; i < prices.length; i++) {
+            cost = cost.add(prices[i].mul(computeRequired[i]));
+        }
+        return factor.mul(cost).div(100000); // 10^5 for percent
+    }
+
     function dripRatePerSecOfSubnet(uint256 NFTid, uint256 subnetId)
         public
         view

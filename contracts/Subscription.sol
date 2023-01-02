@@ -157,6 +157,14 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         return keccak256(bytes(_roleName));
     }
 
+    function getServiceProviderAddress(uint256 _nftId, uint256 _subnetId)
+        public
+        view
+        returns (string memory)
+    {
+        return userSubscription[_nftId][_subnetId].serviceProviderAddress;
+    }
+
     function getReferralAddress(uint256 _nftId, uint256 _subnetId)
         public
         view
@@ -179,6 +187,14 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         returns (uint256[] memory)
     {
         return userSubscription[NFTid][subnetId].computeRequired;
+    }
+
+    function checkSubscribed(uint256 nftID, uint256 subnetID)
+    external
+    view
+    returns (bool)
+    {
+        return userSubscription[nftID][subnetID].subscribed;
     }
 
     function change__GLOBAL_DAO_ADDRESS(address _newGlobalDAO)
@@ -405,6 +421,8 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         userSubscription[_nftId][_subnetId].computeRequired = _computeRequired;
         userSubscription[_nftId][_subnetId].subscribed = true;
 
+        requestPriceChange[_nftId][_subnetId].lastPriceChange = block.timestamp;
+
         emit Subscribed(
             _nftId,
             _subnetId,
@@ -441,7 +459,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             .getSubnetAttributes(_currentSubnetId);
 
         require(
-            isListed,
+            !isListed,
             "Cannot change subscription if subnet is not delisted"
         );
         require(
@@ -535,8 +553,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         ); // eg. can request after 1 month
 
         requestPriceChange[_nftId][_subnetId].timestamp = block.timestamp;
-        requestPriceChange[_nftId][_subnetId]
-            .serviceProviderAddress = _newServiceProvider;
+        requestPriceChange[_nftId][_subnetId].serviceProviderAddress = _newServiceProvider;
 
         emit RequestedServiceProviderChange(
             _nftId,
