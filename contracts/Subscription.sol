@@ -31,6 +31,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     struct NFTSubnetAttribute {
         string serviceProviderAddress;
         address referralAddress;
+        address licenseAddress;
         uint256 r_licenseFee;
         uint256[] computeRequired;
         bool subscribed;
@@ -86,11 +87,14 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 subnetId,
         string serviceProviderAddress,
         address referralAddress,
+        address licenseAddress,
         uint256 licenseFee,
         uint256[] computeRequired
     );
 
-    event ReferralAdded(uint256 NFTId, uint256 subnetId, address refAddress);
+    event ReferralAdded(uint256 NFTId, uint256 subnetId, address referralAddress);
+
+    event LicenseAdded(uint256 NFTId, uint256 subnetId, address licenseAddress);
 
     event ChangedSubnetSubscription(
         uint256 NFTId,
@@ -171,6 +175,14 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         returns (address)
     {
         return userSubscription[_nftId][_subnetId].referralAddress;
+    }
+
+    function getLicenseAddress(uint256 _nftId, uint256 _subnetId)
+        public
+        view
+        returns (address)
+    {
+        return userSubscription[_nftId][_subnetId].licenseAddress;
     }
 
     function r_licenseFee(uint256 _nftId, uint256 _subnetId)
@@ -268,6 +280,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256[] memory subnetId,
         string[] memory _serviceProviderAddress,
         address[] memory _referralAddress,
+        address[] memory _licenseAddress,
         uint256[] memory _licenseFee,
         uint256[][] memory computeRequired
     ) external returns (uint256 NFTid) {
@@ -276,6 +289,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             subnetId[0],
             _serviceProviderAddress[0],
             _referralAddress[0],
+            _licenseAddress[0],
             _licenseFee[0],
             computeRequired[0]
         );
@@ -285,6 +299,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
                 subnetId[i],
                 _serviceProviderAddress[i],
                 _referralAddress[i],
+                _licenseAddress[i],
                 _licenseFee[i],
                 computeRequired[i]
             );
@@ -301,6 +316,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 subnetId,
         string memory _serviceProviderAddress,
         address _referralAddress,
+        address _licenseAddress,
         uint256 _licenseFee,
         uint256[] memory _computeRequired
     ) public whenNotPaused returns (uint256) {
@@ -315,6 +331,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             subnetId,
             _serviceProviderAddress,
             _referralAddress,
+            _licenseAddress,
             _licenseFee,
             _computeRequired
         );
@@ -341,6 +358,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256[] memory subnetId,
         string[] memory _serviceProviderAddress,
         address[] memory _referralAddress,
+        address[] memory _licenseAddress,
         uint256[] memory _licenseFee,
         uint256[][] memory computeRequired
     ) external {
@@ -350,6 +368,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
                 subnetId[i],
                 _serviceProviderAddress[i],
                 _referralAddress[i],
+                _licenseAddress[i],
                 _licenseFee[i],
                 computeRequired[i]
             );
@@ -361,6 +380,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 _subnetId,
         string memory _serviceProviderAddress,
         address _referralAddress,
+        address _licenseAddress,
         uint256 _licenseFee,
         uint256[] memory _computeRequired
     ) public whenNotPaused {
@@ -377,6 +397,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             _subnetId,
             _serviceProviderAddress,
             _referralAddress,
+            _licenseAddress,
             _licenseFee,
             _computeRequired
         );
@@ -387,6 +408,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 _subnetId,
         string memory _serviceProviderAddress,
         address _referralAddress,
+        address _licenseAddress,
         uint256 _licenseFee,
         uint256[] memory _computeRequired
     ) internal {
@@ -417,6 +439,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         userSubscription[_nftId][_subnetId]
             .serviceProviderAddress = _serviceProviderAddress;
         userSubscription[_nftId][_subnetId].referralAddress = _referralAddress;
+        userSubscription[_nftId][_subnetId].licenseAddress = _licenseAddress;
         userSubscription[_nftId][_subnetId].r_licenseFee = _licenseFee;
         userSubscription[_nftId][_subnetId].computeRequired = _computeRequired;
         userSubscription[_nftId][_subnetId].subscribed = true;
@@ -428,6 +451,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             _subnetId,
             _serviceProviderAddress,
             _referralAddress,
+            _licenseAddress,
             _licenseFee,
             _computeRequired
         );
@@ -436,7 +460,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     function addReferralAddress(
         uint256 _nftId,
         uint256 _subnetId,
-        address _refAddress
+        address _referralAddress
     ) external {
         require(
             userSubscription[_nftId][_subnetId].referralAddress == address(0),
@@ -446,8 +470,8 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             ApplicationNFT.ownerOf(_nftId) == _msgSender(),
             "Sender not the owner of NFT id"
         );
-        userSubscription[_nftId][_subnetId].referralAddress = _refAddress;
-        emit ReferralAdded(_nftId, _subnetId, _refAddress);
+        userSubscription[_nftId][_subnetId].referralAddress = _referralAddress;
+        emit ReferralAdded(_nftId, _subnetId, _referralAddress);
     }
 
     function changeSubnetSubscription(
@@ -478,6 +502,9 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         userSubscription[_nftId][_newSubnetId]
             .referralAddress = userSubscription[_nftId][_currentSubnetId]
             .referralAddress;
+        userSubscription[_nftId][_newSubnetId]
+            .licenseAddress = userSubscription[_nftId][_currentSubnetId]
+            .licenseAddress;
         userSubscription[_nftId][_newSubnetId].r_licenseFee = userSubscription[
             _nftId
         ][_currentSubnetId].r_licenseFee;

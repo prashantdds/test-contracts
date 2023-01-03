@@ -536,7 +536,6 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             .getUpdatedBalance(
                 NFTid,
                 nftBalances[NFTid].subnetIds,
-                nftBalances[NFTid].NFTMinter,
                 nftBalances[NFTid].mintTime,
                 nftBalances[NFTid].prevBalance,
                 nftBalances[NFTid].lastBalanceUpdateTime
