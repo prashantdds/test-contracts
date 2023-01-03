@@ -53,11 +53,13 @@ contract Registration is
         bytes32 PRICE_ROLE;
         bytes32 WHITELIST_ROLE;
         bytes32 CLUSTER_LIST_ROLE;
+        address subnetLocalDAO;
     }
 
     struct Cluster {
         address walletAddress;
-        address clusterAddress;
+        address ownerAddress;
+        address operatorAddress;
         string DNSIP;
         uint8 listed; //uint8 [1,2,3] if in 1st state, should be able to withdraw
         uint256 NFTidLocked;
@@ -72,7 +74,7 @@ contract Registration is
 
     // SubnetID =>
     mapping(uint256 => SubnetAttributes) public subnetAttributes;
-    mapping(uint256 => address) public subnetLocalDAO;
+    // mapping(uint256 => address) public subnetLocalDAO;
     mapping(uint256 => address[]) public whiteListedClusters;
     uint256 public totalSubnets;
     mapping(uint256 => uint256) public totalClustersSigned;
@@ -90,7 +92,8 @@ contract Registration is
         uint256 clusterId,
         string DNS_IP,
         address walletAddress,
-        address clusterAddress,
+        address ownerAddress,
+        address operatorAddress,
         address sender
     );
     event NFTLockedForCluster(
@@ -249,6 +252,7 @@ contract Registration is
         returns (
             address,
             address,
+            address,
             string memory,
             uint8,
             uint256
@@ -256,7 +260,8 @@ contract Registration is
     {
         return (
             subnetClusters[_subnetId][_clusterId].walletAddress,
-            subnetClusters[_subnetId][_clusterId].clusterAddress,
+            subnetClusters[_subnetId][_clusterId].ownerAddress,
+            subnetClusters[_subnetId][_clusterId].operatorAddress,
             subnetClusters[_subnetId][_clusterId].DNSIP,
             subnetClusters[_subnetId][_clusterId].listed,
             subnetClusters[_subnetId][_clusterId].NFTidLocked
@@ -269,6 +274,43 @@ contract Registration is
         require(address(SubnetDAODistributor) == address(0), "Already set");
         SubnetDAODistributor = _SubnetDAODistributor;
     }
+
+    // event testEvent(
+    //     uint256 a,
+    //     uint256 b,
+    //     uint256 c,
+    //     uint256 d,
+    //     uint256 e,
+    //     uint256 f,
+    //     uint256 g,
+    //     uint256 h,
+    //     uint256 i,
+    //     uint256 j,
+    //     uint256 k,
+    //     uint256 l,
+    //     bool m
+    // );
+
+    // function test(
+    //     uint256 a,
+    //     uint256 b,
+    //     uint256 c,
+    //     uint256 d,
+    //     uint256 e,
+    //     uint256 f,
+    //     uint256 g,
+    //     uint256 h,
+    //     uint256 i,
+    //     uint256 j,
+    //     uint256 k,
+    //     uint256 l
+    //     ,bool m
+    // ) external {
+    //     emit testEvent(a,b,c,d,e,f,g,h,i,j,k,l
+    //     ,m
+    //     );
+    // }
+    //uncommenting above will fail the compilation
 
     // to change _DarkMatterNFTType call changeSubnetAttributes() with index 9
     function createSubnet(
@@ -294,7 +336,8 @@ contract Registration is
 
         emit NFTLockedForSubnet(_msgSender(), totalSubnets, nftId);
 
-        subnetLocalDAO[totalSubnets] = _subnetLocalDAO;
+        // subnetLocalDAO[totalSubnets] = _subnetLocalDAO;
+        string memory subnetIDStr = Strings.toString(totalSubnets);
 
         SubnetAttributes memory _subnetAttributes;
         _subnetAttributes.subnetType = _subnetType;
@@ -307,8 +350,8 @@ contract Registration is
         _subnetAttributes.supportFeeRate = _supportFeeRate;
         _subnetAttributes.stackFeesReqd = _stackFeesReqd;
         _subnetAttributes.DarkMatterNFTType = DarkMatterNFT;
+        _subnetAttributes.subnetLocalDAO = _subnetLocalDAO;
 
-        string memory subnetIDStr = Strings.toString(totalSubnets);
         _subnetAttributes.SUBNET_ATTR_ROLE = keccak256(abi.encodePacked("SUBNET_ATTR_ROLE", subnetIDStr));
         _subnetAttributes.PRICE_ROLE = keccak256(abi.encodePacked("PRICE_ROLE", subnetIDStr));
         _subnetAttributes.WHITELIST_ROLE = keccak256(abi.encodePacked("WHITELIST_ROLE", subnetIDStr));
@@ -400,7 +443,9 @@ contract Registration is
         returns (bool)
     {
         if (
-            hasRole(CLUSTER_LIST_ROLE, user) || subnetLocalDAO[subnetId] == user
+            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
+            hasRole(CLUSTER_LIST_ROLE, user) ||
+            hasRole(subnetAttributes[subnetId].CLUSTER_LIST_ROLE, _msgSender())
         ) return true;
         return false;
     }
@@ -474,8 +519,7 @@ contract Registration is
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             hasRole(WHITELIST_ROLE, _msgSender()) ||
-                // subnetLocalDAO[subnetId] == _msgSender(),
-                hasRole(subnetAttributes[subnetId].WHITELIST_ROLE, _msgSender()),
+            hasRole(subnetAttributes[subnetId].WHITELIST_ROLE, _msgSender()),
             "Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses"
         );
         address[] memory AllAddresses;
@@ -504,6 +548,7 @@ contract Registration is
         uint256 subnetId,
         string memory _DNSIP,
         address walletAddress,
+        address operatorAddress,
         uint256 nftId
     ) external whenNotPaused {
         if (!subnetAttributes[subnetId].sovereignStatus) {
@@ -533,9 +578,10 @@ contract Registration is
             .add(subnetAttributes[subnetId].stackFeesReqd);
 
         uint256 clusterId = totalClustersSigned[subnetId];
-        address clusterAddress = _msgSender();
+        address ownerAddress = _msgSender();
         subnetClusters[subnetId][clusterId].walletAddress = walletAddress;
-        subnetClusters[subnetId][clusterId].clusterAddress = clusterAddress;
+        subnetClusters[subnetId][clusterId].ownerAddress = ownerAddress;
+        subnetClusters[subnetId][clusterId].operatorAddress = operatorAddress;
         subnetClusters[subnetId][clusterId].DNSIP = _DNSIP;
         subnetClusters[subnetId][clusterId].listed = 1;
         subnetClusters[subnetId][clusterId].NFTidLocked = nftId;
@@ -543,7 +589,7 @@ contract Registration is
         totalClustersSigned[subnetId] = totalClustersSigned[subnetId].add(1);
 
         for (uint256 i = 0; i < whiteListedClusters[subnetId].length; i++)
-            if (whiteListedClusters[subnetId][i] == walletAddress) {
+            if (whiteListedClusters[subnetId][i] == ownerAddress) {
                 subnetClusters[subnetId][clusterId].listed = 2; // whitelisted clusters are approved as they signup
                 SubnetDAODistributor.addWeight(
                     subnetId,
@@ -558,7 +604,8 @@ contract Registration is
             clusterId,
             _DNSIP,
             walletAddress,
-            clusterAddress,
+            ownerAddress,
+            operatorAddress,
             _msgSender()
         );
         emit NFTLockedForCluster(_msgSender(), subnetId, clusterId, nftId);
@@ -572,7 +619,7 @@ contract Registration is
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             // subnetClusters[subnetId][clusterId].ClusterDAO == _msgSender(),
-            subnetClusters[subnetId][clusterId].clusterAddress == _msgSender(),
+            subnetClusters[subnetId][clusterId].ownerAddress == _msgSender(),
             "Sender is not Cluster owner"
         );
         subnetClusters[subnetId][clusterId].DNSIP = newDNSIP;
@@ -582,22 +629,23 @@ contract Registration is
     function transferClusterOwnership(
         uint256 subnetId,
         uint256 clusterId,
-        address newOwner,
-        address newWalletAddress
+        address newOperatorAddress,
+        address newWalletAddress,
+        address operatorAddress
     ) external whenNotPaused {
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
-            // subnetClusters[subnetId][clusterId].ClusterDAO == _msgSender(),.
-            subnetClusters[subnetId][clusterId].clusterAddress == _msgSender(),
+            subnetClusters[subnetId][clusterId].ownerAddress == _msgSender(),
             "Not the cluster owner"
         );
-        subnetClusters[subnetId][clusterId].clusterAddress = newOwner;
+        subnetClusters[subnetId][clusterId].ownerAddress = newOperatorAddress;
         subnetClusters[subnetId][clusterId].walletAddress = newWalletAddress;
+        subnetClusters[subnetId][clusterId].operatorAddress = operatorAddress;
         emit TransferredClusterOwnership(
             subnetId,
             clusterId,
             _msgSender(),
-            newOwner
+            newOperatorAddress
         );
     }
 
@@ -633,7 +681,7 @@ contract Registration is
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             hasRole(CLUSTER_LIST_ROLE, _msgSender()) ||
             hasRole(subnetAttributes[subnetId].CLUSTER_LIST_ROLE, _msgSender()) ||
-                subnetClusters[subnetId][clusterId].clusterAddress == _msgSender(),
+                subnetClusters[subnetId][clusterId].ownerAddress == _msgSender(),
             "Sender is not Cluster owner or has CLUSTER_LIST_ROLE"
         );
         subnetClusters[subnetId][clusterId].listed = 3;
@@ -718,7 +766,7 @@ contract Registration is
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             // subnetClusters[subnetId][clusterId].ClusterDAO == _msgSender(),
-            subnetClusters[subnetId][clusterId].clusterAddress == _msgSender(),
+            subnetClusters[subnetId][clusterId].ownerAddress == _msgSender(),
             "Only cluster operator can withdraw Stack locked"
         );
         address walletAddress = subnetClusters[subnetId][clusterId].walletAddress;
