@@ -3,7 +3,6 @@
 pragma solidity 0.8.2;
 
 import "./interfaces/IRoleControlV2.sol";
-import "./interfaces/ISubscription.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
@@ -16,7 +15,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  */
 contract ContractBasedDeploymentV2 is Initializable {
     IRoleControlV2 public RoleControlV2;
-    ISubscription public Subscription;
+    // ISubscription public Subscription;
     bytes32 public constant CONTRACT_BASED_DEPLOYER =
         keccak256("CONTRACT_BASED_DEPLOYER");
 
@@ -53,9 +52,9 @@ contract ContractBasedDeploymentV2 is Initializable {
 
     event EntryDeleted(string indexed appName);
 
-    function initialize(IRoleControlV2 _RoleControlV2, ISubscription _Subscription) public initializer {
+    function initialize(IRoleControlV2 _RoleControlV2) public initializer {
         RoleControlV2 = _RoleControlV2;
-        Subscription = _Subscription;
+        // Subscription = _Subscription;
     }
 
     function getNFTAddress() external view returns (address) {
@@ -68,6 +67,8 @@ contract ContractBasedDeploymentV2 is Initializable {
      * @param _hashFunction hashFunction code for the hash function used
      * @param _size length of the digest
      */
+
+
     function createData(
         uint256 _nftId,
         string memory appName,
@@ -79,36 +80,7 @@ contract ContractBasedDeploymentV2 is Initializable {
         string memory lastUpdatedTime
     ) external hasPermission(_nftId) {
         require(entries[_nftId][appName].digest == 0, "Already set");
-        require(_resourceArray.length > 1, "Resource array should have replica count and count of resource types");
-        require(_resourceArray[0] > 0, "Replica count in Resource array should be greater than zero");
-        
-        require(_subnetIDList.length > 0, "Minimum of one subnet should be provided");
-        for(uint32 i = 0; i < _subnetIDList.length; i++) {
-            require(_subnetIDList[i].length == 3, "Subnet array format is incorrect");
-            require(_subnetIDList[i][0] > 0, "min replica value should be greater than zero");
-            require(_subnetIDList[i][1] >= _subnetIDList[i][0], "max replica value should be greater than or equal to min replica value");
-        }
-
-        bool zeroFlag = true;
-        for(uint32 i = 1; i < _resourceArray.length; i++) {
-            if(_resourceArray[i] > 0) {
-                zeroFlag = false;
-                break;
-            }
-        }
-        require(!zeroFlag, "Resource array should have a greater than zero count of atleast one resource type");
-
-        // uint256[] memory subnetComputes;
-        // for(uint32 i = 0; i < _subnetIDList.length; i++) {
-        //     uint256 subnetID = _subnetIDList[i];
-        //     subnetComputes = Subscription.getComputesOfSubnet(_nftId, subnetID);
-        //     require(subnetComputes.length >= _resourceArray.length, "One or more subscribed subnets do not have enough resources");
-        //     for(uint32 j = 1; j < _resourceArray.length; j++) {
-        //         if(_resourceArray[j] == 0)
-        //             continue;
-        //         require(_resourceArray[0]*_resourceArray[j] <= subnetComputes[0]*subnetComputes[j], "One or more subscribed subnets do not have enough resources");
-        //     }
-        // }
+        require(_resourceArray.length > 0, "Resource array should have replica count and count of resource types");
 
         entries[_nftId][appName] = Multihash(
             lastAppId[_nftId],
@@ -152,37 +124,9 @@ contract ContractBasedDeploymentV2 is Initializable {
         string memory lastUpdatedTime
     ) external hasPermission(_nftId) {
         require(entries[_nftId][appName].digest != 0, "Already no data");
-        require(_resourceArray.length > 1, "Resource array should have replica count and count of resource types");
-        require(_resourceArray[0] > 0, "Replica count in Resource array should be greater than zero");
-
-        require(_subnetIDList.length > 0, "Minimum of one subnet should be provided");
-        for(uint32 i = 0; i < _subnetIDList.length; i++) {
-            require(_subnetIDList[i].length == 3, "Subnet array format is incorrect");
-            require(_subnetIDList[i][0] > 0, "min replica value should be greater than zero");
-            require(_subnetIDList[i][1] >= _subnetIDList[i][0], "max replica value should be greater than or equal to min replica value");
-        }
-        bool zeroFlag = true;
-        for(uint32 i = 1; i < _resourceArray.length; i++) {
-            if(_resourceArray[i] > 0) {
-                zeroFlag = false;
-                break;
-            }
-        }
-        require(!zeroFlag, "Resource array should have a greater than zero count of atleast one resource type");
+        require(_resourceArray.length > 0, "Resource array should have replica count and count of resource types");
 
         uint256 appId = entries[_nftId][appName].appID;
-
-        // uint256[] memory subnetComputes;
-        // for(uint32 i = 0; i < _subnetIDList.length; i++) {
-        //     uint256 subnetID = _subnetIDList[i];
-        //     subnetComputes = Subscription.getComputesOfSubnet(_nftId, subnetID);
-        //     require(subnetComputes.length >= _resourceArray.length, "One or more subscribed subnets do not have enough resources");
-        //     for(uint32 j = 1; j < _resourceArray.length; j++) {
-        //         if(_resourceArray[j] == 0)
-        //             continue;
-        //         require(_resourceArray[0]*_resourceArray[j] <= subnetComputes[0]*subnetComputes[j], "One or more subscribed subnets do not have enough resources");
-        //     }
-        // }
 
         entries[_nftId][appName] = Multihash(
             appId,
@@ -257,6 +201,7 @@ contract ContractBasedDeploymentV2 is Initializable {
             bytes32 digest,
             uint8 hashfunction,
             uint8 size,
+            uint256[][] memory subnetIDList,
             uint256[] memory _resourceArray,
             string memory lastUpdatedTime
         )
@@ -266,6 +211,7 @@ contract ContractBasedDeploymentV2 is Initializable {
             entry.digest,
             entry.hashFunction,
             entry.size,
+            entry.subnetIdList,
             entry.resourceArray,
             entry.lastUpdatedTime
         );
