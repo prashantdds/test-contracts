@@ -13,6 +13,8 @@ interface ISubscription {
         returns (address);
         
     function GLOBAL_DAO_ADDRESS() external view returns (address);
+
+    function getLicenseAddress(uint256 _nftId, uint256 _subnetId) external view returns (address);
 }
 
 

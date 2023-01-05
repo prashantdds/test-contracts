@@ -5,7 +5,7 @@ interface IBalanceCalculator {
     function getUpdatedBalance(
         uint256 nftId,
         uint256[] memory subnetIds,
-        address nftMinter,
+        // address nftMinter,
         uint256 mintTime,
         uint256[3] memory prevBalance,
         uint256 lastBalanceUpdatedTime

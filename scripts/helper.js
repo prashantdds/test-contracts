@@ -12,7 +12,7 @@ const accounts = [
     "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
 ]
 
-let noPrint = false;
+let noPrint = false
 
 let parameters = {
     registration: {
@@ -36,7 +36,7 @@ let parameters = {
 }
 
 const setParameters = (params) => {
-    parameters = {...parameters, ...params};
+    parameters = { ...parameters, ...params }
 }
 
 let addresses = {}
@@ -48,15 +48,14 @@ const setAddresses = (newaddr) => {
 const getAddresses = () => addresses
 
 const setNoPrint = (flag) => {
-    noPrint = flag;
+    noPrint = flag
 }
 
-const checkNoPrint = () => noPrint;
+const checkNoPrint = () => noPrint
 
 const printLogs = (str) => {
-    if(checkNoPrint())
-        return;
-    printLogs(str);
+    if (checkNoPrint()) return
+    console.log(str)
 }
 
 ///////////////////////////// GET CONTRACTS//////////////////////////////////
@@ -342,10 +341,9 @@ const deployRoleControl = async () => {
         [addresses.appNFT],
         { initializer: "initialize" }
     )
-    await RoleControl.deployed();
+    await RoleControl.deployed()
 
-    if(checkNoPrint())
-    printLogs("RoleControl: ", RoleControl.address);
+    if (checkNoPrint()) printLogs("RoleControl: ", RoleControl.address)
     return RoleControl.address
 }
 
@@ -367,13 +365,11 @@ const deployContractBasedDeployment = async () => {
     )
     const ContractBasedDeployment = await upgrades.deployProxy(
         ContractBasedDeploymentContract,
-        [addresses.RoleControl, addresses.Subscription],
+        [addresses.RoleControl],
         { initializer: "initialize" }
     )
     await ContractBasedDeployment.deployed()
-    printLogs(
-        `ContractBasedDeployment: "${ContractBasedDeployment.address}"`
-    )
+    printLogs(`ContractBasedDeployment: "${ContractBasedDeployment.address}"`)
     return ContractBasedDeployment.address
 }
 
@@ -477,7 +473,7 @@ const deployContracts = async () => {
     await connectSubCalcToSubDAO()
     await connectRegToSubDAO()
 
-    printLogs(addresses);
+    printLogs(addresses)
 }
 
 module.exports = {
