@@ -116,6 +116,24 @@ const mintDarkNFT = async () => {
     console.log("count: ", count)
 }
 
+const mintAppNFT = async () => {
+    const [deployer] = await ethers.getSigners()
+    console.log("deploy by acct: " + deployer.address)
+
+    const bal = await deployer.getBalance()
+
+    const nftToken = await getAppNFT()
+
+    tr = await nftToken.mint(deployer.address)
+    rec = await tr.wait()
+    const transferEvent = rec.events.find(event => event.event == "Transfer");
+    const nftID = transferEvent.args[2].toNumber();
+    console.log("nftID: ", nftID);
+    // console.log("nftToken: ", nftToken);
+    const count = await nftToken.totalSupply()
+    console.log("count: ", count)
+}
+
 const createSubnet = async (index) => {
     const [deployer] = await ethers.getSigners()
     console.log("deploy by acct: " + deployer.address)
@@ -147,7 +165,7 @@ const signupCluster1 = async () => {
     console.log("Cluster sign up 1 for subnet 1..")
     const Registration = await getRegistration()
     const op = await Registration.clusterSignUp(
-        1,
+        0,
         "sovereignsubnetcannothaveempty",
         addresses.deployer,
         7
@@ -159,7 +177,7 @@ const signupCluster2 = async () => {
     console.log("Cluster sign up 2 for subnet 1..")
     const Registration = await getRegistration()
     const op = await Registration.clusterSignUp(
-        1,
+        0,
         "sovereignsubnetcannothaveempty",
         addresses.deployer,
         8
@@ -592,25 +610,84 @@ const ConDepCreateData = async () => {
 const getSubnetAttributes = async () => {
     const reg = await getRegistration()
     const subAttr = await reg.getSubnetAttributes(0)
-    console.log(subAttr)
+    const clustAttr = await reg.getClusterAttributes(0,0);
+    const maxSpots = await reg.totalClusterSpotsAvailable(0);
+    console.log("subAttr", subAttr);
+    console.log("clustAttr", clustAttr);
+    console.log("Maxspots", maxSpots);
+}
+
+const setup = async () => {
+    await mintDarkNFT();
+    await helper.callStackApprove();
+    await helper.callNftApprove();
+    await createSubnet(1);
+    const xct = await getXCT();
+    await xct.approve(
+        helper.getAddresses().Subscription,
+        ethers.utils.parseEther("1000000000")
+    );
+  const subscription = await helper.getSubscription();
+    await subscription.subscribeNew(
+        ethers.utils.parseEther("10000"),
+        0,
+        "ddf",
+        "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
+        10000,
+        [1, 1, 0, 0]
+    );
+    await helper.grantRoleForContractBasedDeployment(1, addresses.deployer);
 }
 
 async function main() {
-    // helper.setAddresses({
-    //     deployer: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    //     xct: "0x59b670e9fA9D0A427751Af201D676719a970857b",
-    //     stack: "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
-    //     nftToken: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
-    //     Registration: "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f",
-    //     appNFT: "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
-    //     SubscriptionBalanceCalculator:
-    //         "0x7a2088a1bFc9d81c55368AE168C2C02570cB814F",
-    //     SubscriptionBalance: "0x09635F643e140090A9A8Dcd712eD6285858ceBef",
-    //     SubnetDAODistributor: "0xc5a5C42992dECbae36851359345FE25997F5C42d",
-    //     Subscription: "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
-    // })
+    addresses = {
+        deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
+        xct: "0xca89AD662eA7A2688d29e2Df6291123eBFB807E4",
+        stack: "0xF1E0336C04f03c39904015b581A5db091B6D9960",
+        nftToken: "0x36cb2DE24CC92BCae864759D9aC4ddcc43a112B0",
+        Registration: "0x027d84b57eA012BddfDcc2b297EaeB2967912c5A",
+        appNFT: "0x492F3b79E18658f1a72c75C8a17760a006efCa60",
+        SubscriptionBalanceCalculator: "0x00Df2C3F6A40B4d657ED68b4689a7ddcA9434e59",
+        SubscriptionBalance: "0xA8ef2C4E1d0091bAb84c74cC40b7306955DfD290",
+        SubnetDAODistributor: "0xF0DeD7b2b4Ac842aA245644e89298F43ac3c8b3e",
+        Subscription: "0xfF29cFD3C9954a485d7C6D128a9f87CEB2C2b366",
+        NFT: "0xbC0fe507d07914EF7039d22Ea5FAbe6947B3D711",
+        RoleControl: "0x660c66A35e4B87454a89b307251bA5074b519892",
+        ContractBasedDeployment: "0x6b8737327AfED0970222615DEC7289439d37e581"
+    }
+    helper.setAddresses({
+        deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
+        xct: "0xca89AD662eA7A2688d29e2Df6291123eBFB807E4",
+        stack: "0xF1E0336C04f03c39904015b581A5db091B6D9960",
+        nftToken: "0x36cb2DE24CC92BCae864759D9aC4ddcc43a112B0",
+        Registration: "0x027d84b57eA012BddfDcc2b297EaeB2967912c5A",
+        appNFT: "0x492F3b79E18658f1a72c75C8a17760a006efCa60",
+        SubscriptionBalanceCalculator: "0x00Df2C3F6A40B4d657ED68b4689a7ddcA9434e59",
+        SubscriptionBalance: "0xA8ef2C4E1d0091bAb84c74cC40b7306955DfD290",
+        SubnetDAODistributor: "0xF0DeD7b2b4Ac842aA245644e89298F43ac3c8b3e",
+        Subscription: "0xfF29cFD3C9954a485d7C6D128a9f87CEB2C2b366",
+        NFT: "0xbC0fe507d07914EF7039d22Ea5FAbe6947B3D711",
+        RoleControl: "0x660c66A35e4B87454a89b307251bA5074b519892",
+        ContractBasedDeployment: "0x6b8737327AfED0970222615DEC7289439d37e581"
+    })
 
-    // await getSubnetAttributes();
+    // helper.setAddresses({
+    //         deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
+    //         xct: "0xca89AD662eA7A2688d29e2Df6291123eBFB807E4",
+    //         stack: "0xF1E0336C04f03c39904015b581A5db091B6D9960",
+    //         nftToken: "0x36cb2DE24CC92BCae864759D9aC4ddcc43a112B0",
+    //         Registration: "0x027d84b57eA012BddfDcc2b297EaeB2967912c5A",
+    //         appNFT: "0x492F3b79E18658f1a72c75C8a17760a006efCa60",
+    //         SubscriptionBalanceCalculator: "0x00Df2C3F6A40B4d657ED68b4689a7ddcA9434e59",
+    //         SubscriptionBalance: "0xA8ef2C4E1d0091bAb84c74cC40b7306955DfD290",
+    //         SubnetDAODistributor: "0xF0DeD7b2b4Ac842aA245644e89298F43ac3c8b3e",
+    //         Subscription: "0xfF29cFD3C9954a485d7C6D128a9f87CEB2C2b366",
+    //         NFT: "0xbC0fe507d07914EF7039d22Ea5FAbe6947B3D711",
+    //         RoleControl: "0x660c66A35e4B87454a89b307251bA5074b519892",
+    //         ContractBasedDeployment: "0xFB86Bcaf08f84E5c5F856bF623C04aB233839298"
+    //     })
+    // const now = new Date();
+    // console.log(now.getTime());
     await helper.deployContracts()
     await helper.callStackApprove()
     await helper.callNftApprove()
@@ -620,9 +697,10 @@ async function main() {
     // await deployStack();
     // await deployDarkNFT();
     // await mintDarkNFT(); // call 8 times
+    // await mintAppNFT(); // call 8 times
     // await deployReg();
-    // await callStackApprove();
-    // await callNftApprove();
+    // await helper.callStackApprove();
+    // await helper.callNftApprove();
     // await createSubnet(1) // call 6 times, change the param to index
     // await deployAppNFT();
     // await deploySubscriptionBalanceCalculator();
@@ -634,6 +712,8 @@ async function main() {
     // await connectSubCalcToSubBal();
     // await connectSubCalcToSubDAO();
     // await connectRegToSubDAO();
+    // await helper.xctApproveSub();
+    // await helper.xctApproveSubBal();
     // await signupCluster1();
     // await signupCluster2();
     // await subscribeNew();
@@ -650,8 +730,71 @@ async function main() {
     // await deployNFTToken2();
     // await deployRoleControlV2();
     // await grantRole();
-    // await deployContractBasedDeploymentV2();
+    // await helper.deployRoleControl();
+    // await helper.deployContractBasedDeployment();
     // await getIPFS();
+    // await setup();
+    // uint256 _nftId,
+    // uint256 _subnetId,
+    // string memory _serviceProviderAddress,
+    // address _referralAddress,
+    // uint256 _licenseFee,
+    // uint256[] memory _computeRequired
+    // const xct = await getXCT();
+    // await xct.approve(
+    //     helper.getAddresses().Subscription,
+    //     ethers.utils.parseEther("1000000000")
+    // );
+    // const subscription = await helper.getSubscription();
+    // await subscription.subscribeNew(
+    //     ethers.utils.parseEther("10000"),
+    //     0,
+    //     "ddf",
+    //     "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
+    //     10000,
+    //     [1, 1, 0, 0]
+    // );
+    // await helper.grantRoleForContractBasedDeployment(1, addresses.deployer)
+
+    // const subscription = await helper.getSubscription();
+    // await subscription.subscribeNew(
+    //     ethers.utils.parseEther("10000"),
+    //     0,
+    //     "ddf",
+    //     "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
+    //     10000,
+    //     [1, 2, 0, 0]
+    // );
+    // await helper.grantRoleForContractBasedDeployment(2, addresses.deployer);
+
+    // uint256 _nftId,
+    // uint256 _subnetId,
+    // string memory _serviceProviderAddress,
+    // address _referralAddress,
+    // uint256 _licenseFee,
+    // uint256[] memory _computeRequired
+
+    // const contractDeploy = await getContractBasedDeployment();
+    // tr = await contractDeploy.createData(
+    //     1,
+    //     "app1",
+    //     "0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5",
+    //     18,
+    //     32,
+    //     [[1,1,0]],
+    //     [1, 2, 0],
+    //     now.getTime()+""
+    // )
+    // rec = await tr.wait()
+    // const events = rec.events.map(event=>({name: event.event , args: event.args}));
+    // console.log(events);
+    // const start = performance.now();
+    // const data = await contractDeploy.getFullData(1, "app1")
+    // const data = await contractDeploy.getDataByIds(2, [0]);
+    // console.log(data);
+    // const end = performance.now();
+    // console.log("time taken: ", end-start);
+
 }
 
 main()

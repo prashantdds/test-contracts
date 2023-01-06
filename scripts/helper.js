@@ -12,7 +12,7 @@ const accounts = [
     "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
 ]
 
-let noPrint = false
+let noPrint = false;
 
 let parameters = {
     registration: {
@@ -26,6 +26,7 @@ let parameters = {
         globalDAO: accounts[0],
         limitNFTSubnets: 600,
         minTimeFunds: 300,
+        supportFee: 10000,
         reqdNoticeTimeSProvider: 2592000,
         reqdCooldownSProvider: 1296000,
     },
@@ -36,7 +37,7 @@ let parameters = {
 }
 
 const setParameters = (params) => {
-    parameters = { ...parameters, ...params }
+    parameters = { ...parameters, ...params };
 }
 
 let addresses = {}
@@ -48,14 +49,15 @@ const setAddresses = (newaddr) => {
 const getAddresses = () => addresses
 
 const setNoPrint = (flag) => {
-    noPrint = flag
+    noPrint = flag;
 }
 
-const checkNoPrint = () => noPrint
+const checkNoPrint = () => noPrint;
 
 const printLogs = (str) => {
-    if (checkNoPrint()) return
-    console.log(str)
+    if (checkNoPrint())
+    return;
+    console.log(str);
 }
 
 ///////////////////////////// GET CONTRACTS//////////////////////////////////
@@ -310,6 +312,7 @@ const deploySubscription = async () => {
             subscription.globalDAO,
             subscription.limitNFTSubnets,
             subscription.minTimeFunds,
+	    subscription.supportFee,
             addresses.Registration,
             addresses.appNFT,
             addresses.SubscriptionBalance,
@@ -341,9 +344,10 @@ const deployRoleControl = async () => {
         [addresses.appNFT],
         { initializer: "initialize" }
     )
-    await RoleControl.deployed()
-
-    if (checkNoPrint()) printLogs("RoleControl: ", RoleControl.address)
+    await RoleControl.deployed();
+    
+        if (checkNoPrint())
+    	printLogs("RoleControl: ", RoleControl.address);
     return RoleControl.address
 }
 

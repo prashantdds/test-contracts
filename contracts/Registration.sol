@@ -229,7 +229,8 @@ contract Registration is
             uint256[] memory,
             uint256,
             uint256,
-            uint256
+            uint256,
+            IERC721Upgradeable _DarkMatterNFT
         )
     {
         uint256 _subnetId = subnetId;
@@ -242,7 +243,8 @@ contract Registration is
             subnetAttributes[_subnetId].otherAttributes,
             subnetAttributes[_subnetId].maxClusters,
             subnetAttributes[_subnetId].supportFeeRate,
-            subnetAttributes[_subnetId].stackFeesReqd
+            subnetAttributes[_subnetId].stackFeesReqd,
+            subnetAttributes[_subnetId].DarkMatterNFTType
         );
     }
 
@@ -275,41 +277,40 @@ contract Registration is
         SubnetDAODistributor = _SubnetDAODistributor;
     }
 
-    // event testEvent(
-    //     uint256 a,
-    //     uint256 b,
-    //     uint256 c,
-    //     uint256 d,
-    //     uint256 e,
-    //     uint256 f,
-    //     uint256 g,
-    //     uint256 h,
-    //     uint256 i,
-    //     uint256 j,
-    //     uint256 k,
-    //     uint256 l,
-    //     bool m
-    // );
+    event testEvent(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f,
+        uint256 g,
+        uint256 h,
+        uint256 i,
+        uint256 j,
+        uint256 k,
+        uint256 l
+    );
 
-    // function test(
-    //     uint256 a,
-    //     uint256 b,
-    //     uint256 c,
-    //     uint256 d,
-    //     uint256 e,
-    //     uint256 f,
-    //     uint256 g,
-    //     uint256 h,
-    //     uint256 i,
-    //     uint256 j,
-    //     uint256 k,
-    //     uint256 l
-    //     ,bool m
-    // ) external {
-    //     emit testEvent(a,b,c,d,e,f,g,h,i,j,k,l
-    //     ,m
-    //     );
-    // }
+    function test(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f,
+        uint256 g,
+        uint256 h,
+        uint256 i,
+        uint256 j,
+        uint256 k,
+        uint256 l
+        // ,bool m
+    ) external {
+        emit testEvent(a,b,c,d,e,f,g,h,i,j,k,l
+        // ,m
+        );
+    }
     //uncommenting above will fail the compilation
 
     // to change _DarkMatterNFTType call changeSubnetAttributes() with index 9
@@ -629,18 +630,18 @@ contract Registration is
     function transferClusterOwnership(
         uint256 subnetId,
         uint256 clusterId,
-        address newOperatorAddress,
+        address newOwnerAddress,
         address newWalletAddress,
-        address operatorAddress
+        address newOperatorAddress
     ) external whenNotPaused {
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             subnetClusters[subnetId][clusterId].ownerAddress == _msgSender(),
             "Not the cluster owner"
         );
-        subnetClusters[subnetId][clusterId].ownerAddress = newOperatorAddress;
+        subnetClusters[subnetId][clusterId].ownerAddress = newOwnerAddress;
         subnetClusters[subnetId][clusterId].walletAddress = newWalletAddress;
-        subnetClusters[subnetId][clusterId].operatorAddress = operatorAddress;
+        subnetClusters[subnetId][clusterId].operatorAddress = newOperatorAddress;
         emit TransferredClusterOwnership(
             subnetId,
             clusterId,
