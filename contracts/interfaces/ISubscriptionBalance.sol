@@ -18,6 +18,11 @@ interface ISubscriptionBalance {
 
     function totalSubnets(uint256 nftId) external view returns (uint256);
 
+    function estimateDripRatePerSecOfSubnet(uint subnetId, uint256 licenseFee, uint256 supportFee, uint256[] memory computeRequired)
+        external
+        view
+        returns (uint256);
+
     function dripRatePerSec(uint256 NFTid)
         external
         view
@@ -34,14 +39,22 @@ interface ISubscriptionBalance {
 
     function subscribeNew(
         uint256 _nftId,
-        uint256 _balanceToAdd,
         uint256 _subnetId,
         address _minter
     ) external returns (bool);
 
-    function refreshEndOfBalance(uint256 _nftId) external returns (bool);
+    function addBalance(uint256 nftID, uint256 _balanceToAdd)
+        external
+        returns (
+            bool
+        );
 
-    function settleAccountBalance(uint256 _nftId) external returns (bool);
+    function prevBalances(uint256 nftID)
+        external
+        view
+        returns (uint256[3] memory);
+
+    function updateBalance(uint256 _nftId) external;
 
     function addSubnetToNFT(uint256 _nftId, uint256 _subnetId)
         external
@@ -55,13 +68,20 @@ interface ISubscriptionBalance {
 
     function isBalancePresent(uint256 _nftId) external view returns (bool);
 
-    function getRealtimeBalances(uint256 NFTid)
+    function isSubscribed(uint256 nftID)
+    external
+    view
+    returns (bool);
+
+    function estimateUpdatedBalance(uint256 NFTid)
         external
         view
         returns (uint256[3] memory);
 
-    function getRealtimeCostIncurredUnsettled(uint256 NFTid)
+    function estimateTotalUpdatedBalance(uint256 NFTid)
         external
         view
         returns (uint256);
+    
+    function totalPrevBalance(uint256 nftID) external view returns (uint256);
 }

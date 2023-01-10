@@ -276,42 +276,7 @@ contract Registration is
         require(address(SubnetDAODistributor) == address(0), "Already set");
         SubnetDAODistributor = _SubnetDAODistributor;
     }
-
-    event testEvent(
-        uint256 a,
-        uint256 b,
-        uint256 c,
-        uint256 d,
-        uint256 e,
-        uint256 f,
-        uint256 g,
-        uint256 h,
-        uint256 i,
-        uint256 j,
-        uint256 k,
-        uint256 l
-    );
-
-    function test(
-        uint256 a,
-        uint256 b,
-        uint256 c,
-        uint256 d,
-        uint256 e,
-        uint256 f,
-        uint256 g,
-        uint256 h,
-        uint256 i,
-        uint256 j,
-        uint256 k,
-        uint256 l
-        // ,bool m
-    ) external {
-        emit testEvent(a,b,c,d,e,f,g,h,i,j,k,l
-        // ,m
-        );
-    }
-    //uncommenting above will fail the compilation
+    
 
     // to change _DarkMatterNFTType call changeSubnetAttributes() with index 9
     function createSubnet(

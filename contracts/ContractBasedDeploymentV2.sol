@@ -82,6 +82,11 @@ contract ContractBasedDeploymentV2 is Initializable {
         require(entries[_nftId][appName].digest == 0, "Already set");
         require(_resourceArray.length > 0, "Resource array should have replica count and count of resource types");
 
+        for(uint256 i = 0; i < _subnetIDList.length; i++)
+        {
+            require(_subnetIDList[i][0] <= _subnetIDList[i][1], "max replica count should be greater or equal to the min replica count");
+        }
+
         entries[_nftId][appName] = Multihash(
             lastAppId[_nftId],
             appName,
@@ -125,6 +130,11 @@ contract ContractBasedDeploymentV2 is Initializable {
     ) external hasPermission(_nftId) {
         require(entries[_nftId][appName].digest != 0, "Already no data");
         require(_resourceArray.length > 0, "Resource array should have replica count and count of resource types");
+
+        for(uint256 i = 0; i < _subnetIDList.length; i++)
+        {
+            require(_subnetIDList[i][0] <= _subnetIDList[i][1], "max replica count should be greater or equal to the min replica count");
+        }
 
         uint256 appId = entries[_nftId][appName].appID;
 
@@ -202,7 +212,7 @@ contract ContractBasedDeploymentV2 is Initializable {
             uint8 hashfunction,
             uint8 size,
             uint256[][] memory subnetIDList,
-            uint256[] memory _resourceArray,
+            uint256[] memory resourceArray,
             string memory lastUpdatedTime
         )
     {

@@ -2,14 +2,17 @@
 pragma solidity 0.8.2;
 
 interface IBalanceCalculator {
+    
     function getUpdatedBalance(
         uint256 nftId,
         uint256[] memory subnetIds,
-        // address nftMinter,
         uint256 mintTime,
         uint256[3] memory prevBalance,
-        uint256 lastBalanceUpdatedTime
-    ) external returns (uint256[3] memory prevBalanceUpdated);
+        uint256 duration
+        // ,
+        // uint256 lastBalanceUpdatedTime
+    ) external returns (uint256[3] memory);
+
 
     function getRealtimeBalance(
         uint256 nftId,
@@ -26,4 +29,6 @@ interface IBalanceCalculator {
 
     function receiveRevenueForAddress(address _userAddress) external;
 
+    function withdrawBalance(address to, uint256 amount)
+    external;
 }

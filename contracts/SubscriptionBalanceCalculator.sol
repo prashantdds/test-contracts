@@ -10,6 +10,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "./interfaces/IRegistration.sol";
 import "./interfaces/ISubscription.sol";
 import "./interfaces/IERC721.sol";
+import "hardhat/console.sol";
 
 contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
@@ -56,14 +57,6 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         SubnetDAODistributor = _SubnetDAODistributor;
     }
 
-    function t_supportFeeAddress(uint256 _tokenId)
-        public
-        view
-        returns (address)
-    {
-        return ApplicationNFT.ownerOf(_tokenId);
-    }
-
     function s_GlobalDAOAddress() public view returns (address) {
         return RegistrationContract.GLOBAL_DAO_ADDRESS();
     }
@@ -83,14 +76,15 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         return RegistrationContract.daoRate();
     }
 
-    function t_SupportFeeRate(uint256 _subnetId)
+    function t_SupportFeeRate(uint256 _nftId, uint256 _subnetId)
         public
         view
         returns (uint256 fee)
     {
-        (, , , , , , , fee, ) = RegistrationContract.getSubnetAttributes(
-            _subnetId
-        );
+        // (, , , , , , , fee, ) = RegistrationContract.getSubnetAttributes(
+        //     _subnetId
+        // );
+        return SubscriptionContract.t_supportFee(_nftId, _subnetId);
     }
 
     function u_ReferralPercent() public view returns (uint256) {
@@ -131,7 +125,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     function getComputeCosts(
         uint256 nftId,
         uint256[] memory subnetIds,
-        uint256 lastBalanceUpdatedTime
+        uint256 duration
     ) internal view returns (uint256 computeCost) {
         uint256 computeCostPerSec = 0;
         for (uint256 i = 0; i < subnetIds.length; i++) {
@@ -145,8 +139,9 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                 );
             }
         }
+        // uint256 duration = block.timestamp.sub(lastBalanceUpdatedTime);
         computeCost = computeCostPerSec.mul(
-            block.timestamp.sub(lastBalanceUpdatedTime)
+            duration
         );
     }
 
@@ -166,6 +161,12 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         XCTToken.transfer(_userAddress, bal);
         balanceOfRev[_userAddress] = 0;
         emit ReceivedRevenue(_userAddress, bal);
+    }
+
+    function withdrawBalance(address to, uint256 amount)
+    public
+    {
+        XCTToken.transfer(to, amount);
     }
 
     function getRealtimeBalance(
@@ -192,7 +193,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                 r_licenseFee(nftId, subnetIds[i]).mul(computeCost).div(100000)
             );
             costIncurredArr[2] = costIncurredArr[2].add(
-                t_SupportFeeRate(subnetIds[i]).mul(computeCost).div(100000)
+                t_SupportFeeRate(nftId, subnetIds[i]).mul(computeCost).div(100000)
             );
         }
 
@@ -232,7 +233,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                 r_licenseFee(nftId, subnetIds[i]).mul(computeCost).div(100000)
             );
             costIncurredArr[2] = costIncurredArr[2].add(
-                t_SupportFeeRate(subnetIds[i]).mul(computeCost).div(100000)
+                t_SupportFeeRate(nftId, subnetIds[i]).mul(computeCost).div(100000)
             );
         }
 
@@ -250,12 +251,13 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         uint256[] memory subnetIds,
         uint256 mintTime,
         uint256[3] memory prevBalance,
-        uint256 lastBalanceUpdatedTime
+        uint256 duration
+        // uint256 lastBalanceUpdatedTime
     ) external returns (uint256[3] memory) {
         uint256 computeCost = getComputeCosts(
             nftId,
             subnetIds,
-            lastBalanceUpdatedTime
+            duration
         );
 
         if (computeCost > 100000) {
@@ -276,8 +278,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                 // update R revenue of (1+R+S+T+U) revenue
                 costIncurredArr[0] = costIncurredArr[0].add(
                     r_licenseFee(nftId, subnetIds[i])
-                        .mul(computeCost)
-                        .div(100000)
+                        .mul(duration)
                 );
                 address licenseAddress = SubscriptionContract.getLicenseAddress(nftId, subnetIds[i]);
                 balanceOfRev[licenseAddress] = balanceOfRev[licenseAddress].add(
@@ -286,20 +287,14 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
 
                 // update T revenue of (1+R+S+T+U) revenue
                 costIncurredArr[2] = costIncurredArr[2].add(
-                    t_SupportFeeRate(subnetIds[i])
+                    t_SupportFeeRate(nftId, subnetIds[i])
                     .mul(computeCost)
                     .div(100000)
                 );
-                balanceOfRev[t_supportFeeAddress(nftId)] = balanceOfRev[
-                    t_supportFeeAddress(nftId)
-                ].add(costIncurredArr[2]);
-
-                // LOGIC removed, now using SubnetDAODistributor contract
-                // balanceOfRev[
-                //     subnetDAOWalletFor1(subnetIds[i])
-                // ] = balanceOfRev[subnetDAOWalletFor1(subnetIds[i])].add(
-                //     computeCost
-                // );
+                address supportAddress = SubscriptionContract.getSupportAddress(nftId, subnetIds[i]);
+                balanceOfRev[supportAddress]
+                    = balanceOfRev[supportAddress]
+                    .add(costIncurredArr[2]);
 
                 // update (1)(for subnetDAOWallet to SubnetDAODistributor contract) of (1+R+S+T+U) revenue
                 balanceOfRev[address(SubnetDAODistributor)] = balanceOfRev[
