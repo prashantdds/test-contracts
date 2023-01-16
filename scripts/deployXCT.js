@@ -1,8 +1,17 @@
 const { ethers } = require("hardhat")
+const {
+    abi: routerABI,
+    bytecode: routerBytecode,
+} = require("@uniswap/v2-periphery/build/UniswapV2Router02.json")
+
+const {
+    abi: wethABI,
+    bytecode: wethBytecode,
+} = require("@uniswap/v2-periphery/build/WETH9.json")
 
 // sleep time expects milliseconds
 function sleep(time) {
-    return new Promise(resolve => setTimeout(resolve, time))
+    return new Promise((resolve) => setTimeout(resolve, time))
 }
 
 // Tested at:
@@ -28,7 +37,7 @@ async function main() {
     // deploy XCT Token
     XCTERC20 = await ethers.getContractFactory("TestXCTERC20")
     xct = await upgrades.deployProxy(XCTERC20, [], {
-        initializer: "initialize"
+        initializer: "initialize",
     })
     await xct.deployed()
     // xct = XCTERC20.attach("0x28d4F5B588E6A3077a88C5349722B203E902E372");
@@ -40,9 +49,59 @@ async function main() {
     ERC20 = await ethers.getContractFactory("TestERC20")
     stack = await upgrades.deployProxy(ERC20, [], { initializer: "initialize" })
     await stack.deployed()
-    // stack = ERC20.attach("0x542cD05416c0a6D71659B249d1b6aaDC9E48248E");
+
+    const USDC = await ERC20.attach(usdcAddressPolygon)
+    // const USDC = await upgrades.deployProxy(ERC20, [], {
+    //     initializer: "initialize",
+    // })
+    // await USDC.deployed()
 
     console.log(`const stack = "${stack.address}"`)
+
+    const routerContract = new ethers.ContractFactory(
+        routerABI,
+        routerBytecode,
+        deployer
+    )
+    const router = await routerContract.attach(
+        "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
+    )
+
+    const weth9Contract = new ethers.ContractFactory(
+        wethABI,
+        wethBytecode,
+        deployer
+    )
+    const weth9 = await weth9Contract.attach(wethAddressPolygon)
+
+    await weth9.approve(router.address, ethers.utils.parseEther("1000"))
+    await stack.approve(router.address, ethers.utils.parseEther("1000"))
+    await USDC.approve(router.address, ethers.utils.parseEther("1000"))
+
+    await router.addLiquidityETH(
+        stack.address,
+        ethers.utils.parseEther("1000"),
+        ethers.utils.parseEther("1000"),
+        ethers.utils.parseEther("100"),
+        deployer.address,
+        ethers.constants.MaxUint256,
+        { value: ethers.utils.parseEther("1000") }
+    )
+
+    // await router.addLiquidityETH(
+    //     USDC.address,
+    //     ethers.utils.parseEther("1000"),
+    //     ethers.utils.parseEther("1000"),
+    //     ethers.utils.parseEther("100"),
+    //     deployer.address,
+    //     ethers.constants.MaxUint256,
+    //     { value: ethers.utils.parseEther("1000") }
+    // )
+
+    await router.getAmountsOut(ethers.utils.parseEther("10000"), [
+        weth9.address,
+        USDC.address,
+    ])
 
     XCTMinterContract = await ethers.getContractFactory("XCTMinter")
     XCTMinter = await upgrades.deployProxy(
@@ -50,13 +109,14 @@ async function main() {
         [
             stack.address,
             xct.address,
-            usdcAddressPolygon,
+            USDC.address,
             admin,
-            wethAddressPolygon,
+            weth9.address,
             treasuryAddress,
             slippage,
             percentStackConversion,
-            percentStackAdvantage
+            percentStackAdvantage,
+            router.address,
         ],
         { initializer: "initialize" }
     )
@@ -75,11 +135,18 @@ async function main() {
 
     await xct.approve(XCTMinter.address, ethers.utils.parseEther("100"))
     await stack.approve(XCTMinter.address, ethers.utils.parseEther("100"))
+
+    const val = await XCTMinter.easyBuyXCT({
+        value: ethers.utils.parseEther("1000"),
+    })
+
+    // const res = await val.wait()
+    // console.log(res.events)
 }
 
 main()
     .then(() => process.exit(0))
-    .catch(err => {
+    .catch((err) => {
         console.error(err)
         process.exit(1)
     })

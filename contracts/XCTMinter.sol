@@ -56,14 +56,19 @@ contract XCTMinter is
         address _TREASURY_ADDRESS,
         uint256 _slippage,
         uint256 _percentStackConversion,
-        uint256 _percentStackAdvantage
+        uint256 _percentStackAdvantage,
+        address router
     ) public initializer {
         __AccessControl_init_unchained();
         __Pausable_init_unchained();
         __ReentrancyGuard_init_unchained();
 
+        // uniswapV2Router = IUniswapV2Router02(
+        //     0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff
+        // );
+
         uniswapV2Router = IUniswapV2Router02(
-            0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff
+            router
         );
         uniswapV2Factory = IUniswapV2Factory(
             0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32
