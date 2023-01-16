@@ -1,4 +1,13 @@
 const { ethers } = require("hardhat")
+const {
+    abi: routerABI,
+    bytecode: routerBytecode,
+} = require("@uniswap/v2-periphery/build/UniswapV2Router02.json")
+
+const {
+    abi: wethABI,
+    bytecode: wethBytecode,
+} = require("@uniswap/v2-periphery/build/WETH9.json")
 
 const accounts = [
     "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -12,7 +21,7 @@ const accounts = [
     "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
 ]
 
-let noPrint = false;
+let noPrint = false
 
 let parameters = {
     registration: {
@@ -35,10 +44,15 @@ let parameters = {
         referralPercent: 5000,
         referralRevExpirySecs: 63072000,
     },
+    xctMinter: {
+        slippage: 10000, // 10%
+        percentStackConversion: 10000, // 10%
+        percentStackAdvantage: 5000, // 5%
+    },
 }
 
 const setParameters = (params) => {
-    parameters = { ...parameters, ...params };
+    parameters = { ...parameters, ...params }
 }
 
 let addresses = {}
@@ -50,21 +64,20 @@ const setAddresses = (newaddr) => {
 const getAddresses = () => addresses
 
 const setNoPrint = (flag) => {
-    noPrint = flag;
+    noPrint = flag
 }
 
-const checkNoPrint = () => noPrint;
+const checkNoPrint = () => noPrint
 
 const printLogs = (str) => {
-    if (checkNoPrint())
-    return;
-    console.log(str);
+    if (checkNoPrint()) return
+    console.log(str)
 }
 
 ///////////////////////////// GET CONTRACTS//////////////////////////////////
 
 const getXCT = async () => {
-    const xctContract = await ethers.getContractFactory("TestERC20")
+    const xctContract = await ethers.getContractFactory("TestXCTERC20")
     return await xctContract.attach(addresses.xct)
 }
 
@@ -138,7 +151,7 @@ const getContractBasedDeployment = async () => {
 ///////////////////////////// DEPLOY CONTRACTS//////////////////////////////////
 
 const deployXCT = async () => {
-    const ERC20 = await ethers.getContractFactory("TestERC20")
+    const ERC20 = await ethers.getContractFactory("TestXCTERC20")
     const xct = await upgrades.deployProxy(ERC20, [], {
         initializer: "initialize",
     })
@@ -315,7 +328,7 @@ const deploySubscription = async () => {
             subscription.limitNFTSubnets,
             subscription.minTimeFunds,
             subscription.globalSupportAddress,
-	        subscription.supportFee,
+            subscription.supportFee,
             addresses.Registration,
             addresses.appNFT,
             addresses.SubscriptionBalance,
@@ -332,10 +345,80 @@ const deploySubscription = async () => {
 }
 
 const deployXctMinter = async () => {
-    AppNFTContract = await ethers.getContractFactory("TestAppNFT")
-    appNFT = await AppNFTContract.deploy()
-    // printLogs(`const appNFT = "${appNFT.address}"`)
-    return appNFT.address
+    const [deployer] = await ethers.getSigners()
+    const usdcAddressPolygon = "0x2791bca1f2de4661ed88a30c99a7a9449aa84174"
+    const wethAddressPolygon = "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
+    const xct = await getXCT()
+    const stack = await getStack()
+    const ERC20 = await ethers.getContractFactory("TestERC20")
+    const USDC = await ERC20.attach(usdcAddressPolygon)
+    const routerContract = new ethers.ContractFactory(
+        routerABI,
+        routerBytecode,
+        deployer
+    )
+    const router = await routerContract.attach(
+        "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
+    )
+
+    const weth9Contract = new ethers.ContractFactory(
+        wethABI,
+        wethBytecode,
+        deployer
+    )
+    const weth9 = await weth9Contract.attach(wethAddressPolygon)
+    await weth9.approve(router.address, ethers.utils.parseEther("1000"))
+    await stack.approve(router.address, ethers.utils.parseEther("1000"))
+    await USDC.approve(router.address, ethers.utils.parseEther("1000"))
+
+    await router.addLiquidityETH(
+        stack.address,
+        ethers.utils.parseEther("1000"),
+        ethers.utils.parseEther("1000"),
+        ethers.utils.parseEther("100"),
+        deployer.address,
+        ethers.constants.MaxUint256,
+        { value: ethers.utils.parseEther("1000") }
+    )
+    // await router.addLiquidityETH(
+    //     USDC.address,
+    //     ethers.utils.parseEther("1000"),
+    //     ethers.utils.parseEther("1000"),
+    //     ethers.utils.parseEther("100"),
+    //     deployer.address,
+    //     ethers.constants.MaxUint256,
+    //     { value: ethers.utils.parseEther("1000") }
+    // )
+
+    const XCTMinterContract = await ethers.getContractFactory("XCTMinter")
+    const XCTMinter = await upgrades.deployProxy(
+        XCTMinterContract,
+        [
+            stack.address,
+            xct.address,
+            USDC.address,
+            deployer.address, // admin
+            weth9.address,
+            deployer.address, // treasuryAddress
+            parameters.xctMinter.slippage,
+            parameters.xctMinter.percentStackConversion,
+            parameters.xctMinter.percentStackAdvantage,
+            router.address,
+        ],
+        { initializer: "initialize" }
+    )
+    await XCTMinter.deployed()
+
+    // grant MINTER_ROLE to XCTMinter contract
+    await xct.grantRole(
+        "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6",
+        XCTMinter.address
+    )
+
+    await xct.approve(XCTMinter.address, ethers.utils.parseEther("100"))
+    await stack.approve(XCTMinter.address, ethers.utils.parseEther("100"))
+
+    return XCTMinter.address
 }
 
 const deployRoleControl = async () => {
@@ -347,10 +430,9 @@ const deployRoleControl = async () => {
         [addresses.appNFT],
         { initializer: "initialize" }
     )
-    await RoleControl.deployed();
-    
-        if (checkNoPrint())
-    	printLogs("RoleControl: ", RoleControl.address);
+    await RoleControl.deployed()
+
+    if (checkNoPrint()) printLogs("RoleControl: ", RoleControl.address)
     return RoleControl.address
 }
 
@@ -372,11 +454,7 @@ const deployContractBasedDeployment = async () => {
     )
     const ContractBasedDeployment = await upgrades.deployProxy(
         ContractBasedDeploymentContract,
-        [
-            addresses.RoleControl,
-            addresses.Subscription,
-            addresses.appNFT
-        ],
+        [addresses.RoleControl, addresses.Subscription, addresses.appNFT],
         { initializer: "initialize" }
     )
     await ContractBasedDeployment.deployed()
