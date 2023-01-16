@@ -23,6 +23,17 @@ interface ISubscriptionBalance {
         view
         returns (uint256);
 
+
+    function estimateDripRatePerSec (
+        uint256[] memory _subnetId,
+        uint256[] memory _supportAddress,
+        uint256[] memory _licenseFee,
+        uint256[][] memory _computeRequired
+    )
+    external
+    view
+    returns (uint256);
+
     function dripRatePerSec(uint256 NFTid)
         external
         view
@@ -43,7 +54,7 @@ interface ISubscriptionBalance {
         address _minter
     ) external returns (bool);
 
-    function addBalance(uint256 nftID, uint256 _balanceToAdd)
+    function addBalance(address nftOwner, uint256 nftID, uint256 _balanceToAdd)
         external
         returns (
             bool

@@ -257,6 +257,7 @@ const deploySubscriptionBalance = async () => {
             addresses.appNFT,
             addresses.xct,
             addresses.SubscriptionBalanceCalculator,
+            addresses.RoleControl,
             subscriptionBalance.referralPercent,
             subscriptionBalance.referralRevExpirySecs,
         ],
@@ -371,7 +372,11 @@ const deployContractBasedDeployment = async () => {
     )
     const ContractBasedDeployment = await upgrades.deployProxy(
         ContractBasedDeploymentContract,
-        [addresses.RoleControl],
+        [
+            addresses.RoleControl,
+            addresses.Subscription,
+            addresses.appNFT
+        ],
         { initializer: "initialize" }
     )
     await ContractBasedDeployment.deployed()
@@ -465,13 +470,13 @@ const deployContracts = async () => {
     addresses.nftToken = await deployDarkNFT()
     addresses.Registration = await deployReg()
     addresses.appNFT = await deployAppNFT()
+    addresses.RoleControl = await deployRoleControl()
     addresses.SubscriptionBalanceCalculator =
         await deploySubscriptionBalanceCalculator()
     addresses.SubscriptionBalance = await deploySubscriptionBalance()
     addresses.SubnetDAODistributor = await deploySubnetDAODistributor()
     addresses.Subscription = await deploySubscription()
     addresses.xctMinter = await deployXctMinter()
-    addresses.RoleControl = await deployRoleControl()
     addresses.ContractBasedDeployment = await deployContractBasedDeployment()
     await connectSubBalToSub()
     await connectSubCalcToSub()
@@ -504,7 +509,7 @@ module.exports = {
     xctApproveSubBal,
     // deployXCT,
     // deployStack,
-    // deployDarkNFT,
+    deployDarkNFT,
     callStackApprove,
     callNftApprove,
     // deployReg,

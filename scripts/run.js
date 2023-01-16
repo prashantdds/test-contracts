@@ -640,36 +640,37 @@ const setup = async () => {
 }
 
 async function main() {
-    addresses = {
-        deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
-        xct: "0xca89AD662eA7A2688d29e2Df6291123eBFB807E4",
-        stack: "0xF1E0336C04f03c39904015b581A5db091B6D9960",
-        nftToken: "0x36cb2DE24CC92BCae864759D9aC4ddcc43a112B0",
-        Registration: "0x027d84b57eA012BddfDcc2b297EaeB2967912c5A",
-        appNFT: "0x492F3b79E18658f1a72c75C8a17760a006efCa60",
-        SubscriptionBalanceCalculator: "0x00Df2C3F6A40B4d657ED68b4689a7ddcA9434e59",
-        SubscriptionBalance: "0xA8ef2C4E1d0091bAb84c74cC40b7306955DfD290",
-        SubnetDAODistributor: "0xF0DeD7b2b4Ac842aA245644e89298F43ac3c8b3e",
-        Subscription: "0xfF29cFD3C9954a485d7C6D128a9f87CEB2C2b366",
-        NFT: "0xbC0fe507d07914EF7039d22Ea5FAbe6947B3D711",
-        RoleControl: "0x660c66A35e4B87454a89b307251bA5074b519892",
-        ContractBasedDeployment: "0x6b8737327AfED0970222615DEC7289439d37e581"
-    }
-    helper.setAddresses({
-        deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
-        xct: "0xca89AD662eA7A2688d29e2Df6291123eBFB807E4",
-        stack: "0xF1E0336C04f03c39904015b581A5db091B6D9960",
-        nftToken: "0x36cb2DE24CC92BCae864759D9aC4ddcc43a112B0",
-        Registration: "0x027d84b57eA012BddfDcc2b297EaeB2967912c5A",
-        appNFT: "0x492F3b79E18658f1a72c75C8a17760a006efCa60",
-        SubscriptionBalanceCalculator: "0x00Df2C3F6A40B4d657ED68b4689a7ddcA9434e59",
-        SubscriptionBalance: "0xA8ef2C4E1d0091bAb84c74cC40b7306955DfD290",
-        SubnetDAODistributor: "0xF0DeD7b2b4Ac842aA245644e89298F43ac3c8b3e",
-        Subscription: "0xfF29cFD3C9954a485d7C6D128a9f87CEB2C2b366",
-        NFT: "0xbC0fe507d07914EF7039d22Ea5FAbe6947B3D711",
-        RoleControl: "0x660c66A35e4B87454a89b307251bA5074b519892",
-        ContractBasedDeployment: "0x6b8737327AfED0970222615DEC7289439d37e581"
-    })
+addresses = {
+    deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
+    xct: "0xca89AD662eA7A2688d29e2Df6291123eBFB807E4",
+    stack: "0xF1E0336C04f03c39904015b581A5db091B6D9960",
+    nftToken: "0x36cb2DE24CC92BCae864759D9aC4ddcc43a112B0",
+    Registration: "0x027d84b57eA012BddfDcc2b297EaeB2967912c5A",
+    appNFT: "0x492F3b79E18658f1a72c75C8a17760a006efCa60",
+    SubscriptionBalanceCalculator: "0x00Df2C3F6A40B4d657ED68b4689a7ddcA9434e59",
+    SubscriptionBalance: "0xA8ef2C4E1d0091bAb84c74cC40b7306955DfD290",
+    SubnetDAODistributor: "0xF0DeD7b2b4Ac842aA245644e89298F43ac3c8b3e",
+    Subscription: "0xfF29cFD3C9954a485d7C6D128a9f87CEB2C2b366",
+    NFT: "0xbC0fe507d07914EF7039d22Ea5FAbe6947B3D711",
+    RoleControl: "0x660c66A35e4B87454a89b307251bA5074b519892",
+    ContractBasedDeployment: "0xB73c47b77C422682219E8D9bC9217C009395cde7"
+}
+    helper.setAddresses( {
+    deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
+    xct: "0xca89AD662eA7A2688d29e2Df6291123eBFB807E4",
+    stack: "0xF1E0336C04f03c39904015b581A5db091B6D9960",
+    nftToken: "0x36cb2DE24CC92BCae864759D9aC4ddcc43a112B0",
+    Registration: "0x027d84b57eA012BddfDcc2b297EaeB2967912c5A",
+    appNFT: "0x492F3b79E18658f1a72c75C8a17760a006efCa60",
+    SubscriptionBalanceCalculator: "0x00Df2C3F6A40B4d657ED68b4689a7ddcA9434e59",
+    SubscriptionBalance: "0xA8ef2C4E1d0091bAb84c74cC40b7306955DfD290",
+    SubnetDAODistributor: "0xF0DeD7b2b4Ac842aA245644e89298F43ac3c8b3e",
+    Subscription: "0xfF29cFD3C9954a485d7C6D128a9f87CEB2C2b366",
+    NFT: "0xbC0fe507d07914EF7039d22Ea5FAbe6947B3D711",
+    RoleControl: "0x660c66A35e4B87454a89b307251bA5074b519892",
+    ContractBasedDeployment: "0xB73c47b77C422682219E8D9bC9217C009395cde7"
+}
+    )
 
     // helper.setAddresses({
     //         deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
@@ -686,13 +687,13 @@ async function main() {
     //         RoleControl: "0x660c66A35e4B87454a89b307251bA5074b519892",
     //         ContractBasedDeployment: "0xFB86Bcaf08f84E5c5F856bF623C04aB233839298"
     //     })
-    // const now = new Date();
-    // console.log(now.getTime());
-    await helper.deployContracts()
-    await helper.callStackApprove()
-    await helper.callNftApprove()
-    await helper.xctApproveSub()
-    await helper.xctApproveSubBal()
+    const now = new Date();
+    console.log(now.getTime());
+    // await helper.deployContracts()
+    // await helper.callStackApprove()
+    // await helper.callNftApprove()
+    // await helper.xctApproveSub()
+    // await helper.xctApproveSubBal()
     // await deployXCT();
     // await deployStack();
     // await deployDarkNFT();
@@ -768,32 +769,45 @@ async function main() {
     // await helper.grantRoleForContractBasedDeployment(2, addresses.deployer);
 
     // uint256 _nftId,
-    // uint256 _subnetId,
-    // string memory _serviceProviderAddress,
-    // address _referralAddress,
-    // uint256 _licenseFee,
-    // uint256[] memory _computeRequired
+    // string memory appName,
+    // bytes32 _digest,
+    // uint8 _hashFunction,
+    // uint8 _size,
+    // uint256[][] memory _subnetIDList,
+    // uint256[] memory _resourceArray,
+    // string memory lastUpdatedTime
 
-    // const contractDeploy = await getContractBasedDeployment();
-    // tr = await contractDeploy.createData(
+    const contractDeploy = await getContractBasedDeployment();
+    // tr = await contractDeploy.updateData(
     //     1,
-    //     "app1",
-    //     "0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5",
+    //     "azEwMjM=",
+    //     "0xa83a5be4756de47fb0f31eed7b02c10360a73f715b8338e713aa4d5de811422e",
     //     18,
     //     32,
     //     [[1,1,0]],
-    //     [1, 2, 0],
+    //     [2, 2],
     //     now.getTime()+""
     // )
     // rec = await tr.wait()
     // const events = rec.events.map(event=>({name: event.event , args: event.args}));
     // console.log(events);
     // const start = performance.now();
-    // const data = await contractDeploy.getFullData(1, "app1")
-    // const data = await contractDeploy.getDataByIds(2, [0]);
-    // console.log(data);
+    // const data = await contractDeploy.getDataArray(1)
+    const data = await contractDeploy.getFullData(1, "azEwMjM=");
+    console.log(data);
     // const end = performance.now();
     // console.log("time taken: ", end-start);
+
+
+    // nftID:    1,
+    // appName:    "app2",
+    // digest:    "0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5",
+    // hashFunc:    18,
+    // size:    32,
+    // subnetIDList:    [[1,1,0]],
+    // resourceArray:    [1, 2, 0],
+    // lastUpdatedTime:    now.getTime()+""
+    // // )
 
 }
 

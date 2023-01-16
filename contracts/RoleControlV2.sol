@@ -20,19 +20,45 @@ contract RoleControlV2 is MultiAccessControlUpgradeable {
         NFT_Address = _NFT_Address;
     }
 
+    // isNFTOwner(_nftId)
     function grantRole(
         uint256 _nftId,
         bytes32 role,
         address account
-    ) public virtual override isNFTOwner(_nftId) {
+    ) public
+    virtual
+    override
+    {
+        address owner = NFT_Address.ownerOf(_nftId);
+        require(
+            owner == _msgSender()
+            || (hasRole(_nftId, ACCESS_MANAGER, _msgSender())
+                && ((role != BILLING_MANAGER) && (role != ACCESS_MANAGER))
+                && (account != owner)
+            )
+            ,
+            "Grant and Revoke role only allowed for NFT owner"
+        );
         _grantRole(_nftId, role, account);
     }
 
+// isNFTOwner(_nftId)
     function revokeRole(
         uint256 _nftId,
         bytes32 role,
         address account
-    ) public virtual override isNFTOwner(_nftId) {
+    ) public virtual override {
+        address owner = NFT_Address.ownerOf(_nftId);
+        require(
+            owner == _msgSender()
+            || (hasRole(_nftId, ACCESS_MANAGER, _msgSender())
+                && ((role != BILLING_MANAGER) && (role != ACCESS_MANAGER))
+                && (account != owner)
+            )
+            ,
+            "Grant and Revoke role only allowed for NFT owner"
+        );
+
         _revokeRole(_nftId, role, account);
     }
 
@@ -58,9 +84,12 @@ contract RoleControlV2 is MultiAccessControlUpgradeable {
 
     modifier isNFTOwner(uint256 _nftId) {
         require(
-            NFT_Address.ownerOf(_nftId) == _msgSender(),
+            NFT_Address.ownerOf(_nftId) == _msgSender()
+            || hasRole(_nftId, ACCESS_MANAGER, _msgSender())
+            ,
             "Grant and Revoke role only allowed for NFT owner"
         );
+
         _;
     }
 }

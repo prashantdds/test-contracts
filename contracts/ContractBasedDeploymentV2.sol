@@ -3,6 +3,8 @@
 pragma solidity 0.8.2;
 
 import "./interfaces/IRoleControlV2.sol";
+import "./interfaces/ISubscription.sol";
+import "./interfaces/IERC721.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
@@ -15,7 +17,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  */
 contract ContractBasedDeploymentV2 is Initializable {
     IRoleControlV2 public RoleControlV2;
-    // ISubscription public Subscription;
+    ISubscription public Subscription;
+    IERC721 AppNFT;
+
     bytes32 public constant CONTRACT_BASED_DEPLOYER =
         keccak256("CONTRACT_BASED_DEPLOYER");
 
@@ -52,15 +56,33 @@ contract ContractBasedDeploymentV2 is Initializable {
 
     event EntryDeleted(string indexed appName);
 
-    function initialize(IRoleControlV2 _RoleControlV2) public initializer {
+    function initialize(
+        IRoleControlV2 _RoleControlV2,
+        ISubscription _Subscription,
+        IERC721 _AppNFT
+    ) public initializer {
         RoleControlV2 = _RoleControlV2;
-        // Subscription = _Subscription;
+        Subscription = _Subscription;
+        AppNFT = _AppNFT;
     }
 
     function getNFTAddress() external view returns (address) {
         return address(RoleControlV2.NFT_Address());
     }
     
+
+        // address subscriber,
+        // bool isExistingNFT,
+        // uint256 _balanceToAdd,
+        // uint256 _nftId,
+        // uint256 _subnetId,
+        // address _referralAddress,
+        // address _licenseAddress,
+        // address _supportAddress,
+        // uint256 _licenseFee,
+        // uint256[] memory _computeRequired
+
+
     /**
      * @dev associate a multihash entry to appName
      * @param _digest hash digest produced by hashing content using hash function
@@ -68,6 +90,114 @@ contract ContractBasedDeploymentV2 is Initializable {
      * @param _size length of the digest
      */
 
+    function subscribeAndCreateData(
+        uint256 _balanceToAdd,
+        address[][] memory _rlsAddresses,
+        uint256[] memory _licenseFee,
+        string memory appName,
+        bytes32 _digest,
+        uint8 _hashFunction,
+        uint8 _size,
+        uint256[][] memory _subnetIDList,
+        uint256[] memory _resourceArray,
+        string memory lastUpdatedTime
+    ) external {
+        require(_resourceArray.length > 0, "Resource array should have replica count and count of resource types");
+
+        for(uint256 i = 0; i < _subnetIDList.length; i++)
+        {
+            require(_subnetIDList[i][0] <= _subnetIDList[i][1], "max replica count should be greater or equal to the min replica count");
+        }
+
+        uint256 nftID = AppNFT.getCurrentTokenId() + 1;
+
+
+        entries[nftID][appName] = Multihash(
+            lastAppId[nftID],
+            appName,
+            _digest,
+            _hashFunction,
+            _size,
+            _subnetIDList,
+            _resourceArray,
+            lastUpdatedTime
+        );
+        
+        appIDToName[nftID][lastAppId[nftID]] = appName;
+        
+        emit EntrySet(
+            appName,
+            lastAppId[nftID],
+            _digest,
+            _hashFunction,
+            _size,
+            _subnetIDList,
+            _resourceArray,
+            lastUpdatedTime
+        );
+
+        lastAppId[nftID] = lastAppId[nftID] + 1;
+
+        subscribe(
+            _balanceToAdd,
+            _rlsAddresses,
+            _licenseFee,
+            _subnetIDList,
+            _resourceArray
+        );
+
+
+
+        // ListenerContract.listen("ContractBasedDeployment", address(this), "createData", appName, _digest, _hashFunction, _size, _resourceArray);
+    }
+
+    function subscribe(
+        uint256 _balanceToAdd,
+        address[][] memory _rlsAddresses,
+        uint256[] memory _licenseFee,
+        uint256[][] memory _subnetIDList,
+        uint256[] memory _resourceArray
+    )
+    internal
+    {
+        uint256[] memory subnetParamList = new uint256[](_subnetIDList.length);
+        for(uint256 i = 0; i < _subnetIDList.length; i++)
+        {
+            subnetParamList[i] = _subnetIDList[i][2];
+        }
+
+        uint256[][] memory resourceParamList = new uint256[][] (_subnetIDList.length);
+        for(uint256 i = 0; i < _subnetIDList.length; i++)
+        {
+            resourceParamList[i] = new uint256[] (_resourceArray.length);
+            
+            for(uint256 j = 0; j < _resourceArray.length; j++)
+            {
+                resourceParamList[i][j] = _resourceArray[j];
+            }
+            
+        }
+
+        Subscription.subscribeBatch(
+            msg.sender,
+            false,
+            _balanceToAdd,
+            0,
+            subnetParamList,
+            _rlsAddresses[0],
+            _rlsAddresses[1],
+            _rlsAddresses[2],
+            _licenseFee,
+            resourceParamList
+        );
+    }
+
+    /**
+     * @dev associate a multihash entry to appName
+     * @param _digest hash digest produced by hashing content using hash function
+     * @param _hashFunction hashFunction code for the hash function used
+     * @param _size length of the digest
+     */
 
     function createData(
         uint256 _nftId,
