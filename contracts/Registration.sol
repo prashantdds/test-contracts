@@ -46,7 +46,6 @@ contract Registration is
         uint256[] unitPrices;
         uint256[] otherAttributes; // eg. [1,2] if reqd
         uint256 maxClusters;
-        uint256 supportFeeRate; // 1000 = 1%
         uint256 stackFeesReqd; // in wei
         IERC721Upgradeable DarkMatterNFTType;
         bytes32 SUBNET_ATTR_ROLE;
@@ -54,6 +53,7 @@ contract Registration is
         bytes32 WHITELIST_ROLE;
         bytes32 CLUSTER_LIST_ROLE;
         address subnetLocalDAO;
+        string subnetName;
     }
 
     struct Cluster {
@@ -63,6 +63,7 @@ contract Registration is
         string DNSIP;
         uint8 listed; //uint8 [1,2,3] if in 1st state, should be able to withdraw
         uint256 NFTidLocked;
+        string clusterName;
     }
 
     struct PriceChangeRequest {
@@ -94,7 +95,8 @@ contract Registration is
         address walletAddress,
         address ownerAddress,
         address operatorAddress,
-        address sender
+        address sender,
+        string clusterName
     );
     event NFTLockedForCluster(
         address userAddress,
@@ -107,6 +109,9 @@ contract Registration is
         uint256 subnetId,
         uint256 nftID
     );
+
+    event ChangedClusterName(uint256 subnetID, uint256 clusterID, string clusterName);
+
     event ChangedDNSIP(uint256 subnetId, uint256 clusterId, string newDNSIP);
     event TransferredClusterOwnership(
         uint256 subnetId,
@@ -131,10 +136,12 @@ contract Registration is
         uint256[] otherAttributes,
         uint256 maxClusters,
         address[] whiteListedClusters,
-        uint256 supportFeeRate,
         address sender,
         uint256 stackFeesReqd
     );
+    
+    event ChangedSubnetName(uint256 subnetID, string subnetName);
+
     event SubnetAttributesChanged(
         uint256 subnetId,
         SubnetAttributes subnetAttributes,
@@ -229,8 +236,8 @@ contract Registration is
             uint256[] memory,
             uint256,
             uint256,
-            uint256,
-            IERC721Upgradeable _DarkMatterNFT
+            IERC721Upgradeable _DarkMatterNFT,
+            string memory
         )
     {
         uint256 _subnetId = subnetId;
@@ -242,9 +249,9 @@ contract Registration is
             subnetAttributes[_subnetId].unitPrices,
             subnetAttributes[_subnetId].otherAttributes,
             subnetAttributes[_subnetId].maxClusters,
-            subnetAttributes[_subnetId].supportFeeRate,
             subnetAttributes[_subnetId].stackFeesReqd,
-            subnetAttributes[_subnetId].DarkMatterNFTType
+            subnetAttributes[_subnetId].DarkMatterNFTType,
+            subnetAttributes[_subnetId].subnetName
         );
     }
 
@@ -257,16 +264,19 @@ contract Registration is
             address,
             string memory,
             uint8,
-            uint256
+            uint256,
+            string memory
         )
     {
+        Cluster memory subnetCluster = subnetClusters[_subnetId][_clusterId];
         return (
-            subnetClusters[_subnetId][_clusterId].walletAddress,
-            subnetClusters[_subnetId][_clusterId].ownerAddress,
-            subnetClusters[_subnetId][_clusterId].operatorAddress,
-            subnetClusters[_subnetId][_clusterId].DNSIP,
-            subnetClusters[_subnetId][_clusterId].listed,
-            subnetClusters[_subnetId][_clusterId].NFTidLocked
+            subnetCluster.walletAddress,
+            subnetCluster.ownerAddress,
+            subnetCluster.operatorAddress,
+            subnetCluster.DNSIP,
+            subnetCluster.listed,
+            subnetCluster.NFTidLocked,
+            subnetCluster.clusterName
         );
     }
 
@@ -276,7 +286,7 @@ contract Registration is
         require(address(SubnetDAODistributor) == address(0), "Already set");
         SubnetDAODistributor = _SubnetDAODistributor;
     }
-    
+
 
     // to change _DarkMatterNFTType call changeSubnetAttributes() with index 9
     function createSubnet(
@@ -290,7 +300,6 @@ contract Registration is
         uint256[] memory _otherAttributes,
         uint256 _maxClusters,
         address[] memory _whiteListedClusters,
-        uint256 _supportFeeRate,
         uint256 _stackFeesReqd
     ) external whenNotPaused {
         DarkMatterNFT.transferFrom(_msgSender(), address(this), nftId);
@@ -313,10 +322,10 @@ contract Registration is
         _subnetAttributes.unitPrices = _unitPrices;
         _subnetAttributes.otherAttributes = _otherAttributes;
         _subnetAttributes.maxClusters = _maxClusters;
-        _subnetAttributes.supportFeeRate = _supportFeeRate;
         _subnetAttributes.stackFeesReqd = _stackFeesReqd;
         _subnetAttributes.DarkMatterNFTType = DarkMatterNFT;
         _subnetAttributes.subnetLocalDAO = _subnetLocalDAO;
+        _subnetAttributes.subnetName = subnetIDStr;
 
         _subnetAttributes.SUBNET_ATTR_ROLE = keccak256(abi.encodePacked("SUBNET_ATTR_ROLE", subnetIDStr));
         _subnetAttributes.PRICE_ROLE = keccak256(abi.encodePacked("PRICE_ROLE", subnetIDStr));
@@ -345,7 +354,6 @@ contract Registration is
             _otherAttributes,
             _maxClusters,
             _whiteListedClusters,
-            _supportFeeRate,
             _msgSender(),
             _stackFeesReqd
         );
@@ -353,6 +361,19 @@ contract Registration is
         whiteListedClusters[totalSubnets] = _whiteListedClusters;
 
         totalSubnets = totalSubnets.add(1);
+    }
+
+    function setSubnetName(uint256 subnetID, string memory subnetName)
+    external
+    {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
+            hasRole(SUBNET_ATTR_ROLE, _msgSender()) ||
+            hasRole(subnetAttributes[subnetID].SUBNET_ATTR_ROLE, _msgSender()), "address does not have the role to modify subnet attributes");
+        
+        subnetAttributes[subnetID].subnetName = subnetName;
+
+        emit ChangedSubnetName(subnetID, subnetName);
     }
 
     function changeSubnetAttributes(
@@ -364,7 +385,6 @@ contract Registration is
         bool _subnetStatusListed, // 4
         uint256[] memory _otherAttributes, // 5
         uint256 _maxClusters, // 6
-        uint256 _supportFeeRate, // 7
         uint256 _stackFeesReqd, // 8
         IERC721Upgradeable _DarkMatterNFTType //9
     ) external  {
@@ -385,10 +405,8 @@ contract Registration is
         else if (_attributeNo == 6)
             subnetAttributes[subnetId].maxClusters = _maxClusters;
         else if (_attributeNo == 7)
-            subnetAttributes[subnetId].supportFeeRate = _supportFeeRate;
-        else if (_attributeNo == 8)
             subnetAttributes[subnetId].stackFeesReqd = _stackFeesReqd;
-        else if (_attributeNo == 9) {
+        else if (_attributeNo == 8) {
             require(
                 approvedDarkMatterNFTTypes[address(_DarkMatterNFTType)],
                 "Not approved Dark Matter NFT"
@@ -515,7 +533,8 @@ contract Registration is
         string memory _DNSIP,
         address walletAddress,
         address operatorAddress,
-        uint256 nftId
+        uint256 nftId,
+        string memory clusterName
     ) external whenNotPaused {
         if (!subnetAttributes[subnetId].sovereignStatus) {
             string memory empty = "";
@@ -551,6 +570,7 @@ contract Registration is
         subnetClusters[subnetId][clusterId].DNSIP = _DNSIP;
         subnetClusters[subnetId][clusterId].listed = 1;
         subnetClusters[subnetId][clusterId].NFTidLocked = nftId;
+        subnetClusters[subnetId][clusterId].clusterName = clusterName;
 
         totalClustersSigned[subnetId] = totalClustersSigned[subnetId].add(1);
 
@@ -572,9 +592,25 @@ contract Registration is
             walletAddress,
             ownerAddress,
             operatorAddress,
-            _msgSender()
+            _msgSender(),
+            clusterName
         );
         emit NFTLockedForCluster(_msgSender(), subnetId, clusterId, nftId);
+    }
+
+    function changeClusterName(uint256 subnetID, uint256 clusterID, string memory clusterName)
+    external
+    whenNotPaused
+    {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
+            // subnetClusters[subnetId][clusterId].ClusterDAO == _msgSender(),
+            subnetClusters[subnetID][clusterID].ownerAddress == _msgSender(),
+            "Sender is not Cluster owner"
+        );
+        subnetClusters[subnetID][clusterID].clusterName = clusterName;
+
+        emit ChangedClusterName(subnetID, clusterID, clusterName);
     }
 
     function changeDNSIP(
@@ -708,8 +744,8 @@ contract Registration is
             subnetClusters[subnetId][clusterId].walletAddress
         ] = balanceOfStackLocked[subnetClusters[subnetId][clusterId].walletAddress]
             .sub(_amount);
-        StackToken.approve(_msgSender(), _amount+1000);
-        StackToken.transferFrom(address(this), _msgSender(), _amount);
+    
+        StackToken.transfer(_msgSender(), _amount);
 
         emit WithdrawnStackFromClusterByDAO(
             subnetId,

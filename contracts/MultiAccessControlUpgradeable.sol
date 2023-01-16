@@ -50,13 +50,26 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
 
     function __AccessControl_init_unchained() internal onlyInitializing {
     }
+
+    struct MemberData {
+        uint256 userRoleID;
+        bool active;
+    }
+
     struct RoleData {
-        mapping(address => bool) members;
+        mapping(address => MemberData) members;
         bytes32 adminRole;
+    }
+
+    struct UserRole {
+        uint256 nftID;
+        bytes32 role;
     }
 
     // NFT id => ROLE => data
     mapping(uint=>mapping(bytes32 => RoleData)) private _roles;
+
+    mapping(address => UserRole[]) private userRoles;
 
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
@@ -85,7 +98,7 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
      * @dev Returns `true` if `account` has been granted `role`.
      */
     function hasRole(uint _appId, bytes32 role, address account) public view virtual  returns (bool) {
-        return _roles[_appId][role].members[account];
+        return _roles[_appId][role].members[account].active;
     }
 
     /**
@@ -218,7 +231,16 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
      */
     function _grantRole(uint _appId, bytes32 role, address account) internal virtual {
         if (!hasRole(_appId, role, account)) {
-            _roles[_appId][role].members[account] = true;
+            _roles[_appId][role].members[account] = MemberData(
+                userRoles[account].length,
+                true
+            );
+
+            userRoles[account].push(UserRole(
+                _appId,
+                role
+            ));
+
             emit RoleGranted(_appId, role, account, _msgSender());
         }
     }
@@ -231,10 +253,25 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
      * May emit a {RoleRevoked} event.
      */
     function _revokeRole(uint _appId, bytes32 role, address account) internal virtual {
-        if (hasRole(_appId, role, account)) {
-            _roles[_appId][role].members[account] = false;
+        if (hasRole(_appId, role, account))
+        {
+            uint256 entryID = _roles[_appId][role].members[account].userRoleID;
+
+            _roles[_appId][role].members[account].active = false;
+
+            delete userRoles[account][entryID];
+            
             emit RoleRevoked(_appId, role, account, _msgSender());
         }
+    }
+    
+
+    function getAccountRoles(address account)
+    external
+    view
+    returns (UserRole[] memory)
+    {
+        return userRoles[account];
     }
 
     /**
