@@ -367,27 +367,27 @@ const deployXctMinter = async () => {
         deployer
     )
     const weth9 = await weth9Contract.attach(wethAddressPolygon)
-    await weth9.approve(router.address, ethers.utils.parseEther("0.001"))
-    await stack.approve(router.address, ethers.utils.parseEther("0.001"))
-    await USDC.approve(router.address, ethers.utils.parseEther("0.001"))
+    await weth9.approve(router.address, ethers.utils.parseEther("100"))
+    await stack.approve(router.address, ethers.utils.parseEther("100"))
+    await USDC.approve(router.address, ethers.utils.parseEther("100"))
 
     await router.addLiquidityETH(
         stack.address,
-        ethers.utils.parseEther("0.001"),
-        ethers.utils.parseEther("0.001"),
-        ethers.utils.parseEther("0.001"),
+        ethers.utils.parseEther("100"),
+        ethers.utils.parseEther("100"),
+        ethers.utils.parseEther("100"),
         deployer.address,
         ethers.constants.MaxUint256,
-        { value: ethers.utils.parseEther("0.001") }
+        { value: ethers.utils.parseEther("100") }
     )
     // await router.addLiquidityETH(
     //     USDC.address,
-    //     ethers.utils.parseEther("1000"),
-    //     ethers.utils.parseEther("1000"),
+    //     ethers.utils.parseEther("100"),
+    //     ethers.utils.parseEther("100"),
     //     ethers.utils.parseEther("100"),
     //     deployer.address,
     //     ethers.constants.MaxUint256,
-    //     { value: ethers.utils.parseEther("1000") }
+    //     { value: ethers.utils.parseEther("100") }
     // )
 
     const XCTMinterContract = await ethers.getContractFactory("XCTMinter")
@@ -415,8 +415,8 @@ const deployXctMinter = async () => {
         XCTMinter.address
     )
 
-    await xct.approve(XCTMinter.address, ethers.utils.parseEther("0.001"))
-    await stack.approve(XCTMinter.address, ethers.utils.parseEther("0.001"))
+    await xct.approve(XCTMinter.address, ethers.utils.parseEther("100"))
+    await stack.approve(XCTMinter.address, ethers.utils.parseEther("100"))
 
     return XCTMinter.address
 }

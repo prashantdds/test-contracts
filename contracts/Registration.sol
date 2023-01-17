@@ -385,8 +385,8 @@ contract Registration is
         bool _subnetStatusListed, // 4
         uint256[] memory _otherAttributes, // 5
         uint256 _maxClusters, // 6
-        uint256 _stackFeesReqd, // 8
-        IERC721Upgradeable _DarkMatterNFTType //9
+        uint256 _stackFeesReqd, // 7
+        IERC721Upgradeable _DarkMatterNFTType //8
     ) external  {
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
