@@ -367,14 +367,14 @@ const deployXctMinter = async () => {
         deployer
     )
     const weth9 = await weth9Contract.attach(wethAddressPolygon)
-    await weth9.approve(router.address, ethers.utils.parseEther("100"))
-    await stack.approve(router.address, ethers.utils.parseEther("100"))
-    await USDC.approve(router.address, ethers.utils.parseEther("100"))
+    await weth9.approve(router.address, ethers.utils.parseEther("1000"))
+    await stack.approve(router.address, ethers.utils.parseEther("1000"))
+    await USDC.approve(router.address, ethers.utils.parseEther("1000"))
 
     await router.addLiquidityETH(
         stack.address,
-        ethers.utils.parseEther("100"),
-        ethers.utils.parseEther("100"),
+        ethers.utils.parseEther("1000"),
+        ethers.utils.parseEther("1000"),
         ethers.utils.parseEther("100"),
         deployer.address,
         ethers.constants.MaxUint256,
@@ -382,12 +382,12 @@ const deployXctMinter = async () => {
     )
     // await router.addLiquidityETH(
     //     USDC.address,
-    //     ethers.utils.parseEther("100"),
-    //     ethers.utils.parseEther("100"),
+    //     ethers.utils.parseEther("1000"),
+    //     ethers.utils.parseEther("1000"),
     //     ethers.utils.parseEther("100"),
     //     deployer.address,
     //     ethers.constants.MaxUint256,
-    //     { value: ethers.utils.parseEther("100") }
+    //     { value: ethers.utils.parseEther("1000") }
     // )
 
     const XCTMinterContract = await ethers.getContractFactory("XCTMinter")
