@@ -639,6 +639,105 @@ const setup = async () => {
     await helper.grantRoleForContractBasedDeployment(1, addresses.deployer)
 }
 
+const setupUrsula = async () => {
+    const subnet1 = {
+        creator: helper.getAddresses().deployer,
+        subnetDAO: helper.getAddresses().deployer,
+        subnetType: 1,
+        sovereignStatus: true,
+        cloudProviderType: 1,
+        subnetStatusListed: true,
+        unitPrices: [ethers.utils.parseEther("0.0001"),
+        ethers.utils.parseEther("0.0002"),
+        ethers.utils.parseEther("0.0003"),
+        ethers.utils.parseEther("0.0004")],
+        otherAttributes: [],
+        maxClusters: 1,
+        whitelistedClusters: [],
+        stackFeesReqd: ethers.utils.parseEther("0.01")
+    };
+
+    const darkMatter = await helper.getNFTToken();
+    const Registration = await helper.getRegistration();
+    const contractDeploy = await helper.getContractBasedDeployment();
+    const appNFT = await helper.getAppNFT();
+
+    let tr = await darkMatter.mint(helper.getAddresses().deployer);
+    let rec = await tr.wait();
+    let transferEvent = rec.events.find(event => event.event == "Transfer");
+    const nftID = transferEvent.args[2].toNumber();
+
+    await darkMatter.setApprovalForAll(
+        Registration.address,
+        true
+    );
+
+    tr = await Registration.createSubnet(
+        nftID,
+        subnet1.subnetDAO,
+        subnet1.subnetType,
+        subnet1.sovereignStatus,
+        subnet1.cloudProviderType,
+        subnet1.subnetStatusListed,
+        subnet1.unitPrices,
+        subnet1.otherAttributes,
+        subnet1.maxClusters,
+        subnet1.whitelistedClusters,
+        subnet1.stackFeesReqd,
+        "subnet"
+        );
+
+    rec = await tr.wait();
+    const subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");
+    const subnetID = subnetCreatedEvent.args[0].toNumber();
+
+
+    tr = await darkMatter.mint(helper.getAddresses().deployer);
+    rec = await tr.wait();
+    transferEvent = rec.events.find(event => event.event == "Transfer");
+    const clusterNFTID = transferEvent.args[2].toNumber();
+
+    tr = await Registration.clusterSignUp(
+        subnetID,
+        "",
+        helper.getAddresses().deployer,
+        helper.getAddresses().deployer,
+        clusterNFTID,
+        "cluster-1"
+    );
+
+    rec = await tr.wait();
+    const clusterSignupEvent = rec.events.find(event => event.event == "ClusterSignedUp");
+    const clusterID = clusterSignupEvent.args[1].toNumber();
+
+
+    tr = await appNFT.mint(helper.getAddresses().deployer);
+    rec = await tr.wait();
+    transferEvent = rec.events.find(event => event.event == "Transfer");
+    const appNFTID = transferEvent.args[2].toNumber();
+
+    await helper.grantRoleForContractBasedDeployment(appNFTID, helper.getAddresses().deployer);
+
+    tr = await contractDeploy.createData(
+        appNFTID,
+        "app1",
+        "0xa83a5be4756de47fb0f31eed7b02c10360a73f715b8338e713aa4d5de811422e",
+        18,
+        32,
+        [[1,1,subnetID]],
+        [2, 2],
+        "",
+        false
+    );
+
+    const data = await contractDeploy.getFullData(appNFTID, "app1");
+
+    console.log("subnetID: ", subnetID);
+    console.log("clusterID: ", clusterID);
+    console.log("appNFT ID: ", appNFTID);
+    console.log("app data created: ", data);
+}
+
 async function main() {
     // addresses = {
     //     deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
@@ -695,7 +794,7 @@ async function main() {
     await helper.callNftApprove()
     await helper.xctApproveSub()
     await helper.xctApproveSubBal()
-    await helper.grantSubRoleForDeployment()
+    await setupUrsula();
     // await deployXCT();
     // await deployStack();
     // await deployDarkNFT();
@@ -777,7 +876,7 @@ async function main() {
     // uint8 _size,
     // uint256[][] memory _subnetIDList,
     // uint256[] memory _resourceArray,
-    // string memory lastUpdatedTime
+// string memory lastUpdatedTime
 
     // const contractDeploy = await getContractBasedDeployment()
     // tr = await contractDeploy.updateData(
