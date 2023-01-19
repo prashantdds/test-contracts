@@ -5,7 +5,7 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
+import "hardhat/console.sol";
 /**
  * @dev Contract module that allows children to implement role-based access
  * control mechanisms. This is a lightweight version that doesn't allow enumerating role
@@ -53,11 +53,17 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
 
     struct MemberData {
         uint256 userRoleID;
+        uint256 memberID;
+        address member;
         bool active;
     }
 
     struct RoleData {
-        mapping(address => MemberData) members;
+        // address member;
+        // bytes32 Role;
+        mapping(address => MemberData) memberMap;
+        address[] memberList;
+        // address[] members;
         bytes32 adminRole;
     }
 
@@ -67,9 +73,11 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
     }
 
     // NFT id => ROLE => data
-    mapping(uint=>mapping(bytes32 => RoleData)) private _roles;
+    mapping(uint256 => mapping(bytes32 => RoleData)) private nftToAccountRoles;
+    mapping(uint256 => mapping(bytes32 => mapping(address => bool))) hasRoleMap;
+    // mapping(uint=>mapping(bytes32 => RoleData)) private _roles;
 
-    mapping(address => UserRole[]) private userRoles;
+    mapping(address => UserRole[]) private accountsToNFTRoles;
 
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
@@ -97,8 +105,13 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
     /**
      * @dev Returns `true` if `account` has been granted `role`.
      */
-    function hasRole(uint _appId, bytes32 role, address account) public view virtual  returns (bool) {
-        return _roles[_appId][role].members[account].active;
+    function hasRole(uint appID, bytes32 role, address account)
+    public
+    view
+    virtual 
+    returns (bool) {
+
+        return nftToAccountRoles[appID][role].memberMap[account].active;
     }
 
     /**
@@ -130,8 +143,8 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
      *
      * To change a role's admin, use {_setRoleAdmin}.
      */
-    function getRoleAdmin(uint _appId, bytes32 role) public view virtual  returns (bytes32) {
-        return _roles[_appId][role].adminRole;
+    function getRoleAdmin(uint appID, bytes32 role) public view virtual  returns (bytes32) {
+        return nftToAccountRoles[appID][role].adminRole;
     }
 
     /**
@@ -218,7 +231,7 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
      */
     function _setRoleAdmin(uint _appId, bytes32 role, bytes32 adminRole) internal virtual {
         bytes32 previousAdminRole = getRoleAdmin(_appId, role);
-        _roles[_appId][role].adminRole = adminRole;
+        nftToAccountRoles[_appId][role].adminRole = adminRole;
         emit RoleAdminChanged(_appId, role, previousAdminRole, adminRole);
     }
 
@@ -229,19 +242,31 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
      *
      * May emit a {RoleGranted} event.
      */
-    function _grantRole(uint _appId, bytes32 role, address account) internal virtual {
-        if (!hasRole(_appId, role, account)) {
-            _roles[_appId][role].members[account] = MemberData(
-                userRoles[account].length,
-                true
+    function _grantRole(uint appID, bytes32 role, address account) internal virtual {
+        if (!hasRole(appID, role, account))
+        {
+
+            nftToAccountRoles[appID][role].memberMap[account].memberID
+                 = nftToAccountRoles[appID][role].memberList.length;
+
+            nftToAccountRoles[appID][role].memberMap[account].userRoleID
+                = accountsToNFTRoles[account].length;
+
+            
+            nftToAccountRoles[appID][role].memberMap[account].active = true;
+
+            nftToAccountRoles[appID][role].memberList.push(
+                account
             );
 
-            userRoles[account].push(UserRole(
-                _appId,
-                role
-            ));
+            accountsToNFTRoles[account].push(
+                UserRole(
+                    appID,
+                    role
+                )
+            );
 
-            emit RoleGranted(_appId, role, account, _msgSender());
+            emit RoleGranted(appID, role, account, _msgSender());
         }
     }
 
@@ -252,28 +277,41 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
      *
      * May emit a {RoleRevoked} event.
      */
-    function _revokeRole(uint _appId, bytes32 role, address account) internal virtual {
-        if (hasRole(_appId, role, account))
+    function _revokeRole(uint appID, bytes32 role, address account) internal virtual {
+        if (hasRole(appID, role, account))
         {
-            uint256 entryID = _roles[_appId][role].members[account].userRoleID;
 
-            _roles[_appId][role].members[account].active = false;
+            uint256 memberID = nftToAccountRoles[appID][role].memberMap[account].memberID;
+            uint256 userRoleID = nftToAccountRoles[appID][role].memberMap[account].userRoleID;
 
-            delete userRoles[account][entryID];
+            nftToAccountRoles[appID][role].memberMap[account].active = false;
+
+
+            delete nftToAccountRoles[appID][role].memberList[memberID];
+
+            delete accountsToNFTRoles[account][userRoleID];
+
             
-            emit RoleRevoked(_appId, role, account, _msgSender());
+            emit RoleRevoked(appID, role, account, _msgSender());
         }
     }
     
 
-    function getAccountRoles(address account)
+    function getAllRolesFromAccount(address account)
     external
     view
     returns (UserRole[] memory)
     {
-        return userRoles[account];
+        return accountsToNFTRoles[account];
     }
 
+    function getAccountsWithRole(uint256 appId, bytes32 role)
+    external
+    view
+    returns (address[] memory)
+    {
+        return nftToAccountRoles[appId][role].memberList;
+    }
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
