@@ -32,6 +32,7 @@ contract ContractBasedDeploymentV2 is Initializable {
         uint256[][] subnetIdList;
         uint256[] resourceArray;
         string lastUpdatedTime;
+        bool cidLock;
     }
 
     // NFT id => App name => Multihash
@@ -51,7 +52,8 @@ contract ContractBasedDeploymentV2 is Initializable {
         uint8 size,
         uint256[][] subnetIDList,
         uint256[] resourceArray,
-        string lastUpdatedTime
+        string lastUpdatedTime,
+        bool cidLock
     );
 
     event EntryDeleted(string indexed appName);
@@ -100,7 +102,8 @@ contract ContractBasedDeploymentV2 is Initializable {
         uint8 _size,
         uint256[][] memory _subnetIDList,
         uint256[] memory _resourceArray,
-        string memory lastUpdatedTime
+        string memory lastUpdatedTime,
+        bool cidLock
     ) external {
         require(_resourceArray.length > 0, "Resource array should have replica count and count of resource types");
 
@@ -120,7 +123,8 @@ contract ContractBasedDeploymentV2 is Initializable {
             _size,
             _subnetIDList,
             _resourceArray,
-            lastUpdatedTime
+            lastUpdatedTime,
+            cidLock
         );
         
         appIDToName[nftID][lastAppId[nftID]] = appName;
@@ -133,7 +137,8 @@ contract ContractBasedDeploymentV2 is Initializable {
             _size,
             _subnetIDList,
             _resourceArray,
-            lastUpdatedTime
+            lastUpdatedTime,
+            cidLock
         );
 
         lastAppId[nftID] = lastAppId[nftID] + 1;
@@ -207,7 +212,8 @@ contract ContractBasedDeploymentV2 is Initializable {
         uint8 _size,
         uint256[][] memory _subnetIDList,
         uint256[] memory _resourceArray,
-        string memory lastUpdatedTime
+        string memory lastUpdatedTime,
+        bool cidLock
     ) external hasPermission(_nftId) {
         require(entries[_nftId][appName].digest == 0, "Already set");
         require(_resourceArray.length > 0, "Resource array should have replica count and count of resource types");
@@ -225,7 +231,8 @@ contract ContractBasedDeploymentV2 is Initializable {
             _size,
             _subnetIDList,
             _resourceArray,
-            lastUpdatedTime
+            lastUpdatedTime,
+            cidLock
         );
         appIDToName[_nftId][lastAppId[_nftId]] = appName;
         emit EntrySet(
@@ -236,7 +243,8 @@ contract ContractBasedDeploymentV2 is Initializable {
             _size,
             _subnetIDList,
             _resourceArray,
-            lastUpdatedTime
+            lastUpdatedTime,
+            cidLock
         );
         lastAppId[_nftId] = lastAppId[_nftId] + 1;
         // ListenerContract.listen("ContractBasedDeployment", address(this), "createData", appName, _digest, _hashFunction, _size, _resourceArray);
@@ -260,6 +268,16 @@ contract ContractBasedDeploymentV2 is Initializable {
     ) external hasPermission(_nftId) {
         require(entries[_nftId][appName].digest != 0, "Already no data");
         require(_resourceArray.length > 0, "Resource array should have replica count and count of resource types");
+        if(entries[_nftId][appName].cidLock)
+        {
+            require(
+                entries[_nftId][appName].digest == _digest
+                && entries[_nftId][appName].hashFunction == _hashFunction
+                && entries[_nftId][appName].size == _size
+                ,"The CID in this app is locked, and cannot be changed"
+            );
+        }
+
 
         for(uint256 i = 0; i < _subnetIDList.length; i++)
         {
@@ -267,6 +285,7 @@ contract ContractBasedDeploymentV2 is Initializable {
         }
 
         uint256 appId = entries[_nftId][appName].appID;
+        bool cidLock = entries[_nftId][appName].cidLock;
 
         entries[_nftId][appName] = Multihash(
             appId,
@@ -276,7 +295,8 @@ contract ContractBasedDeploymentV2 is Initializable {
             _size,
             _subnetIDList,
             _resourceArray,
-            lastUpdatedTime
+            lastUpdatedTime,
+            cidLock
         );
         // resourceArray[appName] = _resourceArray;
         emit EntrySet(
@@ -287,7 +307,8 @@ contract ContractBasedDeploymentV2 is Initializable {
             _size,
             _subnetIDList,
             _resourceArray,
-            lastUpdatedTime
+            lastUpdatedTime,
+            cidLock
         );
         // ListenerContract.listen("ContractBasedDeployment", address(this), "updateData", appName, _digest, _hashFunction, _size, _resourceArray);
     }
@@ -343,7 +364,8 @@ contract ContractBasedDeploymentV2 is Initializable {
             uint8 size,
             uint256[][] memory subnetIDList,
             uint256[] memory resourceArray,
-            string memory lastUpdatedTime
+            string memory lastUpdatedTime,
+            bool cidLock
         )
     {
         Multihash memory entry = entries[_nftId][appName];
@@ -353,7 +375,8 @@ contract ContractBasedDeploymentV2 is Initializable {
             entry.size,
             entry.subnetIdList,
             entry.resourceArray,
-            entry.lastUpdatedTime
+            entry.lastUpdatedTime,
+            entry.cidLock
         );
     }
 

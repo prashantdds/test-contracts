@@ -71,6 +71,12 @@ contract Registration is
         uint256[] unitPrices;
     }
 
+    struct SubnetNameAndID
+    {
+        string subnetName;
+        uint256 subnetID;
+    }
+
     mapping(uint256 => PriceChangeRequest) requestPriceChange;
 
     // SubnetID =>
@@ -300,7 +306,8 @@ contract Registration is
         uint256[] memory _otherAttributes,
         uint256 _maxClusters,
         address[] memory _whiteListedClusters,
-        uint256 _stackFeesReqd
+        uint256 _stackFeesReqd,
+        string memory subnetName
     ) external whenNotPaused {
         DarkMatterNFT.transferFrom(_msgSender(), address(this), nftId);
         StackToken.transferFrom(
@@ -325,7 +332,7 @@ contract Registration is
         _subnetAttributes.stackFeesReqd = _stackFeesReqd;
         _subnetAttributes.DarkMatterNFTType = DarkMatterNFT;
         _subnetAttributes.subnetLocalDAO = _subnetLocalDAO;
-        _subnetAttributes.subnetName = subnetIDStr;
+        _subnetAttributes.subnetName = subnetName;
 
         _subnetAttributes.SUBNET_ATTR_ROLE = keccak256(abi.encodePacked("SUBNET_ATTR_ROLE", subnetIDStr));
         _subnetAttributes.PRICE_ROLE = keccak256(abi.encodePacked("PRICE_ROLE", subnetIDStr));
@@ -363,17 +370,42 @@ contract Registration is
         totalSubnets = totalSubnets.add(1);
     }
 
-    function setSubnetName(uint256 subnetID, string memory subnetName)
-    external
-    {
-        require(
-            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
-            hasRole(SUBNET_ATTR_ROLE, _msgSender()) ||
-            hasRole(subnetAttributes[subnetID].SUBNET_ATTR_ROLE, _msgSender()), "address does not have the role to modify subnet attributes");
-        
-        subnetAttributes[subnetID].subnetName = subnetName;
 
-        emit ChangedSubnetName(subnetID, subnetName);
+
+    function getAllSubnetNamesAndIDs()
+    external
+    view
+    returns (SubnetNameAndID [] memory subnetNameList)
+    {
+        uint256 subnetCount = 0;
+        for(uint i = 0; i < totalSubnets; i++)
+        {
+            if(subnetAttributes[i].subnetStatusListed)
+                subnetCount++;
+        }
+
+        subnetNameList = new SubnetNameAndID[](subnetCount);
+
+        for(uint i = 0; i < totalSubnets; i++)
+        {
+            if(subnetAttributes[i].subnetStatusListed)
+                subnetNameList[i].subnetName = subnetAttributes[i].subnetName;
+                subnetNameList[i].subnetID = i;
+        }
+    }
+
+
+    function getSubnetNames(uint256 [] memory subnetIDList)
+    external
+    view
+    returns (string [] memory subnetNameList)
+    {
+        subnetNameList = new string[](subnetIDList.length);
+
+        for(uint i = 0; i < subnetIDList.length; i++)
+        {
+            subnetNameList[i] = subnetAttributes[subnetIDList[i]].subnetName;
+        }
     }
 
     function changeSubnetAttributes(
@@ -386,7 +418,8 @@ contract Registration is
         uint256[] memory _otherAttributes, // 5
         uint256 _maxClusters, // 6
         uint256 _stackFeesReqd, // 8
-        IERC721Upgradeable _DarkMatterNFTType //9
+        IERC721Upgradeable _DarkMatterNFTType, //9
+        string memory _subnetName
     ) external  {
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
@@ -412,6 +445,9 @@ contract Registration is
                 "Not approved Dark Matter NFT"
             );
             subnetAttributes[subnetId].DarkMatterNFTType = _DarkMatterNFTType;
+        }
+        else if (_attributeNo == 9) {
+            subnetAttributes[subnetId].subnetName = _subnetName;
         }
 
         emit SubnetAttributesChanged(
