@@ -538,6 +538,15 @@ const xctApproveSubBal = async () => {
     // printLogs(op.hash)
 }
 
+const grantSubRoleForDeployment = async (address) => {
+    const Subscription = await getSubscription()
+    const SUBSCRIBE_ROLE = await Subscription.SUBSCRIBE_ROLE()
+    await Subscription.grantRole(
+        SUBSCRIBE_ROLE,
+        addresses.ContractBasedDeployment
+    )
+}
+
 const deployContracts = async () => {
     addresses = {
         deployer: accounts[0],
@@ -598,4 +607,5 @@ module.exports = {
     deployContractBasedDeployment,
     setNoPrint,
     setParameters,
+    grantSubRoleForDeployment,
 }

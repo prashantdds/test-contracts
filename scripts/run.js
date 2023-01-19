@@ -695,6 +695,7 @@ async function main() {
     await helper.callNftApprove()
     await helper.xctApproveSub()
     await helper.xctApproveSubBal()
+    await helper.grantSubRoleForDeployment()
     // await deployXCT();
     // await deployStack();
     // await deployDarkNFT();
