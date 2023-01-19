@@ -378,7 +378,7 @@ const deployXctMinter = async () => {
         ethers.utils.parseEther("100"),
         deployer.address,
         ethers.constants.MaxUint256,
-        { value: ethers.utils.parseEther("1000") }
+        { value: ethers.utils.parseEther("100") }
     )
     // await router.addLiquidityETH(
     //     USDC.address,
