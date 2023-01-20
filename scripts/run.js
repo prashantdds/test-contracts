@@ -639,7 +639,24 @@ const setup = async () => {
     await helper.grantRoleForContractBasedDeployment(1, addresses.deployer)
 }
 
+const getAmountIfLess = async (erc20, account, balanceToAdd, contractToApprove) => {
+    // add amount to depositor if depositor's balance is less
+    let currentBalance = await erc20.balanceOf(account.address);
+    if(currentBalance.lt(balanceToAdd)) {
+        await erc20.transfer(account.address,  balanceToAdd);
+    }
+    //approve subscription balance to withdraw erc20 out of depositor's wallet
+    await erc20.connect(account).approve(
+        contractToApprove.address,
+        balanceToAdd
+    );
+
+}
+
 const setupUrsula = async () => {
+    const addrList = await ethers.getSigners();
+    const cluster = addrList[4];
+
     const subnet1 = {
         creator: helper.getAddresses().deployer,
         subnetDAO: helper.getAddresses().deployer,
@@ -657,6 +674,7 @@ const setupUrsula = async () => {
         stackFeesReqd: ethers.utils.parseEther("0.01")
     };
 
+    const stack = await helper.getStack();
     const darkMatter = await helper.getNFTToken();
     const Registration = await helper.getRegistration();
     const contractDeploy = await helper.getContractBasedDeployment();
@@ -692,16 +710,23 @@ const setupUrsula = async () => {
     const subnetID = subnetCreatedEvent.args[0].toNumber();
 
 
-    tr = await darkMatter.mint(helper.getAddresses().deployer);
+    tr = await darkMatter.mint(cluster.address);
     rec = await tr.wait();
     transferEvent = rec.events.find(event => event.event == "Transfer");
     const clusterNFTID = transferEvent.args[2].toNumber();
 
-    tr = await Registration.clusterSignUp(
+    await darkMatter.connect(cluster).setApprovalForAll(
+        Registration.address,
+        true
+    );
+
+    await getAmountIfLess(stack, cluster, subnet1.stackFeesReqd, Registration);
+
+    tr = await Registration.connect(cluster).clusterSignUp(
         subnetID,
         "",
-        helper.getAddresses().deployer,
-        helper.getAddresses().deployer,
+        cluster.address,
+        cluster.address,
         clusterNFTID,
         "cluster-1"
     );
@@ -731,11 +756,13 @@ const setupUrsula = async () => {
     );
 
     const data = await contractDeploy.getFullData(appNFTID, "app1");
+    const clusterAttributes = await Registration.getClusterAttributes(subnetID, clusterID);
 
     console.log("subnetID: ", subnetID);
     console.log("clusterID: ", clusterID);
     console.log("appNFT ID: ", appNFTID);
     console.log("app data created: ", data);
+    console.log("cluster attributes: ", clusterAttributes);
 }
 
 async function main() {
@@ -772,6 +799,29 @@ async function main() {
     //     ContractBasedDeployment: "0xB73c47b77C422682219E8D9bC9217C009395cde7",
     // })
 
+    helper.setAddresses(
+        {
+            deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',    
+            xct: '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
+            stack: '0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e',       
+            nftToken: '0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0',    
+            Registration: '0x9A676e781A523b5d0C0e43731313A708CB607508',
+            appNFT: '0x0B306BF915C4d645ff596e518fAf3F9669b97016',
+            RoleControl: '0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE',
+            SubscriptionBalanceCalculator: '0x3Aa5ebB10DC797CAC828524e59A333d0A371443c',
+            SubscriptionBalance: '0x59b670e9fA9D0A427751Af201D676719a970857b',
+            SubnetDAODistributor: '0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44',
+            Subscription: '0x4A679253410272dd5232B3Ff7cF5dbB88f295319',
+            ContractBasedDeployment: '0x09635F643e140090A9A8Dcd712eD6285858ceBef'
+          }
+        // {
+        //     deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+        //     xct: '0xC20654dB7F9483f10c91dc94924dC8F04F79bfd5',
+        //     stack: '0xB10982193B39Eda3428d6AaeBbd7986f2A2Baa1a',
+        //     xctMinter: '0x0eb44B96bC23A6362d383eF04bE67501251cF227'
+        //   }
+    )
+
     // helper.setAddresses({
     //         deployer: "0x3C904a5f23f868f309a6DB2a428529F33848f517",
     //         xct: "0xca89AD662eA7A2688d29e2Df6291123eBFB807E4",
@@ -787,14 +837,19 @@ async function main() {
     //         RoleControl: "0x660c66A35e4B87454a89b307251bA5074b519892",
     //         ContractBasedDeployment: "0xFB86Bcaf08f84E5c5F856bF623C04aB233839298"
     //     })
-    const now = new Date()
-    console.log(now.getTime())
+    // const now = new Date()
+    // console.log(now.getTime())
     await helper.deployContracts()
     await helper.callStackApprove()
     await helper.callNftApprove()
     await helper.xctApproveSub()
     await helper.xctApproveSubBal()
     await setupUrsula();
+
+    // await helper.setupXCTMinter();
+    // await helper.testXCT();
+
+    // 200000000000000000 1990031876438381866
     // await deployXCT();
     // await deployStack();
     // await deployDarkNFT();
