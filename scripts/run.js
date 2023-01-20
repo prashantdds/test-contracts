@@ -656,6 +656,8 @@ const getAmountIfLess = async (erc20, account, balanceToAdd, contractToApprove) 
 const setupUrsula = async () => {
     const addrList = await ethers.getSigners();
     const cluster = addrList[4];
+    const roleAccount1 = addrList[5];
+    const roleAccount2 = addrList[6];
 
     const subnet1 = {
         creator: helper.getAddresses().deployer,
@@ -679,6 +681,7 @@ const setupUrsula = async () => {
     const Registration = await helper.getRegistration();
     const contractDeploy = await helper.getContractBasedDeployment();
     const appNFT = await helper.getAppNFT();
+    const RoleControl = await helper.getRoleControl();
 
     let tr = await darkMatter.mint(helper.getAddresses().deployer);
     let rec = await tr.wait();
@@ -735,6 +738,7 @@ const setupUrsula = async () => {
     const clusterSignupEvent = rec.events.find(event => event.event == "ClusterSignedUp");
     const clusterID = clusterSignupEvent.args[1].toNumber();
 
+    await Registration.approveListingCluster(subnetID, clusterID, 100);
 
     tr = await appNFT.mint(helper.getAddresses().deployer);
     rec = await tr.wait();
@@ -758,11 +762,27 @@ const setupUrsula = async () => {
     const data = await contractDeploy.getFullData(appNFTID, "app1");
     const clusterAttributes = await Registration.getClusterAttributes(subnetID, clusterID);
 
+
+    await helper.grantRoleForContractBasedDeployment(appNFTID, helper.getAddresses().deployer);
+
+
+    const READ = await RoleControl.READ();
+    const CONTRACT_BASED_DEPLOYER = await RoleControl.CONTRACT_BASED_DEPLOYER();
+
+
+    await RoleControl.grantRole(appNFTID, READ, roleAccount1.address);
+    await RoleControl.grantRole(appNFTID, CONTRACT_BASED_DEPLOYER, roleAccount2.address);
+
+    let hasRole1 = await RoleControl.hasRole(appNFTID, READ, roleAccount1.address);
+    let hasRole2 = await RoleControl.hasRole(appNFTID, CONTRACT_BASED_DEPLOYER, roleAccount2.address);
+
     console.log("subnetID: ", subnetID);
     console.log("clusterID: ", clusterID);
     console.log("appNFT ID: ", appNFTID);
     console.log("app data created: ", data);
     console.log("cluster attributes: ", clusterAttributes);
+    console.log("account #5 has READ role: ", hasRole1);
+    console.log("account #6 has CONTRACT DEPLOYER role: ", hasRole2);
 }
 
 async function main() {
