@@ -46,8 +46,11 @@ let parameters = {
     },
     xctMinter: {
         slippage: 10000, // 10%
-        percentStackConversion: 10000, // 10%
+        // percentStackConversion: 10000, // 10%
+        percentStackConversion: 20000, // 10%
         percentStackAdvantage: 5000, // 5%
+        usdcAddressPolygon: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+        wethAddressPolygon: "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
     },
 }
 
@@ -148,6 +151,12 @@ const getContractBasedDeployment = async () => {
     )
 }
 
+const getXCTMinter = async () => {
+    const XCTMinterContract = await ethers.getContractFactory("XCTMinter");
+    return await XCTMinterContract.attach(
+        addresses.xctMinter
+    );
+}
 ///////////////////////////// DEPLOY CONTRACTS//////////////////////////////////
 
 const deployXCT = async () => {
@@ -344,29 +353,37 @@ const deploySubscription = async () => {
     return Subscription.address
 }
 
-const deployXctMinter = async () => {
+const getUniswapRouter = async () => {
     const [deployer] = await ethers.getSigners()
-    const usdcAddressPolygon = "0x2791bca1f2de4661ed88a30c99a7a9449aa84174"
-    const wethAddressPolygon = "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
-    const xct = await getXCT()
-    const stack = await getStack()
-    const ERC20 = await ethers.getContractFactory("TestERC20")
-    const USDC = await ERC20.attach(usdcAddressPolygon)
     const routerContract = new ethers.ContractFactory(
         routerABI,
         routerBytecode,
         deployer
-    )
+    );
     const router = await routerContract.attach(
         "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
     )
+
+    return router;
+}
+
+const deployXCTMinter = async () => {
+    const [deployer] = await ethers.getSigners()
+    // const usdcAddressPolygon = "0x2791bca1f2de4661ed88a30c99a7a9449aa84174"
+    // const wethAddressPolygon = "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
+    const xct = await getXCT()
+    const stack = await getStack()
+    const ERC20 = await ethers.getContractFactory("TestERC20")
+    const USDC = await ERC20.attach(parameters.xctMinter.usdcAddressPolygon)
+
+    const router = await getUniswapRouter();
 
     const weth9Contract = new ethers.ContractFactory(
         wethABI,
         wethBytecode,
         deployer
     )
-    const weth9 = await weth9Contract.attach(wethAddressPolygon)
+        const weth9 = await weth9Contract.attach(parameters.xctMinter.wethAddressPolygon)
     await weth9.approve(router.address, ethers.utils.parseEther("1000"))
     await stack.approve(router.address, ethers.utils.parseEther("1000"))
     await USDC.approve(router.address, ethers.utils.parseEther("1000"))
@@ -547,6 +564,106 @@ const grantSubRoleForDeployment = async (address) => {
     )
 }
 
+const setupXCTMinter = async () => {
+    addresses = {
+        deployer: accounts[0],
+    }
+
+    addresses.xct = await deployXCT();
+    addresses.stack = await deployStack();
+    addresses.xctMinter = await deployXCTMinter();
+
+    console.log("addresses: ", addresses);
+
+    xct = await getXCT();
+    stack = await getStack();
+    XCTMinter = await getXCTMinter();
+    return {xct, stack, XCTMinter};
+}
+
+
+const testXCT = async () => {
+    addrList = await ethers.getSigners();
+    const deployer = addrList[0];
+    const valueToSend = ethers.utils.parseEther("1");
+
+    // const {stack, xct, XCTMinter} = await helper.setupXCTMinter();
+    xct = await getXCT();
+    stack = await getStack();
+    XCTMinter = await getXCTMinter();
+    const router = await getUniswapRouter();
+
+    provider = ethers.provider;
+
+    balance = await provider.getBalance(deployer.address);
+    console.log(balance.toString()); // 0
+
+    let path = [
+        parameters.xctMinter.wethAddressPolygon,
+        stack.address
+    ]
+
+    const slippageFactor = (100000 - parameters.xctMinter.slippage)/1000;
+    
+    console.log("slippage: ", slippageFactor);
+
+    const amountForStack = valueToSend.mul(parameters.xctMinter.percentStackConversion).div(
+        100000
+    );
+
+    const amountForUSDC = valueToSend.mul(100000 - parameters.xctMinter.percentStackConversion).div(
+        100000
+    );
+
+    console.log("amount for stack: ", amountForStack);
+    console.log("amouunt for usdc:", amountForUSDC);
+    
+    let stackAmountsOut = await router.getAmountsOut(
+        amountForStack,
+        [
+            parameters.xctMinter.wethAddressPolygon,
+            stack.address   
+        ]
+    );
+
+    let usdcAmountsOut = await router.getAmountsOut(
+        amountForUSDC,
+        [
+            parameters.xctMinter.wethAddressPolygon,
+            parameters.xctMinter.usdcAddressPolygon   
+        ]
+    );
+
+    const expectedStack = stackAmountsOut[1];
+    const expectedUSDC = usdcAmountsOut[1].mul(slippageFactor).div(100);
+    
+    console.log("expectedStack: ", expectedStack);
+    console.log("expected usdc: ", expectedUSDC);
+
+    let ethBalanceBefore = await provider.getBalance(deployer.address);
+    let beforeBalance= await xct.balanceOf(deployer.address);
+    let beforeStackBalance = await stack.balanceOf(deployer.address);
+    await XCTMinter.easyBuyXCT(
+        {
+            value: valueToSend
+        }
+    );
+    let afterBalance = await xct.balanceOf(deployer.address);
+    let ethBalanceAfter = await provider.getBalance(deployer.address);
+    let afterStackBalance = await stack.balanceOf(deployer.address);
+
+    console.log("eth: ", ethBalanceBefore);
+    console.log("eth deducted: ", ethBalanceBefore.sub(ethBalanceAfter));
+    console.log("xct added: ",afterBalance.sub(beforeBalance));
+    console.log("stack balance added: ", afterStackBalance.sub(beforeStackBalance));
+
+    
+    // address[] memory path = new address[](2);
+    // path[0] = WETH;
+    // path[1] = address(StackToken);
+
+}
+
 const deployContracts = async () => {
     addresses = {
         deployer: accounts[0],
@@ -563,8 +680,9 @@ const deployContracts = async () => {
     addresses.SubscriptionBalance = await deploySubscriptionBalance()
     addresses.SubnetDAODistributor = await deploySubnetDAODistributor()
     addresses.Subscription = await deploySubscription()
-    addresses.xctMinter = await deployXctMinter()
+    addresses.xctMinter = await deployXCTMinter()
     addresses.ContractBasedDeployment = await deployContractBasedDeployment()
+    await grantSubRoleForDeployment()
     await connectSubBalToSub()
     await connectSubCalcToSub()
     await connectSubCalcToSubBal()
@@ -594,8 +712,8 @@ module.exports = {
     getContractBasedDeployment,
     xctApproveSub,
     xctApproveSubBal,
-    // deployXCT,
-    // deployStack,
+    deployXCT,
+    deployStack,
     deployDarkNFT,
     callStackApprove,
     callNftApprove,
@@ -608,4 +726,8 @@ module.exports = {
     setNoPrint,
     setParameters,
     grantSubRoleForDeployment,
+    getXCTMinter,
+    deployXCTMinter,
+    setupXCTMinter,
+    testXCT
 }

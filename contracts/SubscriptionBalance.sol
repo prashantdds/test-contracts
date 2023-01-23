@@ -13,6 +13,8 @@ import "./interfaces/IRoleControlV2.sol";
 import "./interfaces/IBalanceCalculator.sol";
 import "./interfaces/IERC721.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "hardhat/console.sol";
 
 contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     using SafeMathUpgradeable for uint256;
@@ -160,9 +162,15 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         view
         returns (uint256 totalDripRate)
     {
-        uint256[] memory subnetIds = nftBalances[nftID].subnetIds;
+        // uint256[] memory subnetIds = nftBalances[nftID].subnetIds;\
+        uint256[] memory subnetIds = SubscriptionContract.getSubnetsOfNFT(nftID);
+        bool[] memory activeSubnets = SubscriptionContract.getActiveSubnetsOfNFT(nftID);
+
         totalDripRate = 0;
         for (uint256 i = 0; i < subnetIds.length; i++) {
+            if(!activeSubnets[i])
+                continue;
+
             totalDripRate = totalDripRate.add(
                 dripRatePerSecOfSubnet(nftID, subnetIds[i])
             );
@@ -205,8 +213,9 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         (, , , , uint256[] memory prices, , , , ) = RegistrationContract
             .getSubnetAttributes(subnetId);
         uint256 cost = 0;
+        uint256 len = Math.min(prices.length, computeRequired.length);
 
-        for (uint256 i = 0; i < prices.length; i++) {
+        for (uint256 i = 0; i < len; i++) {
             cost = cost.add(prices[i].mul(computeRequired[i]));
         }
         return factor.mul(cost).div(100000) + licenseFee; // 10^5 for percent
@@ -218,7 +227,6 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         returns (uint256)
     {
         uint256 factor = s_GlobalDAORate()
-            // .add(r_licenseFee(nftID, subnetId))
             .add(t_SupportFeeRate(nftID, subnetId))
             .add(ReferralPercent)
             .add(100000);
@@ -228,9 +236,12 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         uint256[] memory computeRequired = SubscriptionContract
             .getComputesOfSubnet(nftID, subnetId);
 
-        for (uint256 i = 0; i < prices.length; i++) {
+
+        uint256 minLen = Math.min(prices.length, computeRequired.length);
+        for (uint256 i = 0; i < minLen; i++) {
             cost = cost.add(prices[i].mul(computeRequired[i]));
         }
+        
         return factor.mul(cost).div(100000) + r_licenseFee(nftID, subnetId); // 10^5 for percent
     }
 
@@ -259,30 +270,29 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         return prevBalance.sub(cost);
     }
 
-    function totalSubnets(uint256 nftId) external view returns (uint256) {
-        return nftBalances[nftId].subnetIds.length;
-    }
+    // function totalSubnets(uint256 nftId) external view returns (uint256) {
+    //     return nftBalances[nftId].subnetIds.length;
+    // }
 
-    function changeSubnet(
-        uint256 nftID,
-        uint256 _currentSubnetId,
-        uint256 _newSubnetId
-    ) external onlySubscription returns (bool) {
-        uint256[] memory subnetIdsInNFT = nftBalances[nftID].subnetIds;
-        // replace subnetId
-        for (uint256 i = 0; i < subnetIdsInNFT.length; i++) {
-            if (subnetIdsInNFT[i] == _currentSubnetId) {
-                subnetIdsInNFT[i] = _newSubnetId;
-                break;
-            }
-        }
-        nftBalances[nftID].subnetIds = subnetIdsInNFT;
-        return true;
-    }
+    // function changeSubnet(
+    //     uint256 nftID,
+    //     uint256 _currentSubnetId,
+    //     uint256 _newSubnetId
+    // ) external onlySubscription returns (bool) {
+    //     uint256[] memory subnetIdsInNFT = nftBalances[nftID].subnetIds;
+    //     // replace subnetId
+    //     for (uint256 i = 0; i < subnetIdsInNFT.length; i++) {
+    //         if (subnetIdsInNFT[i] == _currentSubnetId) {
+    //             subnetIdsInNFT[i] = _newSubnetId;
+    //             break;
+    //         }
+    //     }
+    //     nftBalances[nftID].subnetIds = subnetIdsInNFT;
+    //     return true;
+    // }
 
     function subscribeNew(
         uint256 nftID,
-        uint256 _subnetId,
         address _minter
     ) external onlySubscription returns (bool) {
         uint256[] memory arr;
@@ -295,20 +305,11 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             block.timestamp,
             0
         );
-        nftBalances[nftID].subnetIds.push(_subnetId);
 
         // _addBalance(nftID, _balanceToAdd);
         return true;
     }
 
-    function addSubnetToNFT(uint256 nftID, uint256 _subnetId)
-        external
-        onlySubscription
-        returns (bool)
-    {
-        nftBalances[nftID].subnetIds.push(_subnetId);
-        return true;
-    }
 
     function addBalance(address nftOwner, uint256 nftID, uint256 _balanceToAdd)
         public
@@ -557,10 +558,13 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         view
         returns (uint256[3] memory)
     {
+        uint256[] memory subnetIds = SubscriptionContract.getSubnetsOfNFT(nftID);
+        bool[] memory activeSubnets = SubscriptionContract.getActiveSubnetsOfNFT(nftID);
         return
             BalanceCalculator.getRealtimeBalance(
                 nftID,
-                nftBalances[nftID].subnetIds,
+                subnetIds,
+                activeSubnets,
                 nftBalances[nftID].prevBalance,
                 nftBalances[nftID].lastBalanceUpdateTime
             );
@@ -571,11 +575,14 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         view
         returns (uint256)
     {
+        uint256[] memory subnetIds = SubscriptionContract.getSubnetsOfNFT(nftID);
+        bool[] memory activeSubnets = SubscriptionContract.getActiveSubnetsOfNFT(nftID);
         return
             totalPrevBalance(nftID) -
             BalanceCalculator.getRealtimeCostIncurred(
                 nftID,
-                nftBalances[nftID].subnetIds,
+                subnetIds,
+                activeSubnets,
                 nftBalances[nftID].lastBalanceUpdateTime
             );
     }
@@ -593,10 +600,14 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         if(balanceEndTime > block.timestamp) {
             balanceDuration = block.timestamp - nftBalances[nftID].lastBalanceUpdateTime;
         }
+        uint256[] memory subnetIds = SubscriptionContract.getSubnetsOfNFT(nftID);
+        bool[] memory activeSubnets = SubscriptionContract.getActiveSubnetsOfNFT(nftID);
+
         uint256[3] memory prevBalanceUpdated = BalanceCalculator
             .getUpdatedBalance(
                 nftID,
-                nftBalances[nftID].subnetIds,
+                subnetIds,
+                activeSubnets,
                 nftBalances[nftID].mintTime,
                 nftBalances[nftID].prevBalance,
                 balanceDuration
@@ -624,6 +635,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
     function isSubscribed(uint256 nftID)
     public
+    view
     returns (bool)
     {
         return nftBalances[nftID].mintTime > 0;

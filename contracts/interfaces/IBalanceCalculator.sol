@@ -6,6 +6,7 @@ interface IBalanceCalculator {
     function getUpdatedBalance(
         uint256 nftId,
         uint256[] memory subnetIds,
+        bool[] memory activeSubnets,
         uint256 mintTime,
         uint256[3] memory prevBalance,
         uint256 duration
@@ -17,6 +18,7 @@ interface IBalanceCalculator {
     function getRealtimeBalance(
         uint256 nftId,
         uint256[] memory subnetIds,
+        bool[] memory activeSubnets,
         uint256[3] memory prevBalance,
         uint256 lastBalanceUpdatedTime
     ) external view returns (uint256[3] memory prevBalanceUpdated);
@@ -24,6 +26,7 @@ interface IBalanceCalculator {
     function getRealtimeCostIncurred(
         uint256 nftId,
         uint256[] memory subnetIds,
+        bool[] memory activeSubnets,
         uint256 lastBalanceUpdatedTime
     ) external view returns (uint256);
 

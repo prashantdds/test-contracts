@@ -8,6 +8,20 @@ interface ISubscription {
     view
     returns (bool);
 
+    function getSubnetsOfNFT(
+        uint256 nftID
+    )
+    external
+    view
+    returns(uint256[] memory);
+
+    function getActiveSubnetsOfNFT(
+        uint256 nftID
+    )
+    external
+    view
+    returns (bool[] memory);
+
     function getComputesOfSubnet(uint256 NFTid, uint256 subnetId) external view returns(uint256[] memory);
     function hasRole(bytes32 role, address account) external view returns(bool);
 
@@ -37,7 +51,6 @@ interface ISubscription {
 
     function subscribe(
         address subscriber,
-        bool isExistingNFT,
         uint256 _balanceToAdd,
         uint256 _nftId,
         uint256 _subnetId,
@@ -45,13 +58,12 @@ interface ISubscription {
         address _licenseAddress,
         address _supportAddress,
         uint256 _licenseFee,
-        uint256[] memory _computeRequired
+        int256[] memory _deltaCompute
     )
     external;
 
     function subscribeBatch(
         address subscriber,
-        bool isExistingNFT,
         uint256 _balanceToAdd,
         uint256 _nftId,
         uint256[] memory _subnetId,
@@ -59,7 +71,7 @@ interface ISubscription {
         address[] memory _licenseAddress,
         address[] memory _supportAddress,
         uint256[] memory _licenseFee,
-        uint256[][] memory _computeRequired
+        int256[][] memory _deltaCompute
     )
     external;
 }

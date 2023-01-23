@@ -50,7 +50,7 @@ interface ISubscriptionBalance {
 
     function subscribeNew(
         uint256 _nftId,
-        uint256 _subnetId,
+        // uint256 _subnetId,
         address _minter
     ) external returns (bool);
 

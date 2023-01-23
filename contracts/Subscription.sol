@@ -9,6 +9,7 @@ import "./interfaces/IRegistration.sol";
 import "./interfaces/IERC721.sol";
 import "./interfaces/ISubscriptionBalance.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "hardhat/console.sol";
 
 contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
@@ -43,6 +44,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 supportPercentage;
         uint256[] computeRequired;
         bool subscribed;
+        uint256 subnetArrayID;
     }
 
     // NFT id => SubnetID => NFTSubnetAttribute
@@ -51,8 +53,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
 
     // NFT ids => subnetids for view purpose only
     mapping(uint256 => uint256[]) public subscribedSubnetsOfNFT;
-    // NFT ids => subnetids for view purpose only
-    mapping(uint256 => uint256[]) public unsubscribedSubnetsOfNFT;
+    mapping(uint256 => bool[]) public activeSubnetsOfNFT;
 
     struct SupportPercentage {
         uint256 supportPercentage;
@@ -129,7 +130,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address licenseAddress,
         address supportAddress,
         uint256 licenseFee,
-        uint256[] computeRequired
+        int256[] deltaCompute
     );
 
     event ReferralAdded(uint256 NFTId, uint256 subnetId, address referralAddress);
@@ -159,6 +160,26 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 subnetId,
         uint256[] computeRequired
     );
+
+    function getSubnetsOfNFT(
+        uint256 nftID
+    )
+    public
+    view
+    returns(uint256[] memory)
+    {
+        return subscribedSubnetsOfNFT[nftID];
+    }
+
+    function getActiveSubnetsOfNFT(
+        uint256 nftID
+    )
+    public
+    view
+    returns (bool[] memory)
+    {
+        return activeSubnetsOfNFT[nftID];
+    }
 
     function isBridgeRole()
     public
@@ -322,28 +343,54 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             "The NFT is not subscribed to this subnet"
         );
 
-        uint256 totalBalance = SubscriptionBalance.totalPrevBalance(nftID);
-
-        if(totalBalance > 0)
-        {
-            uint256 estimate = SubscriptionBalance.estimateDripRatePerSecOfSubnet(
-                subnetID,
-                userSubscription[nftID][subnetID].licenseFee,
-                userSubscription[nftID][subnetID].supportPercentage,
-                computeRequired
-            );
-
-            estimate += SubscriptionBalance.dripRatePerSec(nftID);
-            
-            require((estimate * MIN_TIME_FUNDS) < totalBalance, "The total balance amount is not enough");
-        }
-
         SubscriptionBalance.updateBalance(nftID);
 
         userSubscription[nftID][subnetID].computeRequired = computeRequired;
 
         emit Computes_changed(nftID, subnetID, computeRequired);
     }
+
+    function addDeltaComputes(
+        uint256 nftID,
+        uint256 subnetID,
+        int256[] memory deltaCompute
+    )
+    public
+    view
+    returns (uint256[] memory)
+    {
+
+        uint256[] memory compute = new uint256[](deltaCompute.length);
+
+        if(!userSubscription[nftID][subnetID].subscribed)
+        {
+            for(uint256 i = 0; i < deltaCompute.length; i++)
+            {
+                require(deltaCompute[i] >= 0, "Cannot subscribe with negative resource values");
+                compute[i] = uint256(deltaCompute[i]);
+            }
+            return compute;
+        }
+
+        uint256[] memory subscribedCompute = userSubscription[nftID][subnetID].computeRequired;
+        
+        for(uint256 i = 0; i < subscribedCompute.length; i++)
+        {
+            int256 val = int256(subscribedCompute[i]) + deltaCompute[i];
+            require(val >= 0, "Withdrawing more resources than purchased");
+            
+            compute[i] = uint256(val);
+        }
+
+        for(uint256 i = subscribedCompute.length; i < deltaCompute.length; i++)
+        {
+            require(deltaCompute[i] >= 0, "Cannot subscribe with negative resource values");
+            compute[i] = uint256(deltaCompute[i]);
+        }
+    
+        return compute;
+    }
+
 
     function addSupportAddress(address supportAddress, uint256 defaultPercentage)
     public
@@ -398,14 +445,15 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256[][] memory _computeRequired
     )
     internal
+    view
     returns (uint256)
     {
-        uint256 estimate = 0;
+        // uint256 estimate = 0;
         uint256[] memory supportFee = new uint256[](_supportAddress.length);
         
         for(uint256 i = 0; i < _subnetId.length; i++)
         {
-            // supportFee[i] = getSupportFeesForNFT(_supportAddress[i], _nftId);
+            supportFee[i] = getSupportFeesForNFT(_supportAddress[i], _nftId);
         }
 
         return SubscriptionBalance.estimateDripRatePerSec(
@@ -418,7 +466,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
 
     function subscribeBatch(
         address subscriber,
-        bool isExistingNFT,
         uint256 _balanceToAdd,
         uint256 _nftId,
         uint256[] memory _subnetId,
@@ -426,48 +473,17 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address[] memory _licenseAddress,
         address[] memory _supportAddress,
         uint256[] memory _licenseFee,
-        uint256[][] memory _computeRequired
+        int256[][] memory _deltaCompute
     ) external {
         require(
-            (subscriber == _msgSender() && (!isExistingNFT || ApplicationNFT.ownerOf(_nftId) == subscriber))
-            || isBridgeRole()
-            || hasRole(SUBSCRIBE_ROLE, _msgSender())
+            // (subscriber == _msgSender() && ApplicationNFT.ownerOf(_nftId) == subscriber)
+             (
+                isBridgeRole()
+                || hasRole(SUBSCRIBE_ROLE, _msgSender())
+            )
             ,
-            "The subscriber address given should be your address"
+            "You do not have the role to call this function"
         );
-
-        uint256 totalBalance = _balanceToAdd;
-
-        if(!isExistingNFT)
-        {
-            _nftId = ApplicationNFT.getCurrentTokenId().add(1);
-            ApplicationNFT.mint(subscriber);
-        }
-        else {
-            totalBalance += SubscriptionBalance.totalPrevBalance(_nftId);
-        }
-
-        if(totalBalance > 0)
-        {
-            uint256 dripRate = 
-                    estimateDripRatePerSec(
-                        _nftId,
-                        _subnetId,
-                        _supportAddress,
-                        _licenseFee,
-                        _computeRequired
-                    );
-
-            if(isExistingNFT)
-            {
-                dripRate += SubscriptionBalance.dripRatePerSec(_nftId);
-            }
-
-            require(((
-                dripRate
-            ) * MIN_TIME_FUNDS) < totalBalance, "The total balance amount is not enough");
-
-        }
 
         subscribeInternal(
             subscriber,
@@ -479,7 +495,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             _licenseAddress[0],
             _supportAddress[0],
             _licenseFee[0],
-            _computeRequired[0]
+            _deltaCompute[0]
         );
     
         for (uint256 i = 1; i < _subnetId.length; i++)
@@ -494,7 +510,18 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
                 _licenseAddress[i],
                 _supportAddress[i],
                 _licenseFee[i],
-                _computeRequired[i]
+                _deltaCompute[i]
+            );
+        }
+
+        uint256 totalBalance = SubscriptionBalance.totalPrevBalance(_nftId);
+
+        if(totalBalance > 0)
+        {
+            require(
+                SubscriptionBalance.dripRatePerSec(_nftId) * MIN_TIME_FUNDS
+                    <= totalBalance,
+                    "The total balance amount is not enough"
             );
         }
     }
@@ -502,7 +529,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
 
     function subscribe(
         address subscriber,
-        bool isExistingNFT,
         uint256 _balanceToAdd,
         uint256 _nftId,
         uint256 _subnetId,
@@ -510,42 +536,18 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address _licenseAddress,
         address _supportAddress,
         uint256 _licenseFee,
-        uint256[] memory _computeRequired
+        int256[] memory _deltaCompute
     ) public whenNotPaused {
         require(
-            (subscriber == _msgSender() && (!isExistingNFT || ApplicationNFT.ownerOf(_nftId) == subscriber))
-            || isBridgeRole()
-            || hasRole(SUBSCRIBE_ROLE, _msgSender())
+            // (subscriber == _msgSender() && ApplicationNFT.ownerOf(_nftId) == subscriber)
+            (subscriber == _msgSender())
+            && (
+                isBridgeRole()
+                || hasRole(SUBSCRIBE_ROLE, _msgSender())
+            )
             ,
-            "The subscriber address given should be your address"
+            "You do not have the role to call this function"
         );
-
-        uint256 totalBalance = _balanceToAdd;
-
-        if(!isExistingNFT)
-        {
-            _nftId = ApplicationNFT.getCurrentTokenId().add(1);
-            ApplicationNFT.mint(subscriber);
-        }
-        else {
-            totalBalance += SubscriptionBalance.totalPrevBalance(_nftId);
-        }
-
-        if(totalBalance > 0)
-        {
-            uint256 estimate = SubscriptionBalance.estimateDripRatePerSecOfSubnet(
-                _subnetId,
-                _licenseFee,
-                getSupportFeesForNFT(_supportAddress, _nftId),
-                _computeRequired
-            );
-            if(isExistingNFT)
-            {
-                estimate += SubscriptionBalance.dripRatePerSec(_nftId);
-            }
-            
-            require((estimate * MIN_TIME_FUNDS) < totalBalance, "The total balance amount is not enough");
-        }
 
         subscribeInternal(
         subscriber,
@@ -557,9 +559,21 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         _licenseAddress,
         _supportAddress,
         _licenseFee,
-        _computeRequired
+        _deltaCompute
         );
+
+        uint256 totalBalance = SubscriptionBalance.totalPrevBalance(_nftId);
+
+        if(totalBalance > 0)
+        {
+            require(
+                SubscriptionBalance.dripRatePerSec(_nftId) * MIN_TIME_FUNDS
+                    <= totalBalance,
+                    "The total balance amount is not enough"
+            );
+        }
     }
+
 
     function subscribeInternal(
         address nftOwner,
@@ -571,37 +585,37 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address _licenseAddress,
         address _supportAddress,
         uint256 _licenseFee,
-        uint256[] memory _computeRequired
+        int256[] memory _deltaCompute
     ) internal {
 
         if(isSubscribed)
         {
-            SubscriptionBalance.addSubnetToNFT(_nftId, _subnetId);
+            // SubscriptionBalance.addSubnetToNFT(_nftId, _subnetId);
             _subscribeSubnet(
-                nftOwner,
+                // nftOwner,
                 _nftId,
                 _subnetId,
                 _referralAddress,
                 _licenseAddress,
                 _supportAddress,
                 _licenseFee,
-                _computeRequired
+                _deltaCompute
             );
         }
         else {
             _subscribeSubnet(
-                nftOwner,
+                // nftOwner,
                 _nftId,
                 _subnetId,
                 _referralAddress,
                 _licenseAddress,
                 _supportAddress,
                 _licenseFee,
-                _computeRequired
+                _deltaCompute
             );
             SubscriptionBalance.subscribeNew(
                 _nftId,
-                _subnetId,
+                // _subnetId,
                 nftOwner
             );
         }
@@ -617,19 +631,19 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     }
 
     function _subscribeSubnet(
-        address nftOwner,
+        // address nftOwner,
         uint256 _nftId,
         uint256 _subnetId,
         address _referralAddress,
         address _licenseAddress,
         address _supportAddress,
         uint256 _licenseFee,
-        uint256[] memory _computeRequired
+        int256[] memory deltaCompute
     ) internal {
-        require(
-            !userSubscription[_nftId][_subnetId].subscribed,
-            "Already subscribed"
-        );
+        // require(
+        //     !userSubscription[_nftId][_subnetId].subscribed,
+        //     "Already subscribed"
+        // );
         require(
             RegistrationContract.totalSubnets() > _subnetId,
             "_subnetId donot exist in RegistrationContract"
@@ -641,7 +655,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             "RegistrationContract: subnet is delisted and hence cannot be subscribed"
         );
         require(
-            SubscriptionBalance.totalSubnets(_nftId) <= LIMIT_NFT_SUBNETS,
+            subscribedSubnetsOfNFT[_nftId].length <= LIMIT_NFT_SUBNETS,
             "Cannot subscribe as limit exceeds to max Subnet subscription allowed per NFT"
         );
         // require(
@@ -654,14 +668,33 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             "The support address given is not valid"
         );
 
-        subscribedSubnetsOfNFT[_nftId].push(_subnetId);
+        require(
+            !userSubscription[_nftId][_subnetId].subscribed || (
+            deltaCompute.length >=  userSubscription[_nftId][_subnetId].computeRequired.length),
+            "The number of types of delta computes provided is less than the existing number of types of resources"
+        );
+
+        uint256[] memory computes = addDeltaComputes(
+            _nftId,
+            _subnetId,
+            deltaCompute
+        );
+        
+        userSubscription[_nftId][_subnetId].computeRequired = computes;
+        if(userSubscription[_nftId][_subnetId].subscribed)
+        {
+            return;
+        }
+
         userSubscription[_nftId][_subnetId].referralAddress = _referralAddress;
         userSubscription[_nftId][_subnetId].licenseAddress = _licenseAddress;
         userSubscription[_nftId][_subnetId].supportAddress = _supportAddress;
         userSubscription[_nftId][_subnetId].supportPercentage = getSupportFeesForNFT(_supportAddress, _nftId);
         userSubscription[_nftId][_subnetId].licenseFee = _licenseFee;
-        userSubscription[_nftId][_subnetId].computeRequired = _computeRequired;
         userSubscription[_nftId][_subnetId].subscribed = true;
+        userSubscription[_nftId][_subnetId].subnetArrayID = subscribedSubnetsOfNFT[_nftId].length;
+        subscribedSubnetsOfNFT[_nftId].push(_subnetId);
+        activeSubnetsOfNFT[_nftId].push(true);
 
         emit Subscribed(
             _nftId,
@@ -670,7 +703,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             _licenseAddress,
             _supportAddress,
             _licenseFee,
-            _computeRequired
+            deltaCompute
         );
     }
 
@@ -737,16 +770,21 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             = userSubscription[_nftId][_currentSubnetId].supportPercentage;
         userSubscription[_nftId][_newSubnetId].computeRequired 
             = userSubscription[_nftId][_currentSubnetId].computeRequired;
-
         userSubscription[_nftId][_currentSubnetId].subscribed = false;
-        unsubscribedSubnetsOfNFT[_nftId].push(_currentSubnetId);
-        subscribedSubnetsOfNFT[_nftId].push(_newSubnetId);
 
-        SubscriptionBalance.changeSubnet(
-            _nftId,
-            _currentSubnetId,
-            _newSubnetId
-        );
+        uint256 curSubnetID = userSubscription[_nftId][_currentSubnetId].subnetArrayID;
+        delete subscribedSubnetsOfNFT[_nftId][curSubnetID];
+        activeSubnetsOfNFT[_nftId][curSubnetID] = false;
+
+        userSubscription[_nftId][_currentSubnetId].subnetArrayID = subscribedSubnetsOfNFT[_nftId].length;
+        subscribedSubnetsOfNFT[_nftId].push(_newSubnetId);
+        activeSubnetsOfNFT[_nftId].push(true);
+
+        // SubscriptionBalance.changeSubnet(
+        //     _nftId,
+        //     _currentSubnetId,
+        //     _newSubnetId
+        // );
 
         emit ChangedSubnetSubscription(_nftId, _currentSubnetId, _newSubnetId);
     }
@@ -775,7 +813,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     function applySupportChange(address nftOwner, uint256 nftID, uint256 subnetID)
         external
     {
-        string memory empty = "";
+        // string memory empty = "";
         require(
             // nftOwner == _msgSender()
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
@@ -817,7 +855,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         uint256 subnetID,
         address newSupportAddress
     ) external {
-        string memory empty = "";
+        // string memory empty = "";
         require(
             // nftOwner == _msgSender()
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))

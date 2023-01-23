@@ -125,15 +125,22 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     function getComputeCosts(
         uint256 nftId,
         uint256[] memory subnetIds,
+        bool[] memory activeSubnets,
         uint256 duration
     ) internal view returns (uint256 computeCost) {
         uint256 computeCostPerSec = 0;
         for (uint256 i = 0; i < subnetIds.length; i++) {
+            if(!activeSubnets[i])
+                continue;
+    
             uint256[] memory computeRequired = SubscriptionContract
                 .getComputesOfSubnet(nftId, subnetIds[i]);
+
             (, , , , uint256[] memory unitPrices, , , , ) = RegistrationContract
                 .getSubnetAttributes(subnetIds[i]);
-            for (uint256 j = 0; j < computeRequired.length; j++) {
+
+            for (uint256 j = 0; j < computeRequired.length; j++)
+            {
                 computeCostPerSec = computeCostPerSec.add(
                     computeRequired[j].mul(unitPrices[j])
                 );
@@ -172,12 +179,14 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     function getRealtimeBalance(
         uint256 nftId,
         uint256[] memory subnetIds,
+        bool[] memory activeSubnets,
         uint256[3] memory prevBalance,
         uint256 lastBalanceUpdatedTime
     ) external view returns (uint256[3] memory) {
         uint256 computeCost = getComputeCosts(
             nftId,
             subnetIds,
+            activeSubnets,
             lastBalanceUpdatedTime
         );
 
@@ -213,11 +222,13 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     function getRealtimeCostIncurred(
         uint256 nftId,
         uint256[] memory subnetIds,
+        bool[] memory activeSubnets,
         uint256 lastBalanceUpdatedTime
     ) external view returns (uint256) {
         uint256 computeCost = getComputeCosts(
             nftId,
             subnetIds,
+            activeSubnets,
             lastBalanceUpdatedTime
         );
 
@@ -246,9 +257,70 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         );
     }
 
+
+    function getUpdatedBalanceForSubnet(
+        uint256 nftId,
+        uint256 subnetID,
+        uint256 mintTime,
+        uint256 computeCost,
+        uint256 duration,
+        uint256[4] memory costIncurredArr
+    )
+    internal
+    returns (uint256[4] memory)
+    {
+        // update R revenue of (1+R+S+T+U) revenue
+        costIncurredArr[0] = costIncurredArr[0].add(
+            r_licenseFee(nftId, subnetID)
+                .mul(duration)
+        );
+        address licenseAddress = SubscriptionContract.getLicenseAddress(nftId, subnetID);
+        balanceOfRev[licenseAddress] = balanceOfRev[licenseAddress].add(
+            costIncurredArr[0]
+        );
+
+        // update T revenue of (1+R+S+T+U) revenue
+        costIncurredArr[2] = costIncurredArr[2].add(
+            t_SupportFeeRate(nftId, subnetID)
+            .mul(computeCost)
+            .div(100000)
+        );
+        address supportAddress = SubscriptionContract.getSupportAddress(nftId, subnetID);
+        balanceOfRev[supportAddress]
+            = balanceOfRev[supportAddress].add(costIncurredArr[2]);
+
+        // update (1)(for subnetDAOWallet to SubnetDAODistributor contract) of (1+R+S+T+U) revenue
+        balanceOfRev[address(SubnetDAODistributor)] = balanceOfRev[
+            address(SubnetDAODistributor)
+        ].add(computeCost);
+        SubnetDAODistributor.commitAssignedFor(
+            subnetID,
+            computeCost
+        );
+
+        // update (u) of of (1+R+S+T+U) revenue.
+        if (mintTime.add(u_ReferralExpiry()) > block.timestamp) {
+            address ReferrerAddress = SubscriptionContract
+                .getReferralAddress(nftId, subnetID);
+
+            balanceOfRev[ReferrerAddress] = balanceOfRev[
+                ReferrerAddress
+            ].add(costIncurredArr[3]);
+        }
+        // add to Global DAO
+        else {
+            balanceOfRev[s_GlobalDAOAddress()] = balanceOfRev[
+                s_GlobalDAOAddress()
+            ].add(costIncurredArr[3]);
+        }
+
+        return costIncurredArr;
+    }
+
     function getUpdatedBalance(
         uint256 nftId,
         uint256[] memory subnetIds,
+        bool[] memory activeSubnets,
         uint256 mintTime,
         uint256[3] memory prevBalance,
         uint256 duration
@@ -257,6 +329,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         uint256 computeCost = getComputeCosts(
             nftId,
             subnetIds,
+            activeSubnets,
             duration
         );
 
@@ -275,51 +348,19 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
 
             for (uint256 i = 0; i < subnetIds.length; i++)
             {
-                // update R revenue of (1+R+S+T+U) revenue
-                costIncurredArr[0] = costIncurredArr[0].add(
-                    r_licenseFee(nftId, subnetIds[i])
-                        .mul(duration)
-                );
-                address licenseAddress = SubscriptionContract.getLicenseAddress(nftId, subnetIds[i]);
-                balanceOfRev[licenseAddress] = balanceOfRev[licenseAddress].add(
-                    costIncurredArr[0]
-                );
+                if(!activeSubnets[i])
+                    continue;
 
-                // update T revenue of (1+R+S+T+U) revenue
-                costIncurredArr[2] = costIncurredArr[2].add(
-                    t_SupportFeeRate(nftId, subnetIds[i])
-                    .mul(computeCost)
-                    .div(100000)
-                );
-                address supportAddress = SubscriptionContract.getSupportAddress(nftId, subnetIds[i]);
-                balanceOfRev[supportAddress]
-                    = balanceOfRev[supportAddress]
-                    .add(costIncurredArr[2]);
 
-                // update (1)(for subnetDAOWallet to SubnetDAODistributor contract) of (1+R+S+T+U) revenue
-                balanceOfRev[address(SubnetDAODistributor)] = balanceOfRev[
-                    address(SubnetDAODistributor)
-                ].add(computeCost);
-                SubnetDAODistributor.commitAssignedFor(
+                costIncurredArr = getUpdatedBalanceForSubnet(
+                    nftId,
                     subnetIds[i],
-                    computeCost
+                    mintTime,
+                    computeCost,
+                    duration,
+                    costIncurredArr
                 );
 
-                // update (u) of of (1+R+S+T+U) revenue.
-                if (mintTime.add(u_ReferralExpiry()) > block.timestamp) {
-                    address ReferrerAddress = SubscriptionContract
-                        .getReferralAddress(nftId, subnetIds[i]);
-
-                    balanceOfRev[ReferrerAddress] = balanceOfRev[
-                        ReferrerAddress
-                    ].add(costIncurredArr[3]);
-                }
-                // add to Global DAO
-                else {
-                    balanceOfRev[s_GlobalDAOAddress()] = balanceOfRev[
-                        s_GlobalDAOAddress()
-                    ].add(costIncurredArr[3]);
-                }
             }
 
             return
