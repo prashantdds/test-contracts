@@ -662,11 +662,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         //     ApplicationNFT.ownerOf(_nftId) == nftOwner,
         //     "Sender not the owner of NFT id"
         // );
-        require(
-            // supportAddressToNFT[_supportAddress][0].active,
-            supportAddressDefault[_supportAddress].active == true,
-            "The support address given is not valid"
-        );
 
         require(
             !userSubscription[_nftId][_subnetId].subscribed || (
@@ -685,6 +680,12 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         {
             return;
         }
+
+        require(
+            // supportAddressToNFT[_supportAddress][0].active,
+            supportAddressDefault[_supportAddress].active == true,
+            "The support address given is not valid"
+        );
 
         userSubscription[_nftId][_subnetId].referralAddress = _referralAddress;
         userSubscription[_nftId][_subnetId].licenseAddress = _licenseAddress;
