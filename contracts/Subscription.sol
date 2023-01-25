@@ -40,11 +40,13 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address referralAddress;
         address licenseAddress;
         address supportAddress;
+        address platformAddress;
         uint256 licenseFee;
         uint256 supportPercentage;
         uint256[] computeRequired;
         bool subscribed;
         uint256 subnetArrayID;
+        uint256 createTime;
     }
 
     // NFT id => SubnetID => NFTSubnetAttribute
@@ -69,6 +71,17 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     mapping(address => SupportAddress) supportAddressDefault;
     mapping(address => mapping(uint256 => SupportPercentage)) public supportAddressToNFT;
     mapping(uint256 => mapping(address => bool)) supportPercentChangeMap;
+
+    struct PlatformAddress {
+        uint256 platformPercentage;
+        uint256 discountPercentage;
+        uint256 referralPercentage;
+        uint256 referralExpiryDuration;
+        bool active;
+    }
+
+    address[] public platformAddressList;
+    mapping(address => PlatformAddress) public platformAddressMap;
 
     uint256 public LIMIT_NFT_SUBNETS;
     uint256 public MIN_TIME_FUNDS;
@@ -129,6 +142,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address referralAddress,
         address licenseAddress,
         address supportAddress,
+        address platformAddress,
         uint256 licenseFee,
         int256[] deltaCompute
     );
@@ -221,12 +235,68 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         return userSubscription[_nftId][_subnetId].supportAddress;
     }
 
+    function getPlatformAddress(uint256 _nftId, uint256 _subnetId)
+        public
+        view
+        returns (address)
+    {
+        return userSubscription[_nftId][_subnetId].platformAddress;
+    }
+
+    function getReferralDuration(uint256 nftID, uint256 subnetID)
+    public
+    view
+    returns(uint256)
+    {
+        return platformAddressMap[userSubscription[nftID][subnetID].platformAddress].referralExpiryDuration;
+    }
+
     function r_licenseFee(uint256 _nftId, uint256 _subnetId)
         public
         view
         returns (uint256)
     {
         return userSubscription[_nftId][_subnetId].licenseFee;
+    }
+
+    function t_supportPercent(uint256 nftID, uint256 subnetID)
+        public
+        view
+        returns (uint256)
+    {
+        return userSubscription[nftID][subnetID].supportPercentage;
+    }
+
+    function u_referralPercent(uint256 nftID, uint256 subnetID)
+    public
+    view
+    returns (uint256)
+    {
+        return platformAddressMap[userSubscription[nftID][subnetID].platformAddress].referralPercentage;
+    }
+
+    function v_platformPercent(uint256 nftID, uint256 subnetID)
+    public
+    view
+    returns (uint256)
+    {
+        return platformAddressMap[userSubscription[nftID][subnetID].platformAddress].platformPercentage;
+    }
+
+    function w_discountPercent(uint256 nftID, uint256 subnetID)
+    public
+    view
+    returns (uint256)
+    {
+        address platformAddress = userSubscription[nftID][subnetID].platformAddress;
+        uint256 createTime = userSubscription[nftID][subnetID].createTime;
+        uint256 referralExpiryDuration = platformAddressMap[platformAddress].referralExpiryDuration;
+        address referralAddress = userSubscription[nftID][subnetID].referralAddress;
+        if(referralAddress != address(0) && ((createTime + referralExpiryDuration) > block.timestamp))
+        {
+            return platformAddressMap[userSubscription[nftID][subnetID].platformAddress].discountPercentage;
+        }
+        return 0;
     }
 
     function getSupportFeesForNFT(address supportAddress, uint256 nftID)
@@ -243,15 +313,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         else {
             supportPercentage = supportAddressDefault[GLOBAL_SUPPORT_ADDRESS].defaultPercentage;
         }
-    }
-
-    function t_supportFee(uint256 nftID, uint256 subnetID)
-        public
-        view
-        returns (uint256)
-    {
-        // return 10000;
-        return userSubscription[nftID][subnetID].supportPercentage;
     }
 
     function getComputesOfSubnet(uint256 NFTid, uint256 subnetId)
@@ -405,6 +466,30 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         supportAddressList.push(supportAddress);
     }
 
+    function addPlatformAddress(
+    address platformAddress
+    ,uint256 platformPercentage
+    ,uint256 discountPercentage
+    ,uint256 referralPercentage
+    ,uint256 referralDuration
+    )
+    external
+    {
+        require(_msgSender() == GLOBAL_DAO_ADDRESS
+        || isBridgeRole()
+        ,
+        "Only the global dao address can add the platform address");
+        
+        platformAddressList.push(platformAddress);
+        platformAddressMap[platformAddress] = PlatformAddress(
+            platformPercentage,
+            discountPercentage,
+            referralPercentage,
+            referralDuration,
+            true
+        );
+    }
+
     function setSupportFeesForNFT(address supportAddress, uint256 nftID, uint256 supportPercentage)
     external
     {
@@ -437,32 +522,32 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         userSubscription[nftID][subnetID].supportPercentage = supportAddressToNFT[supportAddress][nftID].supportPercentage;
     }
 
-    function estimateDripRatePerSec (
-        uint256 _nftId,
-        uint256[] memory _subnetId,
-        address[] memory _supportAddress,
-        uint256[] memory _licenseFee,
-        uint256[][] memory _computeRequired
-    )
-    internal
-    view
-    returns (uint256)
-    {
-        // uint256 estimate = 0;
-        uint256[] memory supportFee = new uint256[](_supportAddress.length);
+    // function estimateDripRatePerSec (
+    //     uint256 _nftId,
+    //     uint256[] memory _subnetId,
+    //     address[] memory _supportAddress,
+    //     uint256[] memory _licenseFee,
+    //     uint256[][] memory _computeRequired
+    // )
+    // internal
+    // view
+    // returns (uint256)
+    // {
+    //     // uint256 estimate = 0;
+    //     uint256[] memory supportFee = new uint256[](_supportAddress.length);
         
-        for(uint256 i = 0; i < _subnetId.length; i++)
-        {
-            supportFee[i] = getSupportFeesForNFT(_supportAddress[i], _nftId);
-        }
+    //     for(uint256 i = 0; i < _subnetId.length; i++)
+    //     {
+    //         supportFee[i] = getSupportFeesForNFT(_supportAddress[i], _nftId);
+    //     }
 
-        return SubscriptionBalance.estimateDripRatePerSec(
-            _subnetId,
-            supportFee,
-            _licenseFee,
-            _computeRequired
-        );
-    }
+    //     return SubscriptionBalance.estimateDripRatePerSec(
+    //         _subnetId,
+    //         supportFee,
+    //         _licenseFee,
+    //         _computeRequired
+    //     );
+    // }
 
     function subscribeBatch(
         address subscriber,
@@ -472,6 +557,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address[] memory _referralAddress,
         address[] memory _licenseAddress,
         address[] memory _supportAddress,
+        address[] memory _platformAddress,
         uint256[] memory _licenseFee,
         int256[][] memory _deltaCompute
     ) external {
@@ -494,6 +580,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             _referralAddress[0],
             _licenseAddress[0],
             _supportAddress[0],
+            _platformAddress[0],
             _licenseFee[0],
             _deltaCompute[0]
         );
@@ -509,6 +596,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
                 _referralAddress[i],
                 _licenseAddress[i],
                 _supportAddress[i],
+                _platformAddress[i],
                 _licenseFee[i],
                 _deltaCompute[i]
             );
@@ -535,6 +623,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address _referralAddress,
         address _licenseAddress,
         address _supportAddress,
+        address _platformAddress,
         uint256 _licenseFee,
         int256[] memory _deltaCompute
     ) public whenNotPaused {
@@ -558,6 +647,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         _referralAddress,
         _licenseAddress,
         _supportAddress,
+        _platformAddress,
         _licenseFee,
         _deltaCompute
         );
@@ -584,6 +674,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address _referralAddress,
         address _licenseAddress,
         address _supportAddress,
+        address _platformAddress,
         uint256 _licenseFee,
         int256[] memory _deltaCompute
     ) internal {
@@ -598,6 +689,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
                 _referralAddress,
                 _licenseAddress,
                 _supportAddress,
+                _platformAddress,
                 _licenseFee,
                 _deltaCompute
             );
@@ -610,6 +702,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
                 _referralAddress,
                 _licenseAddress,
                 _supportAddress,
+                _platformAddress,
                 _licenseFee,
                 _deltaCompute
             );
@@ -637,6 +730,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address _referralAddress,
         address _licenseAddress,
         address _supportAddress,
+        address _platformAddress,
         uint256 _licenseFee,
         int256[] memory deltaCompute
     ) internal {
@@ -686,10 +780,16 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             supportAddressDefault[_supportAddress].active == true,
             "The support address given is not valid"
         );
-
+        require(
+            platformAddressMap[_platformAddress].active == true,
+            "The platform address given is not valid"
+        );
+        
+        userSubscription[_nftId][_subnetId].createTime = block.timestamp;
         userSubscription[_nftId][_subnetId].referralAddress = _referralAddress;
         userSubscription[_nftId][_subnetId].licenseAddress = _licenseAddress;
         userSubscription[_nftId][_subnetId].supportAddress = _supportAddress;
+        userSubscription[_nftId][_subnetId].platformAddress = _platformAddress;
         userSubscription[_nftId][_subnetId].supportPercentage = getSupportFeesForNFT(_supportAddress, _nftId);
         userSubscription[_nftId][_subnetId].licenseFee = _licenseFee;
         userSubscription[_nftId][_subnetId].subscribed = true;
@@ -703,6 +803,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             _referralAddress,
             _licenseAddress,
             _supportAddress,
+            _platformAddress,
             _licenseFee,
             deltaCompute
         );
@@ -763,6 +864,8 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             = userSubscription[_nftId][_currentSubnetId].referralAddress;
         userSubscription[_nftId][_newSubnetId].licenseAddress
             = userSubscription[_nftId][_currentSubnetId].licenseAddress;
+        userSubscription[_nftId][_newSubnetId].platformAddress
+            = userSubscription[_nftId][_currentSubnetId].platformAddress;
         userSubscription[_nftId][_newSubnetId].supportAddress 
             = userSubscription[_nftId][_currentSubnetId].supportAddress;
         userSubscription[_nftId][_newSubnetId].licenseFee

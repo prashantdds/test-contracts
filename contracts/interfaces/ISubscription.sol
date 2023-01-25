@@ -26,7 +26,23 @@ interface ISubscription {
     function hasRole(bytes32 role, address account) external view returns(bool);
 
     function r_licenseFee(uint256 _nftId, uint256 _subnetId) external view returns (uint256);
-    function t_supportFee(uint256 _nftId, uint256 _subnetId) external view returns (uint256);
+    function t_supportPercent(uint256 _nftId, uint256 _subnetId) external view returns (uint256);
+
+    function u_referralPercent(uint256 nftID, uint256 subnetID)
+    external
+    view
+    returns (uint256);
+
+    function v_platformPercent(uint256 nftID, uint256 subnetID)
+    external
+    view
+    returns (uint256);
+
+    function w_discountPercent(uint256 nftID, uint256 subnetID)
+    external
+    view
+    returns (uint256);
+
     function getReferralAddress(uint256 _nftId, uint256 _subnetId)
         external
         view
@@ -40,6 +56,16 @@ interface ISubscription {
         external
         view
         returns (address);
+
+    function getPlatformAddress(uint256 _nftId, uint256 _subnetId)
+        external
+        view
+        returns (address);
+
+    function getReferralDuration(uint256 nftID, uint256 subnetID)
+    external
+    view
+    returns(uint256);
     
     function getSupportFeesForNFT(uint256 nftID, uint256 subnetID)
     view
@@ -57,6 +83,7 @@ interface ISubscription {
         address _referralAddress,
         address _licenseAddress,
         address _supportAddress,
+        address _platformAddress,
         uint256 _licenseFee,
         int256[] memory _deltaCompute
     )
@@ -70,6 +97,7 @@ interface ISubscription {
         address[] memory _referralAddress,
         address[] memory _licenseAddress,
         address[] memory _supportAddress,
+        address[] memory _platformAddress,
         uint256[] memory _licenseFee,
         int256[][] memory _deltaCompute
     )

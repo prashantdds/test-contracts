@@ -18,7 +18,16 @@ interface ISubscriptionBalance {
 
     function totalSubnets(uint256 nftId) external view returns (uint256);
 
-    function estimateDripRatePerSecOfSubnet(uint subnetId, uint256 licenseFee, uint256 supportFee, uint256[] memory computeRequired)
+
+    function estimateDripRatePerSecOfSubnet(
+        uint subnetId,
+        uint256 licenseFee,
+        uint256 supportFee,
+        uint256 platformFee,
+        uint256 referralFee,
+        uint256 discountFee,
+        uint256[] memory computeRequired
+        )
         external
         view
         returns (uint256);
@@ -26,7 +35,10 @@ interface ISubscriptionBalance {
 
     function estimateDripRatePerSec (
         uint256[] memory _subnetId,
-        uint256[] memory _supportAddress,
+        uint256[] memory _supportFee,
+        uint256[] memory _platformFee,
+        uint256[] memory _referralFee,
+        uint256[] memory _discountFee,
         uint256[] memory _licenseFee,
         uint256[][] memory _computeRequired
     )

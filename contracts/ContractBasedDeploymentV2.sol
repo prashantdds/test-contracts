@@ -47,7 +47,7 @@ contract ContractBasedDeploymentV2 is Initializable {
     // NFT id => App name => Multihash
     mapping(uint256 => mapping(string => Multihash)) public entries;
 
-    mapping(uint256 => mapping(string => mapping(uint256 => AppSubnet))) appSubnets;
+    mapping(uint256 => mapping(string => mapping(uint256 => AppSubnet))) public appSubnets;
 
     // NFT id => App id => App name
     mapping(uint256 => string[]) public appIDToNameList;
@@ -55,19 +55,36 @@ contract ContractBasedDeploymentV2 is Initializable {
     // NFT id => app id counter
     mapping(uint256 => uint256) lastAppId;
 
-    event EntrySet(
-        string indexed appName,
-        uint256 appId,
+    event CreateApp(
+        uint256 balanceToAdd,
+        uint256 nftID,
+        address[][] rlsAddresses,
+        uint256[] licenseFee,
+        string appName,
         bytes32 digest,
-        uint8 hashFunction,
-        uint8 size,
-        uint256[][] subnetIDList,
+        uint8[] hashAndSize,
+        uint256[] subnetList,
+        uint256[][][] multiplier,
         uint256[] resourceArray,
         string lastUpdatedTime,
         bool cidLock
     );
 
-    event EntryDeleted(string indexed appName);
+    event UpdateApp(
+        uint256 balanceToAdd,
+        uint256 nftID,
+        address[][] rlsAddresses,
+        uint256[] licenseFee,
+        string appName,
+        bytes32 digest,
+        uint8[] hashAndSize,
+        uint256[] subnetList,
+        uint256[][][] multiplier,
+        uint256[] resourceArray,
+        string lastUpdatedTime
+    );
+
+    event EntryDeleted(uint256 nftID, string appName);
 
     function initialize(
         IRoleControlV2 _RoleControlV2,
@@ -129,6 +146,7 @@ contract ContractBasedDeploymentV2 is Initializable {
             rlsAddresses[0],
             rlsAddresses[1],
             rlsAddresses[2],
+            rlsAddresses[3],
             licenseFee,
             resourceParamList
         );
@@ -190,6 +208,21 @@ contract ContractBasedDeploymentV2 is Initializable {
         );
 
         appIDToNameList[nftID].push(appName);
+
+        emit CreateApp(
+        balanceToAdd,
+        nftID,
+        rlsAddresses,
+        licenseFee,
+        appName,
+        digest,
+        hashAndSize,
+        subnetList,
+        multiplier,
+        resourceArray,
+        lastUpdatedTime,
+        cidLock
+        );
     }
 
 
@@ -264,6 +297,20 @@ contract ContractBasedDeploymentV2 is Initializable {
             lastUpdatedTime,
             entries[nftID][appName].cidLock
         );
+
+        emit UpdateApp(
+        balanceToAdd,
+         nftID,
+        rlsAddresses,
+        licenseFee,
+        appName,
+        digest,
+        hashAndSize,
+        subnetList,
+        multiplier,
+        resourceArray,
+        lastUpdatedTime
+        );
     }
 
     /**
@@ -280,22 +327,14 @@ contract ContractBasedDeploymentV2 is Initializable {
         uint256 len = subnetList.length;
         uint256[] memory resourceArray = entries[nftID][appName].resourceArray;
 
-        address[][] memory rlsAddresses = new address[][](3);
-
-        for(uint i = 0; i < 3; i++)
-        {
-            rlsAddresses[i] = new address[](len);
-        }
-
+        address[] memory rlsAddresses = new address[](len);
         uint256[] memory licenseFee = new uint256[](len);
 
         int256[][] memory resourceParamList = new int256[][] (len);
         for(uint256 i = 0; i < len; i++)
         {
             resourceParamList[i] = new int256[] (resourceArray.length );
-            // uint256[][][] memory multiplier = entries[_nftId][appName].multiplier;
 
-    // mapping(uint256 => mapping(string => mapping(uint256 => AppSubnet))) appSubnets;
             uint256[] memory currentMultiplier = appSubnets[nftID][appName][subnetList[i]].currentMultiplier;
 
             for(uint256 j = 0; j < resourceArray.length; j++)
@@ -309,9 +348,10 @@ contract ContractBasedDeploymentV2 is Initializable {
             0,
             nftID,
             subnetList,
-            rlsAddresses[0],
-            rlsAddresses[1],
-            rlsAddresses[2],
+            rlsAddresses,
+            rlsAddresses,
+            rlsAddresses,
+            rlsAddresses,
             licenseFee,
             resourceParamList
         );
@@ -320,7 +360,7 @@ contract ContractBasedDeploymentV2 is Initializable {
         
         delete entries[nftID][appName];
     
-    //     emit EntryDeleted(appName);
+        emit EntryDeleted(nftID, appName);
     }
 
     /**

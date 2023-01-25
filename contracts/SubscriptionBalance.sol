@@ -115,7 +115,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         LinkContract = _newLinkContract;
     }
 
-    function t_supportFeeAddress(uint256 _tokenId)
+    function t_supportAddress(uint256 _tokenId)
         public
         view
         returns (address)
@@ -149,12 +149,12 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         return RegistrationContract.daoRate();
     }
 
-    function t_SupportFeeRate(uint256 nftID, uint256 _subnetId)
+    function t_SupportPercent(uint256 nftID, uint256 _subnetId)
         public
         view
         returns (uint256 fee)
     {
-        fee = SubscriptionContract.t_supportFee(nftID, _subnetId);
+        fee = SubscriptionContract.t_supportPercent(nftID, _subnetId);
     }
 
     function dripRatePerSec(uint256 nftID)
@@ -180,6 +180,9 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     function estimateDripRatePerSec (
         uint256[] memory _subnetId,
         uint256[] memory _supportFee,
+        uint256[] memory _platformFee,
+        uint256[] memory _referralFee,
+        uint256[] memory _discountFee,
         uint256[] memory _licenseFee,
         uint256[][] memory _computeRequired
     )
@@ -192,23 +195,40 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         {
             estimate += estimateDripRatePerSecOfSubnet(
                 _subnetId[i], 
-                _licenseFee[i],
-                _supportFee[i],
+                [
+                    _supportFee[i],
+                    _platformFee[i],
+                    _referralFee[i],
+                    _discountFee[i],
+                    _licenseFee[i]
+                ],
                 _computeRequired[i]
             );
         }
         return estimate;
     }
 
-    function estimateDripRatePerSecOfSubnet(uint subnetId, uint256 licenseFee, uint256 supportFee, uint256[] memory computeRequired)
+    //    uint256 supportFee,
+    //     uint256 platformFee,
+    //     uint256 referralFee,
+    //     uint256 discountFee,
+    //     uint256 licenseFee,
+
+    function estimateDripRatePerSecOfSubnet(
+        uint subnetId,
+        uint256[5] memory percent,
+        uint256[] memory computeRequired
+        )
         public
         view
         returns (uint256)
      {
         uint256 factor = s_GlobalDAORate()
             // .add(licenseFee)
-            .add(supportFee)
-            .add(ReferralPercent)
+            .add(percent[0])
+            .add(percent[1])
+            .add(percent[2])
+            .sub(percent[3])
             .add(100000);
         (, , , , uint256[] memory prices, , , , ) = RegistrationContract
             .getSubnetAttributes(subnetId);
@@ -218,31 +238,39 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         for (uint256 i = 0; i < len; i++) {
             cost = cost.add(prices[i].mul(computeRequired[i]));
         }
-        return factor.mul(cost).div(100000) + licenseFee; // 10^5 for percent
+        return factor.mul(cost).div(100000) + percent[4]; // 10^5 for percent
     }
 
-    function dripRatePerSecOfSubnet(uint256 nftID, uint256 subnetId)
+    function dripRatePerSecOfSubnet(uint256 nftID, uint256 subnetID)
         public
         view
         returns (uint256)
     {
+        uint256 u_referralPercent = SubscriptionContract.u_referralPercent(nftID, subnetID);
+        uint256 t_supportPercent = SubscriptionContract.t_supportPercent(nftID, subnetID);
+        uint256 v_platformPercent = SubscriptionContract.v_platformPercent(nftID, subnetID);
+        uint256 w_discountPercent = SubscriptionContract.w_discountPercent(nftID, subnetID);
+        
+
         uint256 factor = s_GlobalDAORate()
-            .add(t_SupportFeeRate(nftID, subnetId))
-            .add(ReferralPercent)
+            .add(t_supportPercent)
+            .add(v_platformPercent)
+            .add(u_referralPercent)
+            .sub(w_discountPercent)
             .add(100000);
         (, , , , uint256[] memory prices, , , , ) = RegistrationContract
-            .getSubnetAttributes(subnetId);
+            .getSubnetAttributes(subnetID);
         uint256 cost = 0;
         uint256[] memory computeRequired = SubscriptionContract
-            .getComputesOfSubnet(nftID, subnetId);
+            .getComputesOfSubnet(nftID, subnetID);
 
 
         uint256 minLen = Math.min(prices.length, computeRequired.length);
         for (uint256 i = 0; i < minLen; i++) {
             cost = cost.add(prices[i].mul(computeRequired[i]));
         }
-        
-        return factor.mul(cost).div(100000) + r_licenseFee(nftID, subnetId); // 10^5 for percent
+
+        return factor.mul(cost).div(100000) + r_licenseFee(nftID, subnetID); // 10^5 for percent
     }
 
     function prevBalances(uint256 nftID)

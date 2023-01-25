@@ -659,6 +659,13 @@ const setupUrsula = async () => {
     const roleAccount1 = addrList[5];
     const roleAccount2 = addrList[6];
 
+    const platformAddress = addrList[5];
+    const referralExpiry = 60 * 60 * 24 * 4;
+
+    const platformFee = 10000;
+    const discountFee = 3000;
+    const referralFee = 4000;
+
     const subnet1 = {
         creator: helper.getAddresses().deployer,
         subnetDAO: helper.getAddresses().deployer,
@@ -747,16 +754,53 @@ const setupUrsula = async () => {
 
     await helper.grantRoleForContractBasedDeployment(appNFTID, helper.getAddresses().deployer);
 
-    tr = await contractDeploy.createData(
+    const referralAddress = addrList[2];
+    const licenseAddress = addrList[3].address;
+    const licenseFee = 10000;
+
+    await Subscription.addPlatformAddress(
+        platformAddress.address
+        ,platformFee
+        ,discountFee
+        ,referralFee
+        ,referralExpiry
+    );
+
+    let app1 = {
+        appName: "first-app",
+        digest: "0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5",
+        rlsAddresses: [
+            [referralAddress.address],
+            [licenseAddress],
+            [helper.parameters.subscription.globalSupportAddress],
+            [platformAddress.address]
+        ],
+        licenseFee: [licenseFee],
+        hashAndSize: [
+            18, 32
+        ],
+        subnetList: [0],
+        multiplier: [[
+            [1, 0, 0]
+        ]],
+        resourceArray: [1, 0, 0],
+        lastUpdatedTime: '',
+        cidLock: false
+    };
+
+    tr = await contractDeploy.createApp(
+        ethers.utils.parseEther("0"),
         appNFTID,
-        "app1",
-        "0xa83a5be4756de47fb0f31eed7b02c10360a73f715b8338e713aa4d5de811422e",
-        18,
-        32,
-        [[1,1,subnetID]],
-        [2, 2],
-        "",
-        false
+        app1.rlsAddresses,
+        app1.licenseFee,
+        app1.appName,
+        app1.digest,
+        app1.hashAndSize,
+        app1.subnetList,
+        app1.multiplier,
+        app1.resourceArray,
+        app1.lastUpdatedTime,
+        app1.cidLock
     );
 
     const data = await contractDeploy.getFullData(appNFTID, "app1");
@@ -775,6 +819,7 @@ const setupUrsula = async () => {
 
     let hasRole1 = await RoleControl.hasRole(appNFTID, READ, roleAccount1.address);
     let hasRole2 = await RoleControl.hasRole(appNFTID, CONTRACT_BASED_DEPLOYER, roleAccount2.address);
+
 
     console.log("subnetID: ", subnetID);
     console.log("clusterID: ", clusterID);
