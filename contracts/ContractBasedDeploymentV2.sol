@@ -25,8 +25,6 @@ contract ContractBasedDeploymentV2 is Initializable {
         keccak256("CONTRACT_BASED_DEPLOYER");
 
     struct AppSubnet {
-        // uint256 minReplica;
-        // uint256 maxReplica;
         uint256[] currentMultiplier;
         uint256[][] replicaList;
         bool active;
@@ -42,6 +40,13 @@ contract ContractBasedDeploymentV2 is Initializable {
         uint256[] resourceArray;
         string lastUpdatedTime;
         bool cidLock;
+        // AppSubnet[] multiplier;
+    }
+
+    struct AppWithMultiplier
+    {
+        Multihash app;
+        AppSubnet[] appSubnets;
     }
 
     // NFT id => App name => Multihash
@@ -52,8 +57,6 @@ contract ContractBasedDeploymentV2 is Initializable {
     // NFT id => App id => App name
     mapping(uint256 => string[]) public appIDToNameList;
 
-    // NFT id => app id counter
-    mapping(uint256 => uint256) lastAppId;
 
     event CreateApp(
         uint256 balanceToAdd,
@@ -119,6 +122,7 @@ contract ContractBasedDeploymentV2 is Initializable {
         {
             resourceParamList[i] = new int256[] (newResource.length);
             uint256[] memory currentMultiplier = appSubnets[nftID][appName][subnetList[i]].currentMultiplier;
+            bool isActive = appSubnets[nftID][appName][subnetList[i]].active;
 
             for(uint256 j = 0; j < currentMultiplier.length; j++)
             {
@@ -135,6 +139,12 @@ contract ContractBasedDeploymentV2 is Initializable {
             
             appSubnets[nftID][appName][subnetList[i]].currentMultiplier = multiplier[i][0];
             appSubnets[nftID][appName][subnetList[i]].replicaList = multiplier[i];
+
+            if(!isActive)
+            {
+                entries[nftID][appName].subnetList.push(subnetList[i]);
+                appSubnets[nftID][appName][subnetList[i]].active = true;
+            }
         }
 
 
@@ -286,17 +296,11 @@ contract ContractBasedDeploymentV2 is Initializable {
         );
 
 
-        entries[nftID][appName] = Multihash(
-            entries[nftID][appName].appID,
-            appName,
-            digest,
-            hashAndSize[0],
-            hashAndSize[1],
-            subnetList,
-            resourceArray,
-            lastUpdatedTime,
-            entries[nftID][appName].cidLock
-        );
+        entries[nftID][appName].digest = digest;
+        entries[nftID][appName].hashFunction = hashAndSize[0];
+        entries[nftID][appName].size = hashAndSize[1];
+        entries[nftID][appName].resourceArray = resourceArray;
+        entries[nftID][appName].lastUpdatedTime = lastUpdatedTime;
 
         emit UpdateApp(
         balanceToAdd,
@@ -392,6 +396,7 @@ contract ContractBasedDeploymentV2 is Initializable {
         }
     }
 
+
     function getFullData(uint256 _nftId, string memory appName)
         public
         view
@@ -399,7 +404,7 @@ contract ContractBasedDeploymentV2 is Initializable {
             bytes32 digest,
             uint8 hashfunction,
             uint8 size,
-            // uint256[][] memory subnetIDList,
+            uint256[] memory subnetList,
             uint256[] memory resourceArray,
             string memory lastUpdatedTime,
             bool cidLock
@@ -410,7 +415,7 @@ contract ContractBasedDeploymentV2 is Initializable {
             entry.digest,
             entry.hashFunction,
             entry.size,
-            // entry.subnetIdList,
+            entry.subnetList,
             entry.resourceArray,
             entry.lastUpdatedTime,
             entry.cidLock
@@ -433,12 +438,22 @@ contract ContractBasedDeploymentV2 is Initializable {
     function getDataArray(uint256 _nftId)
         public
         view
-        returns (Multihash[] memory)
+        returns (AppWithMultiplier[] memory)
     {
-        Multihash[] memory _entriesArr = new Multihash[](lastAppId[_nftId]);
+        AppWithMultiplier[] memory _entriesArr = new AppWithMultiplier[](appIDToNameList[_nftId].length);
         for (uint256 i = 0; i < appIDToNameList[_nftId].length; i++){
             string memory appName = appIDToNameList[_nftId][i];
-            _entriesArr[i] = entries[_nftId][appName];
+            _entriesArr[i].app = entries[_nftId][appName];
+
+            uint256[] memory subnetIds = entries[_nftId][appName].subnetList;
+            AppSubnet[] memory entryAppSubnets = new AppSubnet[](subnetIds.length);
+
+            for(uint j = 0; j < subnetIds.length; j++)
+            {
+                entryAppSubnets[j] = appSubnets[_nftId][appName][subnetIds[j]];
+            }
+
+            _entriesArr[i].appSubnets = entryAppSubnets;
         }
         return _entriesArr;
     }
