@@ -337,14 +337,19 @@ contract ContractBasedDeploymentV2 is Initializable {
         int256[][] memory resourceParamList = new int256[][] (len);
         for(uint256 i = 0; i < len; i++)
         {
+            uint256 subnetID = subnetList[i];
             resourceParamList[i] = new int256[] (resourceArray.length );
 
-            uint256[] memory currentMultiplier = appSubnets[nftID][appName][subnetList[i]].currentMultiplier;
+            uint256[] memory currentMultiplier = appSubnets[nftID][appName][subnetID].currentMultiplier;
 
             for(uint256 j = 0; j < resourceArray.length; j++)
             {
                 resourceParamList[i][j] = -1 * int256(resourceArray[j]) * int256(currentMultiplier[j]);
-            }   
+            }
+
+            delete appSubnets[nftID][appName][subnetID].currentMultiplier;
+            delete appSubnets[nftID][appName][subnetID].replicaList;
+            delete appSubnets[nftID][appName][subnetID];
         }
 
         Subscription.subscribeBatch(
