@@ -60,6 +60,7 @@ contract Registration is
         address walletAddress;
         address ownerAddress;
         address operatorAddress;
+        uint32[] publicKey;
         string DNSIP;
         uint8 listed; //uint8 [1,2,3] if in 1st state, should be able to withdraw
         uint256 NFTidLocked;
@@ -268,6 +269,7 @@ contract Registration is
             address,
             address,
             address,
+            uint32[] memory,
             string memory,
             uint8,
             uint256,
@@ -279,6 +281,7 @@ contract Registration is
             subnetCluster.walletAddress,
             subnetCluster.ownerAddress,
             subnetCluster.operatorAddress,
+            subnetCluster.publicKey,
             subnetCluster.DNSIP,
             subnetCluster.listed,
             subnetCluster.NFTidLocked,
@@ -569,6 +572,7 @@ contract Registration is
         string memory _DNSIP,
         address walletAddress,
         address operatorAddress,
+        uint32[] memory publicKey,
         uint256 nftId,
         string memory clusterName
     ) external whenNotPaused {
@@ -607,6 +611,7 @@ contract Registration is
         subnetClusters[subnetId][clusterId].listed = 1;
         subnetClusters[subnetId][clusterId].NFTidLocked = nftId;
         subnetClusters[subnetId][clusterId].clusterName = clusterName;
+        subnetClusters[subnetId][clusterId].publicKey = publicKey;
 
         totalClustersSigned[subnetId] = totalClustersSigned[subnetId].add(1);
 

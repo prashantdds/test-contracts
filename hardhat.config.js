@@ -54,6 +54,12 @@ module.exports = {
             url: "https://polygon-rpc.com/",
             accounts: [`${process.env.PKEY}`],
         },
+        hardhat: {
+            allowUnlimitedContractSize: true
+            // forking: {
+            //   url: "https://polygon-mainnet.g.alchemy.com/v2/BRnyQKRn-PuNxoiwE--0P7YEHI9amUbp",
+            // }
+          }
     },
     etherscan: {
         apiKey: "WGAQCNUDQCFRQJH9D72G94BZ83STGRJCX6",

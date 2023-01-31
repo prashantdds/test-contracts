@@ -211,6 +211,19 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         return keccak256(bytes(_roleName));
     }
 
+    function getSubscribedSubnetsOfNFT(uint256 nftID)
+    external
+    returns(
+        uint256[] memory,
+        bool[] memory
+    )
+    {
+        return(
+            subscribedSubnetsOfNFT[nftID],
+            activeSubnetsOfNFT[nftID]
+        );
+    }
+
     function getReferralAddress(uint256 _nftId, uint256 _subnetId)
         public
         view

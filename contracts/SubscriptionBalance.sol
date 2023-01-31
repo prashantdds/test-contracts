@@ -588,13 +588,30 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     {
         uint256[] memory subnetIds = SubscriptionContract.getSubnetsOfNFT(nftID);
         bool[] memory activeSubnets = SubscriptionContract.getActiveSubnetsOfNFT(nftID);
+
+    //     function getRealtimeBalance(
+    //     uint256 nftId,
+    //     uint256[] memory subnetIds,
+    //     bool[] memory activeSubnets,
+    //     uint256[3] memory prevBalance,
+    //     uint256 duration,
+    //     uint256 mintTime
+    // ) external view returns (uint256[3] memory)
+
+        uint256 balanceDuration = totalPrevBalance(nftID).div(dripRatePerSec(nftID));
+        uint256 balanceEndTime = nftBalances[nftID].lastBalanceUpdateTime + balanceDuration;
+        if(balanceEndTime > block.timestamp) {
+            balanceDuration = block.timestamp - nftBalances[nftID].lastBalanceUpdateTime;
+        }
+
         return
             BalanceCalculator.getRealtimeBalance(
                 nftID,
                 subnetIds,
                 activeSubnets,
                 nftBalances[nftID].prevBalance,
-                nftBalances[nftID].lastBalanceUpdateTime
+                balanceDuration,
+                nftBalances[nftID].mintTime
             );
     }
 
@@ -605,24 +622,27 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     {
         uint256[] memory subnetIds = SubscriptionContract.getSubnetsOfNFT(nftID);
         bool[] memory activeSubnets = SubscriptionContract.getActiveSubnetsOfNFT(nftID);
+
+        uint256 balanceDuration = totalPrevBalance(nftID).div(dripRatePerSec(nftID));
+        uint256 balanceEndTime = nftBalances[nftID].lastBalanceUpdateTime + balanceDuration;
+        if(balanceEndTime > block.timestamp) {
+            balanceDuration = block.timestamp - nftBalances[nftID].lastBalanceUpdateTime;
+        }
+
         return
             totalPrevBalance(nftID) -
             BalanceCalculator.getRealtimeCostIncurred(
                 nftID,
                 subnetIds,
                 activeSubnets,
-                nftBalances[nftID].lastBalanceUpdateTime
+                balanceDuration,
+                nftBalances[nftID].mintTime
             );
     }
 
  function updateBalance(uint256 nftID)
     public
     {
-        // if(nftBalances[nftID].lastBalanceUpdateTime >= nftBalances[nftID].balanceEndTime)
-        // {
-        //     return;
-        // }
-
         uint256 balanceDuration = totalPrevBalance(nftID).div(dripRatePerSec(nftID));
         uint256 balanceEndTime = nftBalances[nftID].lastBalanceUpdateTime + balanceDuration;
         if(balanceEndTime > block.timestamp) {

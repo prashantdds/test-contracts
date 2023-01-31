@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "hardhat/console.sol";
 
 contract XCTMinter is
     AccessControlUpgradeable,
@@ -183,6 +184,8 @@ contract XCTMinter is
         whenNotPaused
         returns (uint256 XCTamount)
     {
+        console.log("starting xct minter function");
+
         uint256 slippageFactor = (SafeMathUpgradeable.sub(100000, slippage))
             .div(1000); // 100 - slippage => will return like 98000/1000 = 98 for default
         address[] memory path = new address[](2);
@@ -193,18 +196,24 @@ contract XCTMinter is
             100000
         );
         uint256[] memory amounts = uniswapV2Router.getAmountsOut(
-            amountForStack.mul(percentStackConversion).div(100000),
+            amountForStack,
             path
         );
 
+        console.log("amounts: ", amounts[0], amounts[1]);
+
+        uint256 before = StackToken.balanceOf(TREASURY_ADDRESS);
         uniswapV2Router.swapExactETHForTokensSupportingFeeOnTransferTokens{
             value: amountForStack
         }(
-            amounts[1].mul(slippageFactor).div(100),
+            // amounts[1].mul(slippageFactor).div(100),
+            amounts[1],
             path,
             TREASURY_ADDRESS,
             block.timestamp
         );
+        uint256 afterVal = StackToken.balanceOf(TREASURY_ADDRESS) - before;
+        console.log("stack added: ", afterVal);
 
         address[] memory path2 = new address[](2);
         path2[0] = WETH;
@@ -215,7 +224,7 @@ contract XCTMinter is
             .div(100000);
 
         uint256[] memory amounts2 = uniswapV2Router.getAmountsOut(
-            amountForStack.mul(100000 - percentStackConversion).div(100000),
+            amountForUSDC,
             path2
         );
 
@@ -232,6 +241,9 @@ contract XCTMinter is
         uint usdcReceived = USDCToken.balanceOf(address(this)).sub(prevUSDC);
         XCTToken.mint(msg.sender, usdcReceived);
         totalXCTMintedByContract = totalXCTMintedByContract.add(usdcReceived);
+
+        before = StackToken.balanceOf(TREASURY_ADDRESS) - before;
+        console.log("last stack added: ", before);
 
         emit XCTBought(WETH, msg.value, usdcReceived);
         return usdcReceived;

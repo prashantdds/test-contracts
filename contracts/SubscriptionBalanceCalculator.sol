@@ -22,6 +22,14 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     IERC20Upgradeable public XCTToken;
     ISubnetDAODistributor public SubnetDAODistributor;
 
+    uint32 constant public PERCENT_COUNT = 6;
+    uint32 constant public PERCENT_ID_1 = 0;
+    uint32 constant public PERCENT_ID_R = 1;
+    uint32 constant public PERCENT_ID_S = 2;
+    uint32 constant public PERCENT_ID_T = 3;
+    uint32 constant public PERCENT_ID_U = 4;
+    uint32 constant public PERCENT_ID_V = 5;
+
     mapping(address => uint256) public balanceOfRev;
 
     event ReceivedRevenue(address benficiary, uint256 bal);
@@ -35,6 +43,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         RegistrationContract = _RegistrationContract;
         ApplicationNFT = _ApplicationNFT;
         XCTToken = _XCTToken;
+ 
     }
 
     function setSubscriptionContract(address _Subscription) external onlyOwner {
@@ -131,30 +140,24 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     }
 
     function getComputeCosts(
-        uint256 nftId,
-        uint256[] memory subnetIds,
-        bool[] memory activeSubnets,
+        uint256 nftID,
+        uint256 subnetID,
         uint256 duration
     ) internal view returns (uint256 computeCost) {
         uint256 computeCostPerSec = 0;
-        for (uint256 i = 0; i < subnetIds.length; i++) {
-            if(!activeSubnets[i])
-                continue;
-    
-            uint256[] memory computeRequired = SubscriptionContract
-                .getComputesOfSubnet(nftId, subnetIds[i]);
+        uint256[] memory computeRequired = SubscriptionContract
+            .getComputesOfSubnet(nftID, subnetID);
 
-            (, , , , uint256[] memory unitPrices, , , , ) = RegistrationContract
-                .getSubnetAttributes(subnetIds[i]);
+        (, , , , uint256[] memory unitPrices, , , , ) = RegistrationContract
+            .getSubnetAttributes(subnetID);
 
-            for (uint256 j = 0; j < computeRequired.length; j++)
-            {
-                computeCostPerSec = computeCostPerSec.add(
-                    computeRequired[j].mul(unitPrices[j])
-                );
-            }
+        for (uint256 j = 0; j < computeRequired.length; j++)
+        {
+            computeCostPerSec = computeCostPerSec.add(
+                computeRequired[j].mul(unitPrices[j])
+            );
         }
-        // uint256 duration = block.timestamp.sub(lastBalanceUpdatedTime);
+
         computeCost = computeCostPerSec.mul(
             duration
         );
@@ -184,57 +187,107 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         XCTToken.transfer(to, amount);
     }
 
-    function estimateBalanceForSubnet(
-        uint256 nftId,
+    function estimateBalance(
+        uint256 nftID,
         uint256 subnetID,
         uint256 mintTime,
-        uint256 computeCost,
-        uint256 duration,
-        uint256[5] memory costIncurredArr
+        uint256 duration
     )
     internal
     view
-    returns (uint256[5] memory)
+    returns (uint256[] memory)
     {
-        // update R revenue of (1+R+S+T+U) revenue
-        costIncurredArr[0] = costIncurredArr[0].add(
-            r_licenseFee(nftId, subnetID)
-                .mul(duration)
-        );
+            uint256[] memory costIncurredArr = new uint256[](PERCENT_COUNT);
 
-        // update T revenue of (1+R+S+T+U) revenue
-        costIncurredArr[2] = costIncurredArr[2].add(
-            t_supportPercent(nftId, subnetID)
-            .mul(computeCost)
-            .div(100000)
-        );
+            uint256 computeCost = getComputeCosts(nftID, subnetID, duration);
 
-        costIncurredArr[4] = costIncurredArr[4].add(
-            u_referralPercent(nftId, subnetID)
-        )
-        .mul(computeCost)
-        .div(100000);
+            costIncurredArr[PERCENT_ID_1] = costIncurredArr[PERCENT_ID_1].add(
+                computeCost
+            );
 
-        // update (u) of of (1+R+S+T+U) revenue.
-        if (mintTime.add(u_ReferralExpiry(nftId, subnetID)) > block.timestamp) {
 
-            costIncurredArr[4] = costIncurredArr[4].add(
-                v_platformPercent(nftId, subnetID)
-                .sub(w_discountPercent(nftId, subnetID))
-            )
-            .mul(computeCost)
-            .div(100000);
-        }
-        // add to Global DAO
-        else {
-            costIncurredArr[4] = costIncurredArr[4].add(
-                v_platformPercent(nftId, subnetID)
+            // update R revenue of (1+R+S+T+U) revenue
+            costIncurredArr[PERCENT_ID_R] = costIncurredArr[PERCENT_ID_R].add(
+                r_licenseFee(nftID, subnetID)
+                    .mul(duration)
+            );
+
+            costIncurredArr[PERCENT_ID_S] = costIncurredArr[PERCENT_ID_S].add(
+                s_GlobalDAORate()
                 .mul(computeCost)
                 .div(100000)
             );
-        }
+
+
+            // update T revenue of (1+R+S+T+U) revenue
+            costIncurredArr[PERCENT_ID_T] = costIncurredArr[PERCENT_ID_T].add(
+                t_supportPercent(nftID, subnetID)
+                .mul(computeCost)
+                .div(100000)
+            );
+
+            costIncurredArr[PERCENT_ID_U] = costIncurredArr[PERCENT_ID_U].add(
+                u_referralPercent(nftID, subnetID)
+                .mul(computeCost)
+                .div(100000)
+            );
+
+            // update (u) of of (1+R+S+T+U) revenue.
+            if (mintTime.add(u_ReferralExpiry(nftID, subnetID)) > block.timestamp)
+            {
+
+                uint256 platformAmount = v_platformPercent(nftID, subnetID)
+                    .sub(w_discountPercent(nftID, subnetID));
+                platformAmount = platformAmount.mul(computeCost).div(100000);
+
+                costIncurredArr[PERCENT_ID_V] = costIncurredArr[PERCENT_ID_V].add(
+                    platformAmount
+                );
+            }
+            // add to Global DAO
+            else {
+                costIncurredArr[PERCENT_ID_V] = costIncurredArr[PERCENT_ID_V].add(
+                    v_platformPercent(nftID, subnetID)
+                    .mul(computeCost)
+                    .div(100000)
+                );
+            }
+
 
         return costIncurredArr;
+    }
+
+
+    function getRealtimeCostIncurred(
+        uint256 nftID,
+        uint256[] memory subnetList,
+        bool[] memory isSubscribedList,
+        uint256 duration,
+        uint256 mintTime
+    ) public view returns (uint256)
+    {
+
+        uint256 totalCostIncurred = 0;
+        for(uint256 i = 0; i < subnetList.length; i++)
+        {
+            if(!isSubscribedList[i])
+                continue;
+
+            uint256[] memory costIncurredArr = estimateBalance(
+                nftID,
+                subnetList[i],
+                mintTime,
+                duration
+            );
+
+            for(uint256 j = 0; j < costIncurredArr.length; j++)
+            {
+                totalCostIncurred += costIncurredArr[j];
+            }
+        }
+
+
+        return totalCostIncurred;
     }
 
     function getRealtimeBalance(
@@ -245,243 +298,138 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         uint256 duration,
         uint256 mintTime
     ) external view returns (uint256[3] memory) {
-        uint256 computeCost = getComputeCosts(
+
+
+        uint256 totalCost = getRealtimeCostIncurred(
             nftId,
             subnetIds,
             activeSubnets,
-            duration
+            duration,
+            mintTime
         );
-
-        uint256[5] memory costIncurredArr = [
-            uint256(0),
-            s_GlobalDAORate().mul(computeCost).div(100000),
-            0,
-            u_referralPercent(0,0 ).mul(computeCost).div(100000),
-            0
-        ]; //r,s,t,u
-
-        for (uint256 i = 0; i < subnetIds.length; i++)
-        {
-            uint256 subnetID = subnetIds[i];
-            costIncurredArr = estimateBalanceForSubnet(
-                nftId,
-                subnetID,
-                mintTime,
-                computeCost,
-                duration,
-                costIncurredArr
-            );
-        }
 
         return
             calculateUpdatedPrevBal(
-                (
-                    costIncurredArr[0] // r
-                    .add(costIncurredArr[1]) // s
-                        .add(costIncurredArr[2])
-                        .add(costIncurredArr[3])
-                        .add(computeCost) // t // u
-                ), // 1
+                totalCost,
                 prevBalance
             );
     }
 
-    function getRealtimeCostIncurred(
-        uint256 nftId,
-        uint256[] memory subnetIds,
-        bool[] memory activeSubnets,
-        uint256 duration,
-        uint256 mintTime
-    ) external view returns (uint256) {
-        uint256 computeCost = getComputeCosts(
-            nftId,
-            subnetIds,
-            activeSubnets,
+
+    function assignRevenues(
+        uint256 nftID,
+        uint256 subnetID,
+        uint256 mintTime,
+        uint256 duration
+    )
+    internal
+    returns (uint256)
+    {
+
+        uint256[] memory costIncurredArr = estimateBalance(
+            nftID,
+            subnetID,
+            mintTime,
             duration
         );
 
-        uint256[5] memory costIncurredArr = [
-            uint256(0),
-            s_GlobalDAORate().mul(computeCost).div(100000),
-            0,
-            0,
-            0
-        ]; //r,s,t,u
-
-        for (uint256 i = 0; i < subnetIds.length; i++)
-        {
-            uint256 subnetID = subnetIds[i];
-            costIncurredArr = estimateBalanceForSubnet(
-                nftId,
-                subnetID,
-                mintTime,
-                computeCost,
-                duration,
-                costIncurredArr
-            );
-        }
-
-        return (
-            costIncurredArr[0] // r
-            .add(costIncurredArr[1]) // s
-                .add(costIncurredArr[2])
-                .add(costIncurredArr[3])
-                .add(costIncurredArr[4])
-                .add(computeCost) // t // u
-        );
-    }
-
-
-    function getUpdatedBalanceForSubnet(
-        uint256 nftId,
-        uint256 subnetID,
-        uint256 mintTime,
-        uint256 computeCost,
-        uint256 duration,
-        uint256[5] memory costIncurredArr
-    )
-    internal
-    returns (uint256[5] memory)
-    {
-        // update R revenue of (1+R+S+T+U) revenue
-        costIncurredArr[0] = costIncurredArr[0].add(
-            r_licenseFee(nftId, subnetID)
-                .mul(duration)
-        );
-        address toAddress = SubscriptionContract.getLicenseAddress(nftId, subnetID);
+        // update (1)(for subnetDAOWallet to SubnetDAODistributor contract) of (1+R+S+T+U) revenue
+        address toAddress = address(SubnetDAODistributor);
         balanceOfRev[toAddress] = balanceOfRev[toAddress].add(
-            costIncurredArr[0]
+            costIncurredArr[PERCENT_ID_1]
+        );
+        SubnetDAODistributor.commitAssignedFor(
+            subnetID,
+            costIncurredArr[PERCENT_ID_1]
         );
 
-        // update T revenue of (1+R+S+T+U) revenue
-        costIncurredArr[2] = costIncurredArr[2].add(
-            t_supportPercent(nftId, subnetID)
-            .mul(computeCost)
-            .div(100000)
+
+        toAddress = SubscriptionContract.getLicenseAddress(nftID, subnetID);
+        balanceOfRev[toAddress] = balanceOfRev[toAddress].add(
+            costIncurredArr[PERCENT_ID_R]
         );
-        toAddress = SubscriptionContract.getSupportAddress(nftId, subnetID);
-        balanceOfRev[toAddress]
-            = balanceOfRev[toAddress].add(costIncurredArr[2]);
 
 
-        costIncurredArr[3] = costIncurredArr[3].add(
-            u_referralPercent(nftId, subnetID)
-        )
-        .mul(computeCost)
-        .div(100000);
+        toAddress = s_GlobalDAOAddress();
+        balanceOfRev[toAddress] = balanceOfRev[toAddress].add(
+            costIncurredArr[PERCENT_ID_S]
+        );
+
+
+        toAddress = SubscriptionContract.getSupportAddress(nftID, subnetID);
+        balanceOfRev[toAddress] = balanceOfRev[toAddress].add(
+            costIncurredArr[PERCENT_ID_T]
+        );
+    
 
         // update (u) of of (1+R+S+T+U) revenue.
-        if (mintTime.add(u_ReferralExpiry(nftId, subnetID)) > block.timestamp) {
-            toAddress = SubscriptionContract
-                .getReferralAddress(nftId, subnetID);
-    
-            balanceOfRev[toAddress] = balanceOfRev[
-                toAddress
-            ].add(costIncurredArr[3]);
+        if (mintTime.add(u_ReferralExpiry(nftID, subnetID)) > block.timestamp)
+        {
+
+            toAddress = SubscriptionContract.getReferralAddress(nftID, subnetID);
+            balanceOfRev[toAddress] = balanceOfRev[toAddress].add(
+                costIncurredArr[PERCENT_ID_U]
+            );
 
 
-        uint256 platformAmount = v_platformPercent(nftId, subnetID)
-            .sub(w_discountPercent(nftId, subnetID));
-        
-        platformAmount = platformAmount.mul(computeCost)
-        .div(100000);
-
-        costIncurredArr[4] = costIncurredArr[4].add(platformAmount);
-
-
-        toAddress = SubscriptionContract.getPlatformAddress(nftId, subnetID);
-        balanceOfRev[toAddress]
-            = balanceOfRev[toAddress].add(costIncurredArr[4]);
+            toAddress = SubscriptionContract.getPlatformAddress(nftID, subnetID);
+            balanceOfRev[toAddress] = balanceOfRev[toAddress].add(
+                costIncurredArr[PERCENT_ID_V]
+            );
         }
         // add to Global DAO
         else {
 
-            balanceOfRev[s_GlobalDAOAddress()] = balanceOfRev[
-                s_GlobalDAOAddress()
-            ].add(costIncurredArr[3]);
+            toAddress = s_GlobalDAOAddress();
+            balanceOfRev[toAddress] = balanceOfRev[toAddress].add(
+                costIncurredArr[PERCENT_ID_U]
+            );
 
-        costIncurredArr[4] = costIncurredArr[4].add(
-            v_platformPercent(nftId, subnetID)
-            .mul(computeCost)
-            .div(100000)
-        );
-        toAddress = SubscriptionContract.getPlatformAddress(nftId, subnetID);
-        balanceOfRev[toAddress]
-            = balanceOfRev[toAddress].add(costIncurredArr[4]);
+            toAddress = SubscriptionContract.getPlatformAddress(nftID, subnetID);
+            balanceOfRev[toAddress] = balanceOfRev[toAddress].add(
+                costIncurredArr[PERCENT_ID_V]
+            );
         }
 
-        return costIncurredArr;
+        uint256 total = 0;
+        for(uint256 i = 0; i < costIncurredArr.length; i++)
+        {
+            total += costIncurredArr[i];
+        }
+
+        return total;
     }
 
     function getUpdatedBalance(
-        uint256 nftId,
-        uint256[] memory subnetIds,
-        bool[] memory activeSubnets,
+        uint256 nftID,
+        uint256[] memory subnetList,
+        bool[] memory isSubscribedList,
         uint256 mintTime,
         uint256[3] memory prevBalance,
         uint256 duration
-        // uint256 lastBalanceUpdatedTime
-    ) external returns (uint256[3] memory) {
-        uint256 computeCost = getComputeCosts(
-            nftId,
-            subnetIds,
-            activeSubnets,
-            duration
-        );
+    )
+    external
+    returns (uint256[3] memory) 
+    {
 
-        if (computeCost > 100000) {
-            uint256[5] memory costIncurredArr = [
-                uint256(0),
-                s_GlobalDAORate().mul(computeCost).div(100000),
-                0,
-                0,
-                0
-            ]; //r,s,t,u
+        uint256 totalCostIncurred = 0;
+        for(uint256 i = 0; i < subnetList.length; i++)
+        {
+            if(!isSubscribedList[i])
+                continue;
 
-            // update S revenue of (1+R+S+T+U) revenue
-            balanceOfRev[s_GlobalDAOAddress()] = balanceOfRev[
-                s_GlobalDAOAddress()
-            ].add(costIncurredArr[1]);
-
-        // update (1)(for subnetDAOWallet to SubnetDAODistributor contract) of (1+R+S+T+U) revenue
-        balanceOfRev[address(SubnetDAODistributor)] = balanceOfRev[
-            address(SubnetDAODistributor)
-        ].add(computeCost);
-        // SubnetDAODistributor.commitAssignedFor(
-        //     subnetID,
-        //     computeCost
-        // );
-
-            for (uint256 i = 0; i < subnetIds.length; i++)
-            {
-                if(!activeSubnets[i])
-                    continue;
-
-
-                costIncurredArr = getUpdatedBalanceForSubnet(
-                    nftId,
-                    subnetIds[i],
-                    mintTime,
-                    computeCost,
-                    duration,
-                    costIncurredArr
-                );
-
-            }
-
-            return
-                calculateUpdatedPrevBal(
-                    (
-                        costIncurredArr[0] // r
-                        .add(costIncurredArr[1]) // s
-                            .add(costIncurredArr[2]) // t 
-                            .add(costIncurredArr[3]) // u
-                            .add(costIncurredArr[4])
-                            .add(computeCost) // 1
-                    ), 
-                    prevBalance
-                );
+            totalCostIncurred += assignRevenues(
+                nftID,
+                subnetList[i],
+                mintTime,
+                duration
+            );
         }
-        return prevBalance;
+
+        return calculateUpdatedPrevBal(
+                totalCostIncurred,
+                prevBalance
+            );
     }
 }
+

@@ -19,6 +19,8 @@ function sleep(time) {
 // const stack = "0x66B76c2cbAc39b997f1069B62DB7Db27751bE59A"
 // const XCTMinter = "0xF018BaBb3f9361b3B486E20B70756cBff98bf5Be"
 
+// npx hardhat node --fork https://polygon-mainnet.g.alchemy.com/v2/fHz9bJrcvXjT4Gg6st2d_aBvDy8MgOfH
+
 async function main() {
     const [deployer] = await ethers.getSigners()
     console.log("deploy by acct: " + deployer.address)

@@ -460,7 +460,8 @@ contract ContractBasedDeploymentV2 is Initializable {
 
     modifier hasPermission(uint256 _nftId) {
         require(
-            RoleControlV2.hasRole(_nftId, CONTRACT_BASED_DEPLOYER, msg.sender),
+            AppNFT.ownerOf(_nftId) == msg.sender
+            || RoleControlV2.hasRole(_nftId, CONTRACT_BASED_DEPLOYER, msg.sender),
             "CONTRACT_BASED_DEPLOYER permission not there in RoleControlV2"
         );
         _;
