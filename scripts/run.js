@@ -640,34 +640,37 @@ const setup = async () => {
     await helper.grantRoleForContractBasedDeployment(1, addresses.deployer)
 }
 
-const getAmountIfLess = async (erc20, account, balanceToAdd, contractToApprove) => {
+const getAmountIfLess = async (
+    erc20,
+    account,
+    balanceToAdd,
+    contractToApprove
+) => {
     // add amount to depositor if depositor's balance is less
-    let currentBalance = await erc20.balanceOf(account.address);
-    if(currentBalance.lt(balanceToAdd)) {
-        await erc20.transfer(account.address,  balanceToAdd);
+    let currentBalance = await erc20.balanceOf(account.address)
+    if (currentBalance.lt(balanceToAdd)) {
+        await erc20.transfer(account.address, balanceToAdd)
     }
     //approve subscription balance to withdraw erc20 out of depositor's wallet
-    await erc20.connect(account).approve(
-        contractToApprove.address,
-        balanceToAdd
-    );
-
+    await erc20
+        .connect(account)
+        .approve(contractToApprove.address, balanceToAdd)
 }
 
 const addSubnet = async () => {
-    console.log("before get signers");
-    const addrList = await ethers.getSigners();
-    console.log("after signers");
-    const cluster = addrList[4];
-    const roleAccount1 = addrList[5];
-    const roleAccount2 = addrList[6];
+    console.log("before get signers")
+    const addrList = await ethers.getSigners()
+    console.log("after signers")
+    const cluster = addrList[4]
+    const roleAccount1 = addrList[5]
+    const roleAccount2 = addrList[6]
 
-    const platformAddress = addrList[5];
-    const referralExpiry = 60 * 60 * 24 * 4;
+    const platformAddress = addrList[5]
+    const referralExpiry = 60 * 60 * 24 * 4
 
-    const platformFee = 10000;
-    const discountFee = 3000;
-    const referralFee = 4000;
+    const platformFee = 10000
+    const discountFee = 3000
+    const referralFee = 4000
 
     const subnet1 = {
         creator: helper.getAddresses().deployer,
@@ -676,38 +679,37 @@ const addSubnet = async () => {
         sovereignStatus: true,
         cloudProviderType: 1,
         subnetStatusListed: true,
-        unitPrices: [ethers.utils.parseEther("0.0004"),
-        ethers.utils.parseEther("0.0003"),
-        ethers.utils.parseEther("0.0005"),
-        ethers.utils.parseEther("0.0006")],
+        unitPrices: [
+            ethers.utils.parseEther("0.0004"),
+            ethers.utils.parseEther("0.0003"),
+            ethers.utils.parseEther("0.0005"),
+            ethers.utils.parseEther("0.0006"),
+        ],
         otherAttributes: [],
         maxClusters: 1,
         whitelistedClusters: [],
-        stackFeesReqd: ethers.utils.parseEther("0.01")
-    };
+        stackFeesReqd: ethers.utils.parseEther("0.01"),
+    }
 
-    const stack = await helper.getStack();
-    const darkMatter = await helper.getNFTToken();
-    const Registration = await helper.getRegistration();
-    const contractDeploy = await helper.getContractBasedDeployment();
-    const appNFT = await helper.getAppNFT();
-    const RoleControl = await helper.getRoleControl();
+    const stack = await helper.getStack()
+    const darkMatter = await helper.getNFTToken()
+    const Registration = await helper.getRegistration()
+    const contractDeploy = await helper.getContractBasedDeployment()
+    const appNFT = await helper.getAppNFT()
+    const RoleControl = await helper.getRoleControl()
 
-    console.log("before mint");
-    let tr = await darkMatter.mint(helper.getAddresses().deployer);
-    console.log("after mint");
-    let rec = await tr.wait();
-    let transferEvent = rec.events.find(event => event.event == "Transfer");
-    const nftID = transferEvent.args[2].toNumber();
+    console.log("before mint")
+    let tr = await darkMatter.mint(helper.getAddresses().deployer)
+    console.log("after mint")
+    let rec = await tr.wait()
+    let transferEvent = rec.events.find((event) => event.event == "Transfer")
+    const nftID = transferEvent.args[2].toNumber()
 
-    console.log("before set approval");
-    await darkMatter.setApprovalForAll(
-        Registration.address,
-        true
-    );
-    console.log("after set approval");
+    console.log("before set approval")
+    await darkMatter.setApprovalForAll(Registration.address, true)
+    console.log("after set approval")
 
-    console.log("before create subnet");
+    console.log("before create subnet")
     tr = await Registration.createSubnet(
         nftID,
         subnet1.subnetDAO,
@@ -721,34 +723,38 @@ const addSubnet = async () => {
         subnet1.whitelistedClusters,
         subnet1.stackFeesReqd,
         "authority"
-        );
+    )
 
-    console.log("after crate subnet");
-    rec = await tr.wait();
-    const subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");
-    const subnetID = subnetCreatedEvent.args[0].toNumber();
+    console.log("after crate subnet")
+    rec = await tr.wait()
+    const subnetCreatedEvent = rec.events.find(
+        (event) => event.event == "SubnetCreated"
+    )
+    const subnetID = subnetCreatedEvent.args[0].toNumber()
 
-    console.log("subnet created: ", subnetID);
+    console.log("subnet created: ", subnetID)
 }
 
-const deleteApp = async () => {
-
-}
+const deleteApp = async () => {}
 
 const setupUrsula = async () => {
-    const addrList = await ethers.getSigners();
-    const cluster = addrList[4];
-    const roleAccount1 = addrList[5];
-    const roleAccount2 = addrList[6];
+    const addrList = await ethers.getSigners()
+    const cluster = addrList[4]
+    const roleAccount1 = addrList[5]
+    const roleAccount2 = addrList[6]
 
-    const platformAddress = addrList[5];
-    const referralExpiry = 60 * 60 * 24 * 4;
+    const platformAddress = addrList[5]
+    const referralExpiry = 60 * 60 * 24 * 4
 
-    const platformFee = 10000;
-    const discountFee = 3000;
-    const referralFee = 4000;
+    const platformFee = 10000
+    const discountFee = 3000
+    const referralFee = 4000
 
-    let bobArray = [3,240,230,78,228,255,87,138,238,193,160,12,171,62,21,215,150,37,96,148,7,254,61,195,88,207,34,158,245,20,104,133,46];
+    let bobArray = [
+        3, 90, 20, 244, 156, 57, 237, 234, 225, 127, 203, 179, 183, 142, 240, 2,
+        76, 127, 172, 131, 75, 113, 184, 97, 91, 117, 208, 166, 152, 28, 244,
+        173, 73,
+    ]
 
     const subnet1 = {
         creator: helper.getAddresses().deployer,
@@ -757,32 +763,31 @@ const setupUrsula = async () => {
         sovereignStatus: true,
         cloudProviderType: 1,
         subnetStatusListed: true,
-        unitPrices: [ethers.utils.parseEther("0.0001"),
-        ethers.utils.parseEther("0.0002"),
-        ethers.utils.parseEther("0.0003"),
-        ethers.utils.parseEther("0.0004")],
+        unitPrices: [
+            ethers.utils.parseEther("0.0001"),
+            ethers.utils.parseEther("0.0002"),
+            ethers.utils.parseEther("0.0003"),
+            ethers.utils.parseEther("0.0004"),
+        ],
         otherAttributes: [],
         maxClusters: 1,
         whitelistedClusters: [],
-        stackFeesReqd: ethers.utils.parseEther("0.01")
-    };
+        stackFeesReqd: ethers.utils.parseEther("0.01"),
+    }
 
-    const stack = await helper.getStack();
-    const darkMatter = await helper.getNFTToken();
-    const Registration = await helper.getRegistration();
-    const contractDeploy = await helper.getContractBasedDeployment();
-    const appNFT = await helper.getAppNFT();
-    const RoleControl = await helper.getRoleControl();
+    const stack = await helper.getStack()
+    const darkMatter = await helper.getNFTToken()
+    const Registration = await helper.getRegistration()
+    const contractDeploy = await helper.getContractBasedDeployment()
+    const appNFT = await helper.getAppNFT()
+    const RoleControl = await helper.getRoleControl()
 
-    let tr = await darkMatter.mint(helper.getAddresses().deployer);
-    let rec = await tr.wait();
-    let transferEvent = rec.events.find(event => event.event == "Transfer");
-    const nftID = transferEvent.args[2].toNumber();
+    let tr = await darkMatter.mint(helper.getAddresses().deployer)
+    let rec = await tr.wait()
+    let transferEvent = rec.events.find((event) => event.event == "Transfer")
+    const nftID = transferEvent.args[2].toNumber()
 
-    await darkMatter.setApprovalForAll(
-        Registration.address,
-        true
-    );
+    await darkMatter.setApprovalForAll(Registration.address, true)
 
     tr = await Registration.createSubnet(
         nftID,
@@ -797,24 +802,30 @@ const setupUrsula = async () => {
         subnet1.whitelistedClusters,
         subnet1.stackFeesReqd,
         "subnet"
-        );
+    )
 
-    rec = await tr.wait();
-    const subnetCreatedEvent = rec.events.find(event => event.event == "SubnetCreated");
-    const subnetID = subnetCreatedEvent.args[0].toNumber();
+    rec = await tr.wait()
+    const subnetCreatedEvent = rec.events.find(
+        (event) => event.event == "SubnetCreated"
+    )
 
+    const subnetID = subnetCreatedEvent.args[0].toNumber()
 
-    tr = await darkMatter.mint(cluster.address);
-    rec = await tr.wait();
-    transferEvent = rec.events.find(event => event.event == "Transfer");
-    const clusterNFTID = transferEvent.args[2].toNumber();
+    tr = await darkMatter.mint(cluster.address)
+    rec = await tr.wait()
+    transferEvent = rec.events.find((event) => event.event == "Transfer")
+    const clusterNFTID = transferEvent.args[2].toNumber()
 
-    await darkMatter.connect(cluster).setApprovalForAll(
-        Registration.address,
-        true
-    );
+    await addrList[0].sendTransaction({
+        to: cluster.address,
+        value: ethers.utils.parseEther("1.0"), // Sends exactly 1.0 ether
+    })
 
-    await getAmountIfLess(stack, cluster, subnet1.stackFeesReqd, Registration);
+    await darkMatter
+        .connect(cluster)
+        .setApprovalForAll(Registration.address, true)
+
+    await getAmountIfLess(stack, cluster, subnet1.stackFeesReqd, Registration)
 
     tr = await Registration.connect(cluster).clusterSignUp(
         subnetID,
@@ -824,32 +835,37 @@ const setupUrsula = async () => {
         bobArray,
         clusterNFTID,
         "cluster-1"
-    );
+    )
 
-    rec = await tr.wait();
-    const clusterSignupEvent = rec.events.find(event => event.event == "ClusterSignedUp");
-    const clusterID = clusterSignupEvent.args[1].toNumber();
+    rec = await tr.wait()
+    const clusterSignupEvent = rec.events.find(
+        (event) => event.event == "ClusterSignedUp"
+    )
+    const clusterID = clusterSignupEvent.args[1].toNumber()
 
-    await Registration.approveListingCluster(subnetID, clusterID, 100);
+    await Registration.approveListingCluster(subnetID, clusterID, 100)
 
-    tr = await appNFT.mint(helper.getAddresses().deployer);
-    rec = await tr.wait();
-    transferEvent = rec.events.find(event => event.event == "Transfer");
-    const appNFTID = transferEvent.args[2].toNumber();
+    tr = await appNFT.mint(helper.getAddresses().deployer)
+    rec = await tr.wait()
+    transferEvent = rec.events.find((event) => event.event == "Transfer")
+    const appNFTID = transferEvent.args[2].toNumber()
 
-    await helper.grantRoleForContractBasedDeployment(appNFTID, helper.getAddresses().deployer);
+    await helper.grantRoleForContractBasedDeployment(
+        appNFTID,
+        helper.getAddresses().deployer
+    )
 
-    const referralAddress = addrList[2];
-    const licenseAddress = addrList[3].address;
-    const licenseFee = 10000;
+    const referralAddress = addrList[2]
+    const licenseAddress = addrList[3].address
+    const licenseFee = 10000
 
     await Subscription.addPlatformAddress(
-        platformAddress.address
-        ,platformFee
-        ,discountFee
-        ,referralFee
-        ,referralExpiry
-    );
+        platformAddress.address,
+        platformFee,
+        discountFee,
+        referralFee,
+        referralExpiry
+    )
 
     let app1 = {
         appName: "first-app",
@@ -858,20 +874,16 @@ const setupUrsula = async () => {
             [referralAddress.address],
             [licenseAddress],
             [helper.parameters.subscription.globalSupportAddress],
-            [platformAddress.address]
+            [platformAddress.address],
         ],
         licenseFee: [licenseFee],
-        hashAndSize: [
-            18, 32
-        ],
+        hashAndSize: [18, 32],
         subnetList: [0],
-        multiplier: [[
-            [1, 0, 0]
-        ]],
+        multiplier: [[[1, 0, 0]]],
         resourceArray: [1, 0, 0],
-        lastUpdatedTime: '',
-        cidLock: false
-    };
+        lastUpdatedTime: "",
+        cidLock: false,
+    }
 
     // tr = await contractDeploy.createApp(
     //     ethers.utils.parseEther("0"),
@@ -889,30 +901,44 @@ const setupUrsula = async () => {
     // );
 
     // const data = await contractDeploy.getFullData(appNFTID, "app1");
-    const clusterAttributes = await Registration.getClusterAttributes(subnetID, clusterID);
+    const clusterAttributes = await Registration.getClusterAttributes(
+        subnetID,
+        clusterID
+    )
 
+    await helper.grantRoleForContractBasedDeployment(
+        appNFTID,
+        helper.getAddresses().deployer
+    )
 
-    await helper.grantRoleForContractBasedDeployment(appNFTID, helper.getAddresses().deployer);
+    const READ = await RoleControl.READ()
+    const CONTRACT_BASED_DEPLOYER = await RoleControl.CONTRACT_BASED_DEPLOYER()
 
+    await RoleControl.grantRole(appNFTID, READ, roleAccount1.address)
+    await RoleControl.grantRole(
+        appNFTID,
+        CONTRACT_BASED_DEPLOYER,
+        roleAccount2.address
+    )
 
-    const READ = await RoleControl.READ();
-    const CONTRACT_BASED_DEPLOYER = await RoleControl.CONTRACT_BASED_DEPLOYER();
+    let hasRole1 = await RoleControl.hasRole(
+        appNFTID,
+        READ,
+        roleAccount1.address
+    )
+    let hasRole2 = await RoleControl.hasRole(
+        appNFTID,
+        CONTRACT_BASED_DEPLOYER,
+        roleAccount2.address
+    )
 
-
-    await RoleControl.grantRole(appNFTID, READ, roleAccount1.address);
-    await RoleControl.grantRole(appNFTID, CONTRACT_BASED_DEPLOYER, roleAccount2.address);
-
-    let hasRole1 = await RoleControl.hasRole(appNFTID, READ, roleAccount1.address);
-    let hasRole2 = await RoleControl.hasRole(appNFTID, CONTRACT_BASED_DEPLOYER, roleAccount2.address);
-
-
-    console.log("subnetID: ", subnetID);
-    console.log("clusterID: ", clusterID);
-    console.log("appNFT ID: ", appNFTID);
+    console.log("subnetID: ", subnetID)
+    console.log("clusterID: ", clusterID)
+    console.log("appNFT ID: ", appNFTID)
     // console.log("app data created: ", data);
-    console.log("cluster attributes: ", clusterAttributes);
-    console.log("account #5 has READ role: ", hasRole1);
-    console.log("account #6 has CONTRACT DEPLOYER role: ", hasRole2);
+    console.log("cluster attributes: ", clusterAttributes)
+    console.log("account #5 has READ role: ", hasRole1)
+    console.log("account #6 has CONTRACT DEPLOYER role: ", hasRole2)
 }
 
 async function main() {
@@ -949,36 +975,32 @@ async function main() {
     //     ContractBasedDeployment: "0xB73c47b77C422682219E8D9bC9217C009395cde7",
     // })
 
-    helper.setAddresses(
-        {
-            deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',    
-            xct: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
-            stack: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',       
-            nftToken: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',    
-            Registration: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
-            appNFT: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6',
-            RoleControl: '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
-            SubscriptionBalanceCalculator: '0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0',
-            SubscriptionBalance: '0x9A676e781A523b5d0C0e43731313A708CB607508',
-            SubnetDAODistributor: '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1',
-            Subscription: '0x68B1D87F95878fE05B998F19b66F4baba5De1aed',
-            ContractBasedDeployment: '0xc6e7DF5E7b4f2A278906862b61205850344D4e7d'
-        }
-        // {
-        //     deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-        //     xct: '0xC20654dB7F9483f10c91dc94924dC8F04F79bfd5',
-        //     stack: '0xB10982193B39Eda3428d6AaeBbd7986f2A2Baa1a',
-        //     xctMinter: '0x0eb44B96bC23A6362d383eF04bE67501251cF227'
-        //   }
-    )
+    // helper.setAddresses(
+    //     {
+    //         deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    //         xct: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+    //         stack: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+    //         nftToken: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',
+    //         Registration: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
+    //         appNFT: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6',
+    //         RoleControl: '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
+    //         SubscriptionBalanceCalculator: '0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0',
+    //         SubscriptionBalance: '0x9A676e781A523b5d0C0e43731313A708CB607508',
+    //         SubnetDAODistributor: '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1',
+    //         Subscription: '0x68B1D87F95878fE05B998F19b66F4baba5De1aed',
+    //         ContractBasedDeployment: '0xc6e7DF5E7b4f2A278906862b61205850344D4e7d'
+    //     }
+    // {
+    //     deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    //     xct: '0xC20654dB7F9483f10c91dc94924dC8F04F79bfd5',
+    //     stack: '0xB10982193B39Eda3428d6AaeBbd7986f2A2Baa1a',
+    //     xctMinter: '0x0eb44B96bC23A6362d383eF04bE67501251cF227'
+    //   }
+    // )
 
     // deploy(); // alice
-    // transferNFT() 
+    // transferNFT()
     // deploy() // newAlice
-
-    
-
-
 
     // deploy() {
     //     saveToIPFS()
@@ -1007,8 +1029,8 @@ async function main() {
     await helper.callNftApprove()
     await helper.xctApproveSub()
     await helper.xctApproveSubBal()
-    await setupUrsula();
-    await addSubnet();
+    await setupUrsula()
+    await addSubnet()
 
     // const xct = await helper.getXCT()
     // await xct.mint(helper.getAddresses().deployer, ethers.utils.parseEther("100000000000000000000"));
@@ -1020,15 +1042,15 @@ async function main() {
     // )
     // await op.wait()
 
-    const ContractBasedDeployment = await helper.getContractBasedDeployment();
-    const Subscription = await helper.getSubscription();
-    const SubscriptionBalance = await helper.getSubscriptionBalance();
+    const ContractBasedDeployment = await helper.getContractBasedDeployment()
+    const Subscription = await helper.getSubscription()
+    const SubscriptionBalance = await helper.getSubscriptionBalance()
 
-    const xctBalance = await SubscriptionBalance.dripRatePerSec(1);
-    console.log("xct balance: ", xctBalance);
+    const xctBalance = await SubscriptionBalance.dripRatePerSec(1)
+    console.log("xct balance: ", xctBalance)
 
-    const usersub = await Subscription.getComputesOfSubnet(1, 0);
-    console.log("usersub: ", usersub);
+    const usersub = await Subscription.getComputesOfSubnet(1, 0)
+    console.log("usersub: ", usersub)
 
     // await ContractBasedDeployment.deleteApp(1, "Wlhod2JHOXlaWEl4");
     // const data= await ContractBasedDeployment.getDataArray(1);
@@ -1121,7 +1143,7 @@ async function main() {
     // uint8 _size,
     // uint256[][] memory _subnetIDList,
     // uint256[] memory _resourceArray,
-// string memory lastUpdatedTime
+    // string memory lastUpdatedTime
 
     // const contractDeploy = await getContractBasedDeployment()
     // tr = await contractDeploy.updateData(
