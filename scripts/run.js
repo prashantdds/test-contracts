@@ -3,11 +3,16 @@ const { ethers } = require("hardhat")
 const helper = require("./helper")
 
 
-const getAmountIfLess = async (erc20, account, balanceToAdd, contractToApprove) => {
+const getAmountIfLess = async (
+    erc20,
+    account,
+    balanceToAdd,
+    contractToApprove
+) => {
     // add amount to depositor if depositor's balance is less
-    let currentBalance = await erc20.balanceOf(account.address);
-    if(currentBalance.lt(balanceToAdd)) {
-        await erc20.transfer(account.address,  balanceToAdd);
+    let currentBalance = await erc20.balanceOf(account.address)
+    if (currentBalance.lt(balanceToAdd)) {
+        await erc20.transfer(account.address, balanceToAdd)
     }
     //approve subscription balance to withdraw erc20 out of depositor's wallet
     await erc20.connect(account).approve(
@@ -146,12 +151,12 @@ const setupUrsula = async () => {
         [cluster1]
     ];
 
-    const platformAddress = addrList[5];
-    const referralExpiry = 60 * 60 * 24 * 4;
+    const platformAddress = addrList[5]
+    const referralExpiry = 60 * 60 * 24 * 4
 
-    const platformFee = 10000;
-    const discountFee = 3000;
-    const referralFee = 4000;
+    const platformFee = 10000
+    const discountFee = 3000
+    const referralFee = 4000
 
 
     const subnetParamList = [
@@ -220,12 +225,12 @@ const setupUrsula = async () => {
     }
 
     await Subscription.addPlatformAddress(
-        platformAddress.address
-        ,platformFee
-        ,discountFee
-        ,referralFee
-        ,referralExpiry
-    );
+        platformAddress.address,
+        platformFee,
+        discountFee,
+        referralFee,
+        referralExpiry
+    )
 
 }
 

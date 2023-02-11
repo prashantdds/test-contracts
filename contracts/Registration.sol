@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./TokensRecoverable.sol";
+import "./interfaces/ISubscriptionBalance.sol";
 import "./interfaces/ISubnetDAODistributor.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -20,6 +21,7 @@ contract Registration is
 
     IERC721Upgradeable public DarkMatterNFT;
     IERC20Upgradeable public StackToken;
+    ISubscriptionBalance public SubscriptionBalance;
     ISubnetDAODistributor public SubnetDAODistributor;
 
     bytes32 public constant CLUSTER_LIST_ROLE = keccak256("CLUSTER_LIST_ROLE");
@@ -292,10 +294,14 @@ contract Registration is
     function set_SubnetDAODistributorContract(
         ISubnetDAODistributor _SubnetDAODistributor
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(address(SubnetDAODistributor) == address(0), "Already set");
         SubnetDAODistributor = _SubnetDAODistributor;
     }
 
+    function set_Subscription(
+        ISubscriptionBalance _SubscriptionBalance
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        SubscriptionBalance = _SubscriptionBalance;
+    }
 
     // to change _DarkMatterNFTType call changeSubnetAttributes() with index 9
     function createSubnet(

@@ -2,16 +2,14 @@
 
 pragma solidity 0.8.2;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/IRegistration.sol";
 import "./interfaces/ILinkContract.sol";
 import "./interfaces/ISubscription.sol";
-import "./interfaces/IRoleControlV2.sol";
 import "./interfaces/IBalanceCalculator.sol";
-import "./interfaces/IERC721.sol";
+import "./interfaces/IApplicationNFT.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "hardhat/console.sol";
@@ -21,21 +19,16 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
     // contract addresses cannot be changed once initialised
     IRegistration public RegistrationContract;
-    IRoleControlV2 public RoleControl;
-    IERC721 public ApplicationNFT;
+    IApplicationNFT public ApplicationNFT;
     IERC20Upgradeable public XCTToken;
     ISubscription public SubscriptionContract;
     IBalanceCalculator public BalanceCalculator;
-    uint256 public ReferralPercent; // 1000 = 1%
-    uint256 public ReferralRevExpirySecs; // eg. after 2 years, Global DAO will receive referral percent reward
     bytes32 public BILLING_MANAGER_ROLE;
     ILinkContract public LinkContract;
 
     struct NFTBalance {
         uint256 lastBalanceUpdateTime;
         uint256[3] prevBalance; // prevBalance[0] = Credit wallet, prevBalance[1] = External Deposit, prevBalance[3] = Owner wallet
-        uint256[] subnetIds; // cannot be changed unless delisted
-        address NFTMinter;
         uint256 mintTime;
         uint256 balanceEndTime;
     }
@@ -45,6 +38,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         uint256 expiryTimestamp;
         uint256 amountAdded;
     }
+
     // NFT id => NFTBalance
     mapping(uint256 => NFTBalance) public nftBalances;
     // Credit provider => NFT id => expiry
@@ -53,18 +47,13 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     event BalanceAdded(uint256 NFTId, uint256 balanceType, uint256 bal);
     event BalanceWithdrawn(uint256 NFTId, uint256 balanceType, uint256 bal);
     event SettledBalanceFor(uint256 NFTId);
-    event ChangedReferralAttributes(
-        uint256 ReferralPercent,
-        uint256 ReferralRevExpirySecs
-    );
 
 
     function initialize(
         IRegistration _RegistrationContract,
-        IERC721 _ApplicationNFT,
+        IApplicationNFT _ApplicationNFT,
         IERC20Upgradeable _XCTToken,
         IBalanceCalculator _BalanceCalculator,
-        IRoleControlV2 _RoleControl,
         uint256 _ReferralPercent,
         uint256 _ReferralRevExpirySecs
     ) public initializer {
@@ -75,11 +64,8 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         ApplicationNFT = _ApplicationNFT;
         XCTToken = _XCTToken;
         BalanceCalculator = _BalanceCalculator;
-        RoleControl = _RoleControl;
-        ReferralPercent = _ReferralPercent;
-        ReferralRevExpirySecs = _ReferralRevExpirySecs;
 
-        BILLING_MANAGER_ROLE = RoleControl.getBytes32OfRole("BILLING_MANAGER");
+        BILLING_MANAGER_ROLE = ApplicationNFT.getBytes32OfRole("BILLING_MANAGER");
     }
 
     function setSubscriptionContract(address _Subscription) external onlyOwner {
@@ -96,17 +82,6 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         return SubscriptionContract.isBridgeRole();
     }
 
-    function change__ReferralAttributes(
-        uint256 _ReferralPercent,
-        uint256 _ReferralRevExpirySecs
-    ) external onlyOwner {
-        ReferralPercent = _ReferralPercent;
-        ReferralRevExpirySecs = _ReferralRevExpirySecs;
-        emit ChangedReferralAttributes(
-            _ReferralPercent,
-            _ReferralRevExpirySecs
-        );
-    }
 
     function setLinkContract(ILinkContract _newLinkContract)
         external
@@ -115,163 +90,15 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         LinkContract = _newLinkContract;
     }
 
-    function t_supportAddress(uint256 _tokenId)
-        public
-        view
-        returns (address)
-    {
-        return ApplicationNFT.ownerOf(_tokenId);
-    }
-
     function s_GlobalDAOAddress() public view returns (address) {
         return RegistrationContract.GLOBAL_DAO_ADDRESS();
     }
 
-    // r address is NFT minter address => nftBalances[nftID].NFTMinter
-
-    function subnetDAOWalletFor1(uint256 _subnetId)
-        public
-        view
-        returns (address)
-    {
-        return RegistrationContract.subnetLocalDAO(_subnetId);
-    }
-
-    function r_licenseFee(uint256 nftID, uint256 _subnetId)
-        public
-        view
-        returns (uint256)
-    {
-        return SubscriptionContract.r_licenseFee(nftID, _subnetId);
-    }
 
     function s_GlobalDAORate() public view returns (uint256) {
         return RegistrationContract.daoRate();
     }
-
-    function t_SupportPercent(uint256 nftID, uint256 _subnetId)
-        public
-        view
-        returns (uint256 fee)
-    {
-        fee = SubscriptionContract.t_supportPercent(nftID, _subnetId);
-    }
-
-    function dripRatePerSec(uint256 nftID)
-        public
-        view
-        returns (uint256 totalDripRate)
-    {
-        // uint256[] memory subnetIds = nftBalances[nftID].subnetIds;\
-        uint256[] memory subnetIds = SubscriptionContract.getSubnetsOfNFT(nftID);
-        bool[] memory activeSubnets = SubscriptionContract.getActiveSubnetsOfNFT(nftID);
-
-        totalDripRate = 0;
-        for (uint256 i = 0; i < subnetIds.length; i++) {
-            if(!activeSubnets[i])
-                continue;
-
-            totalDripRate = totalDripRate.add(
-                dripRatePerSecOfSubnet(nftID, subnetIds[i])
-            );
-        }
-    }
-
-    function estimateDripRatePerSec (
-        uint256[] memory _subnetId,
-        uint256[] memory _supportFee,
-        uint256[] memory _platformFee,
-        uint256[] memory _referralFee,
-        uint256[] memory _discountFee,
-        uint256[] memory _licenseFee,
-        uint256[][] memory _computeRequired
-    )
-    public
-    view
-    returns (uint256)
-    {
-        uint256 estimate = 0;
-        for(uint256 i = 0; i < _subnetId.length; i++)
-        {
-            estimate += estimateDripRatePerSecOfSubnet(
-                _subnetId[i], 
-                [
-                    _supportFee[i],
-                    _platformFee[i],
-                    _referralFee[i],
-                    _discountFee[i],
-                    _licenseFee[i]
-                ],
-                _computeRequired[i]
-            );
-        }
-        return estimate;
-    }
-
-    //    uint256 supportFee,
-    //     uint256 platformFee,
-    //     uint256 referralFee,
-    //     uint256 discountFee,
-    //     uint256 licenseFee,
-
-    function estimateDripRatePerSecOfSubnet(
-        uint subnetId,
-        uint256[5] memory percent,
-        uint256[] memory computeRequired
-        )
-        public
-        view
-        returns (uint256)
-     {
-        uint256 factor = s_GlobalDAORate()
-            // .add(licenseFee)
-            .add(percent[0])
-            .add(percent[1])
-            .add(percent[2])
-            .sub(percent[3])
-            .add(100000);
-        (, , , , uint256[] memory prices, , , , ) = RegistrationContract
-            .getSubnetAttributes(subnetId);
-        uint256 cost = 0;
-        uint256 len = Math.min(prices.length, computeRequired.length);
-
-        for (uint256 i = 0; i < len; i++) {
-            cost = cost.add(prices[i].mul(computeRequired[i]));
-        }
-        return factor.mul(cost).div(100000) + percent[4]; // 10^5 for percent
-    }
-
-    function dripRatePerSecOfSubnet(uint256 nftID, uint256 subnetID)
-        public
-        view
-        returns (uint256)
-    {
-        uint256 u_referralPercent = SubscriptionContract.u_referralPercent(nftID, subnetID);
-        uint256 t_supportPercent = SubscriptionContract.t_supportPercent(nftID, subnetID);
-        uint256 v_platformPercent = SubscriptionContract.v_platformPercent(nftID, subnetID);
-        uint256 w_discountPercent = SubscriptionContract.w_discountPercent(nftID, subnetID);
-        
-
-        uint256 factor = s_GlobalDAORate()
-            .add(t_supportPercent)
-            .add(v_platformPercent)
-            .add(u_referralPercent)
-            .sub(w_discountPercent)
-            .add(100000);
-        (, , , , uint256[] memory prices, , , , ) = RegistrationContract
-            .getSubnetAttributes(subnetID);
-        uint256 cost = 0;
-        uint256[] memory computeRequired = SubscriptionContract
-            .getComputesOfSubnet(nftID, subnetID);
-
-
-        uint256 minLen = Math.min(prices.length, computeRequired.length);
-        for (uint256 i = 0; i < minLen; i++) {
-            cost = cost.add(prices[i].mul(computeRequired[i]));
-        }
-
-        return factor.mul(cost).div(100000) + r_licenseFee(nftID, subnetID); // 10^5 for percent
-    }
+    
 
     function prevBalances(uint256 nftID)
         public
@@ -281,71 +108,66 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         return nftBalances[nftID].prevBalance;
     }
 
-    function totalPrevBalance(uint256 nftID) public view returns (uint256) {
+    function totalPrevBalance(uint256 nftID)
+    public
+    view
+    returns (uint256)
+    {
         uint256 bal = 0;
-        for (uint256 i = 0; i < 3; i++) {
+        for (uint256 i = 0; i < 3; i++)
+        {
             bal = bal.add(nftBalances[nftID].prevBalance[i]);
         }
         return bal;
     }
 
-    function balanceLeft(uint256 nftID) public view returns (uint256) {
+    function checkBalanceLeft(uint256 nftID)
+    public
+    view
+    returns (uint256)
+    {
         uint256 cost = (
             block.timestamp.sub(nftBalances[nftID].lastBalanceUpdateTime)
-        ).mul(dripRatePerSec(nftID));
+        ).mul(BalanceCalculator.dripRatePerSec(nftID));
         uint256 prevBalance = totalPrevBalance(nftID);
         if (prevBalance < cost) return 0;
         return prevBalance.sub(cost);
     }
 
-    // function totalSubnets(uint256 nftId) external view returns (uint256) {
-    //     return nftBalances[nftId].subnetIds.length;
-    // }
-
-    // function changeSubnet(
-    //     uint256 nftID,
-    //     uint256 _currentSubnetId,
-    //     uint256 _newSubnetId
-    // ) external onlySubscription returns (bool) {
-    //     uint256[] memory subnetIdsInNFT = nftBalances[nftID].subnetIds;
-    //     // replace subnetId
-    //     for (uint256 i = 0; i < subnetIdsInNFT.length; i++) {
-    //         if (subnetIdsInNFT[i] == _currentSubnetId) {
-    //             subnetIdsInNFT[i] = _newSubnetId;
-    //             break;
-    //         }
-    //     }
-    //     nftBalances[nftID].subnetIds = subnetIdsInNFT;
-    //     return true;
-    // }
+    function getBalanceEndTime(uint256 nftID)
+    public
+    view
+    returns(uint256)
+    {
+        return nftBalances[nftID].lastBalanceUpdateTime + nftBalances[nftID].balanceEndTime;
+    }
 
     function subscribeNew(
-        uint256 nftID,
-        address _minter
-    ) external onlySubscription returns (bool) {
-        uint256[] memory arr;
+        uint256 nftID
+    )
+    external
+    onlySubscription
+    returns (bool)
+    {
 
         nftBalances[nftID] = NFTBalance(
             block.timestamp,
             [uint256(0), uint256(0), uint256(0)],
-            arr,
-            _minter,
             block.timestamp,
             0
         );
 
-        // _addBalance(nftID, _balanceToAdd);
         return true;
     }
 
 
-    function addBalance(address nftOwner, uint256 nftID, uint256 _balanceToAdd)
+    function addBalance(address nftOwner, uint256 nftID, uint256 balanceToAdd)
         public
         returns (
             bool
         )
     {
-        _addBalance(nftOwner, nftID, _balanceToAdd);
+        _addBalance(nftOwner, nftID, balanceToAdd);
         return true;
     }
 
@@ -354,13 +176,6 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         returns (bool)
     {
 
-    //    require(
-    //         sender == _msgSender()
-    //         || _msgSender() == address(SubscriptionContract)
-    //         || isBridgeRole(),
-    //         "The nftOwner address should be the function caller"
-    //     );
-    
         updateBalance(nftID);
 
         XCTToken.transferFrom(
@@ -375,7 +190,6 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             nftBalances[nftID].prevBalance[2].add(_balanceToAdd)
         ];
 
-        // saveTimestamp(nftID);
         updateBalance(nftID);
 
         emit BalanceAdded(nftID, 2, _balanceToAdd);
@@ -390,7 +204,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole()
-            || RoleControl.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
+            || ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
             ,
             "The nftOwner address should be the function caller"
         );
@@ -401,30 +215,30 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         _withdrawBalance(nftID, bal);
     }
 
-    function withdrawBalanceLinked(
-        address nftOwner,
-        uint256 nftID,
-        uint256 _bal,
-        address customNFTcontract,
-        uint256 customNFTid
-    ) public whenNotPaused {
-        require(
-            nftOwner == _msgSender()
-            || isBridgeRole()
-            || RoleControl.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
-            ,
-            "The nftOwner address should be the function caller"
-        );
-        require(
-            LinkContract.isLinkedTo(customNFTcontract, customNFTid, nftID),
-            "Not linked custom NFT in LinkNFT smart contract"
-        );
-        require(
-            IERC721(customNFTcontract).ownerOf(customNFTid) == nftOwner,
-            "Sender not the owner of Custom NFT id"
-        );
-        _withdrawBalance(nftID, _bal);
-    }
+    // function withdrawBalanceLinked(
+    //     address nftOwner,
+    //     uint256 nftID,
+    //     uint256 _bal,
+    //     address customNFTcontract,
+    //     uint256 customNFTid
+    // ) public whenNotPaused {
+    //     require(
+    //         nftOwner == _msgSender()
+    //         || isBridgeRole()
+    //         || ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
+    //         ,
+    //         "The nftOwner address should be the function caller"
+    //     );
+    //     require(
+    //         LinkContract.isLinkedTo(customNFTcontract, customNFTid, nftID),
+    //         "Not linked custom NFT in LinkNFT smart contract"
+    //     );
+    //     require(
+    //         IERC721(customNFTcontract).ownerOf(customNFTid) == nftOwner,
+    //         "Sender not the owner of Custom NFT id"
+    //     );
+    //     _withdrawBalance(nftID, _bal);
+    // }
 
     function withdrawBalance(address nftOwner, uint256 nftID, uint256 _bal)
         public
@@ -433,7 +247,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole()
-            || RoleControl.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
+            || ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
             ,
             "The nftOwner address should be the function caller"
         );
@@ -589,16 +403,8 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         uint256[] memory subnetIds = SubscriptionContract.getSubnetsOfNFT(nftID);
         bool[] memory activeSubnets = SubscriptionContract.getActiveSubnetsOfNFT(nftID);
 
-    //     function getRealtimeBalance(
-    //     uint256 nftId,
-    //     uint256[] memory subnetIds,
-    //     bool[] memory activeSubnets,
-    //     uint256[3] memory prevBalance,
-    //     uint256 duration,
-    //     uint256 mintTime
-    // ) external view returns (uint256[3] memory)
 
-        uint256 balanceDuration = totalPrevBalance(nftID).div(dripRatePerSec(nftID));
+        uint256 balanceDuration = totalPrevBalance(nftID).div(BalanceCalculator.dripRatePerSec(nftID));
         uint256 balanceEndTime = nftBalances[nftID].lastBalanceUpdateTime + balanceDuration;
         if(balanceEndTime > block.timestamp) {
             balanceDuration = block.timestamp - nftBalances[nftID].lastBalanceUpdateTime;
@@ -623,7 +429,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         uint256[] memory subnetIds = SubscriptionContract.getSubnetsOfNFT(nftID);
         bool[] memory activeSubnets = SubscriptionContract.getActiveSubnetsOfNFT(nftID);
 
-        uint256 balanceDuration = totalPrevBalance(nftID).div(dripRatePerSec(nftID));
+        uint256 balanceDuration = totalPrevBalance(nftID).div(BalanceCalculator.dripRatePerSec(nftID));
         uint256 balanceEndTime = nftBalances[nftID].lastBalanceUpdateTime + balanceDuration;
         if(balanceEndTime > block.timestamp) {
             balanceDuration = block.timestamp - nftBalances[nftID].lastBalanceUpdateTime;
@@ -643,7 +449,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
  function updateBalance(uint256 nftID)
     public
     {
-        uint256 balanceDuration = totalPrevBalance(nftID).div(dripRatePerSec(nftID));
+        uint256 balanceDuration = totalPrevBalance(nftID).div(BalanceCalculator.dripRatePerSec(nftID));
         uint256 balanceEndTime = nftBalances[nftID].lastBalanceUpdateTime + balanceDuration;
         if(balanceEndTime > block.timestamp) {
             balanceDuration = block.timestamp - nftBalances[nftID].lastBalanceUpdateTime;
@@ -677,7 +483,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     {
         nftBalances[nftID].lastBalanceUpdateTime = block.timestamp;
         nftBalances[nftID].balanceEndTime = block.timestamp.add(
-            totalPrevBalance(nftID).div(dripRatePerSec(nftID))
+            totalPrevBalance(nftID).div(BalanceCalculator.dripRatePerSec(nftID))
         );
     }
 

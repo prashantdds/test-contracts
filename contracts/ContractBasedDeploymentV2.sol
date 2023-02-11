@@ -2,9 +2,8 @@
 
 pragma solidity 0.8.2;
 
-import "./interfaces/IRoleControlV2.sol";
 import "./interfaces/ISubscription.sol";
-import "./interfaces/IERC721.sol";
+import "./interfaces/IApplicationNFT.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -17,9 +16,8 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
  * The digest is 32 bytes long and can be stored using bytes32 efficiently.
  */
 contract ContractBasedDeploymentV2 is Initializable {
-    IRoleControlV2 public RoleControlV2;
     ISubscription public Subscription;
-    IERC721 AppNFT;
+    IApplicationNFT AppNFT;
 
     bytes32 public constant CONTRACT_BASED_DEPLOYER =
         keccak256("CONTRACT_BASED_DEPLOYER");
@@ -40,7 +38,7 @@ contract ContractBasedDeploymentV2 is Initializable {
         uint256[] resourceArray;
         string lastUpdatedTime;
         bool cidLock;
-        // AppSubnet[] multiplier;
+        bool noDeploy;
     }
 
     struct AppWithMultiplier
@@ -61,8 +59,8 @@ contract ContractBasedDeploymentV2 is Initializable {
     event CreateApp(
         uint256 balanceToAdd,
         uint256 nftID,
-        address[][] rlsAddresses,
-        uint256[] licenseFee,
+        address[] rlsAddresses,
+        uint256[] licenseFactor,
         string appName,
         bytes32 digest,
         uint8[] hashAndSize,
@@ -70,83 +68,158 @@ contract ContractBasedDeploymentV2 is Initializable {
         uint256[][][] multiplier,
         uint256[] resourceArray,
         string lastUpdatedTime,
-        bool cidLock
+        bool cidLock,
+        bool noDeploy
     );
 
     event UpdateApp(
         uint256 balanceToAdd,
         uint256 nftID,
-        address[][] rlsAddresses,
-        uint256[] licenseFee,
         string appName,
         bytes32 digest,
         uint8[] hashAndSize,
         uint256[] subnetList,
         uint256[][][] multiplier,
         uint256[] resourceArray,
-        string lastUpdatedTime
+        string lastUpdatedTime,
+        bool noDeploy
     );
 
     event EntryDeleted(uint256 nftID, string appName);
 
     function initialize(
-        IRoleControlV2 _RoleControlV2,
         ISubscription _Subscription,
-        IERC721 _AppNFT
+        IApplicationNFT _AppNFT
     ) public initializer {
-        RoleControlV2 = _RoleControlV2;
         Subscription = _Subscription;
         AppNFT = _AppNFT;
     }
 
-    function getNFTAddress() external view returns (address) {
-        return address(RoleControlV2.NFT_Address());
+    function calculateResource(
+        uint256 nftID,
+        string memory appName,
+        uint256[] memory subnetList,
+        uint256[][][] memory multiplier,
+        uint256[] memory newResource,
+        bool noDeploy
+    )
+    internal
+    returns (int256[][] memory)
+    {
+        uint256[] memory curResource = entries[nftID][appName].resourceArray;
+        int256[][] memory resourceParamList = new int256[][] (subnetList.length);
+
+        if(entries[nftID][appName].noDeploy != noDeploy)
+        {
+            if(noDeploy)
+            {
+                for(uint256 i = 0; i < subnetList.length; i++)
+                {
+                    resourceParamList[i] = new int256[] (newResource.length);
+                    uint256[] memory currentMultiplier = appSubnets[nftID][appName][subnetList[i]].currentMultiplier;
+                    bool isActive = appSubnets[nftID][appName][subnetList[i]].active;
+
+                    for(uint256 j = 0; j < currentMultiplier.length; j++)
+                    {
+                        resourceParamList[i][j] = (
+                            - (int256(currentMultiplier[j]) * int256(curResource[j]))
+                            );
+                    }
+
+                    appSubnets[nftID][appName][subnetList[i]].currentMultiplier = multiplier[i][0];
+                    appSubnets[nftID][appName][subnetList[i]].replicaList = multiplier[i];
+
+                    if(!isActive)
+                    {
+                        entries[nftID][appName].subnetList.push(subnetList[i]);
+                        appSubnets[nftID][appName][subnetList[i]].active = true;
+                    }
+                }
+            }
+            else {
+                for(uint256 i = 0; i < subnetList.length; i++)
+                {
+                    resourceParamList[i] = new int256[] (newResource.length);
+                    uint256[] memory currentMultiplier = appSubnets[nftID][appName][subnetList[i]].currentMultiplier;
+                    bool isActive = appSubnets[nftID][appName][subnetList[i]].active;
+
+                    for(uint256 j = 0; j < newResource.length; j++)
+                    {
+                        resourceParamList[i][j] =
+                            (int256(multiplier[i][0][j]) * int256(newResource[j]));
+                    }
+
+                    appSubnets[nftID][appName][subnetList[i]].currentMultiplier = multiplier[i][0];
+                    appSubnets[nftID][appName][subnetList[i]].replicaList = multiplier[i];
+
+                    if(!isActive)
+                    {
+                        entries[nftID][appName].subnetList.push(subnetList[i]);
+                        appSubnets[nftID][appName][subnetList[i]].active = true;
+                    }
+                }
+            }
+        }
+        else {
+            if(!noDeploy)
+            {
+                for(uint256 i = 0; i < subnetList.length; i++)
+                {
+                    resourceParamList[i] = new int256[] (newResource.length);
+                    uint256[] memory currentMultiplier = appSubnets[nftID][appName][subnetList[i]].currentMultiplier;
+                    bool isActive = appSubnets[nftID][appName][subnetList[i]].active;
+        
+                    for(uint256 j = 0; j < currentMultiplier.length; j++)
+                    {
+                        resourceParamList[i][j] = (
+                            (int256(multiplier[i][0][j]) * int256(newResource[j]))
+                            - (int256(currentMultiplier[j]) * int256(curResource[j]))
+                            );
+                    }
+
+                    for(uint256 j = currentMultiplier.length; j < newResource.length; j++)
+                    {
+                        resourceParamList[i][j] = int256(multiplier[i][0][j]) * int256(newResource[j]); 
+                    }
+
+                    appSubnets[nftID][appName][subnetList[i]].currentMultiplier = multiplier[i][0];
+                    appSubnets[nftID][appName][subnetList[i]].replicaList = multiplier[i];
+
+                    if(!isActive)
+                    {
+                        entries[nftID][appName].subnetList.push(subnetList[i]);
+                        appSubnets[nftID][appName][subnetList[i]].active = true;
+                    }
+                }
+            }
+        }
+
+
+        return resourceParamList;
     }
 
     function calcResourceAndSubscribe(
         uint256 balanceToAdd,
         uint256 nftID,
         string memory appName,
-        address[][] memory rlsAddresses,
-        uint256[] memory licenseFee,
+        address[] memory rlsAddresses,
+        uint256[] memory licenseFactor,
         uint256[] memory subnetList,
         uint256[][][] memory multiplier,
-        uint256[] memory newResource
+        uint256[] memory newResource,
+        bool noDeploy
     )
     internal
     {
-        uint256[] memory curResource = entries[nftID][appName].resourceArray;
-        int256[][] memory resourceParamList = new int256[][] (subnetList.length);
 
-        for(uint256 i = 0; i < subnetList.length; i++)
-        {
-            resourceParamList[i] = new int256[] (newResource.length);
-            uint256[] memory currentMultiplier = appSubnets[nftID][appName][subnetList[i]].currentMultiplier;
-            bool isActive = appSubnets[nftID][appName][subnetList[i]].active;
-
-            for(uint256 j = 0; j < currentMultiplier.length; j++)
-            {
-                resourceParamList[i][j] = (
-                    (int256(multiplier[i][0][j]) * int256(newResource[j]))
-                    - (int256(currentMultiplier[j]) * int256(curResource[j]))
-                    );
-            }
-            
-            for(uint256 j = currentMultiplier.length; j < newResource.length; j++)
-            {
-                resourceParamList[i][j] = int256(multiplier[i][0][j]) * int256(newResource[j]); 
-            }
-            
-            appSubnets[nftID][appName][subnetList[i]].currentMultiplier = multiplier[i][0];
-            appSubnets[nftID][appName][subnetList[i]].replicaList = multiplier[i];
-
-            if(!isActive)
-            {
-                entries[nftID][appName].subnetList.push(subnetList[i]);
-                appSubnets[nftID][appName][subnetList[i]].active = true;
-            }
-        }
-
+        int256[][] memory resourceParamList = calculateResource(
+            nftID,
+            appName,
+            subnetList,
+            multiplier,
+            newResource,
+            noDeploy
+        );
 
         Subscription.subscribeBatch(
             msg.sender,
@@ -157,7 +230,7 @@ contract ContractBasedDeploymentV2 is Initializable {
             rlsAddresses[1],
             rlsAddresses[2],
             rlsAddresses[3],
-            licenseFee,
+            licenseFactor,
             resourceParamList
         );
     }
@@ -165,8 +238,8 @@ contract ContractBasedDeploymentV2 is Initializable {
     function createApp(
         uint256 balanceToAdd,
         uint256 nftID,
-        address[][] memory rlsAddresses,
-        uint256[] memory licenseFee,
+        address[] memory rlsAddresses,
+        uint256[] memory licenseFactor,
         string memory appName,
         bytes32 digest,
         uint8[] memory hashAndSize,
@@ -174,7 +247,7 @@ contract ContractBasedDeploymentV2 is Initializable {
         uint256[][][] memory multiplier,
         uint256[] memory resourceArray,
         string memory lastUpdatedTime,
-        bool cidLock
+        bool[] memory cidLockAndNoDeploy
     )
     external
     hasPermission(nftID)
@@ -199,10 +272,11 @@ contract ContractBasedDeploymentV2 is Initializable {
             nftID,
             appName,
             rlsAddresses,
-            licenseFee,
+            licenseFactor,
             subnetList,
             multiplier,
-            resourceArray
+            resourceArray,
+            cidLockAndNoDeploy[1]
         );
 
         entries[nftID][appName] = Multihash(
@@ -214,7 +288,8 @@ contract ContractBasedDeploymentV2 is Initializable {
             subnetList,
             resourceArray,
             lastUpdatedTime,
-            cidLock
+            cidLockAndNoDeploy[0],
+            cidLockAndNoDeploy[1]
         );
 
         appIDToNameList[nftID].push(appName);
@@ -223,7 +298,7 @@ contract ContractBasedDeploymentV2 is Initializable {
         balanceToAdd,
         nftID,
         rlsAddresses,
-        licenseFee,
+        licenseFactor,
         appName,
         digest,
         hashAndSize,
@@ -231,7 +306,8 @@ contract ContractBasedDeploymentV2 is Initializable {
         multiplier,
         resourceArray,
         lastUpdatedTime,
-        cidLock
+        cidLockAndNoDeploy[0],
+        cidLockAndNoDeploy[1]
         );
     }
 
@@ -239,15 +315,14 @@ contract ContractBasedDeploymentV2 is Initializable {
     function updateApp(
         uint256 balanceToAdd,
         uint256 nftID,
-        address[][] memory rlsAddresses,
-        uint256[] memory licenseFee,
         string memory appName,
         bytes32 digest,
         uint8[] memory hashAndSize,
         uint256[] memory subnetList,
         uint256[][][] memory multiplier,
         uint256[] memory resourceArray,
-        string memory lastUpdatedTime
+        string memory lastUpdatedTime,
+        bool noDeploy
     )
     external
     hasPermission(nftID)
@@ -276,41 +351,46 @@ contract ContractBasedDeploymentV2 is Initializable {
             uint256[] memory currentMultiplier = appSubnets[nftID][appName][subnetList[i]].currentMultiplier;
 
             require(multiplier[i][0].length >= currentMultiplier.length,
-                // "The number of replica values entered in the current replica array should be the same of the resource array length"
                 "The number of replica values in replica array should be the greater than or equal to the count of existing replica values"
                 );
         }
-
-        calcResourceAndSubscribe(
-            balanceToAdd,
+        
+        int256[][] memory resourceParamList = calculateResource(
             nftID,
             appName,
-            rlsAddresses,
-            licenseFee,
             subnetList,
             multiplier,
-            resourceArray
+            resourceArray,
+            noDeploy
         );
 
+
+        Subscription.subscribeToSubnetList(
+            msg.sender,
+            balanceToAdd,
+            nftID,
+            subnetList,
+            resourceParamList
+        );
 
         entries[nftID][appName].digest = digest;
         entries[nftID][appName].hashFunction = hashAndSize[0];
         entries[nftID][appName].size = hashAndSize[1];
         entries[nftID][appName].resourceArray = resourceArray;
         entries[nftID][appName].lastUpdatedTime = lastUpdatedTime;
+        entries[nftID][appName].noDeploy = noDeploy;
 
         emit UpdateApp(
         balanceToAdd,
          nftID,
-        rlsAddresses,
-        licenseFee,
         appName,
         digest,
         hashAndSize,
         subnetList,
         multiplier,
         resourceArray,
-        lastUpdatedTime
+        lastUpdatedTime,
+        noDeploy
         );
     }
 
@@ -322,14 +402,13 @@ contract ContractBasedDeploymentV2 is Initializable {
         external
         hasPermission(nftID)
     {
+        uint256[] memory emptyArray = new uint256[](0);
         require(entries[nftID][appName].digest != 0, "Already no data");
 
         uint256[] memory subnetList = entries[nftID][appName].subnetList;
         uint256 len = subnetList.length;
         uint256[] memory resourceArray = entries[nftID][appName].resourceArray;
-
-        address[] memory rlsAddresses = new address[](len);
-        uint256[] memory licenseFee = new uint256[](len);
+        address nullAddress = address(0);
 
         int256[][] memory resourceParamList = new int256[][] (len);
         for(uint256 i = 0; i < len; i++)
@@ -354,11 +433,11 @@ contract ContractBasedDeploymentV2 is Initializable {
             0,
             nftID,
             subnetList,
-            rlsAddresses,
-            rlsAddresses,
-            rlsAddresses,
-            rlsAddresses,
-            licenseFee,
+            nullAddress,
+            nullAddress,
+            nullAddress,
+            nullAddress,
+            emptyArray,
             resourceParamList
         );
 
@@ -463,8 +542,8 @@ contract ContractBasedDeploymentV2 is Initializable {
     modifier hasPermission(uint256 _nftId) {
         require(
             AppNFT.ownerOf(_nftId) == msg.sender
-            || RoleControlV2.hasRole(_nftId, CONTRACT_BASED_DEPLOYER, msg.sender),
-            "CONTRACT_BASED_DEPLOYER permission not there in RoleControlV2"
+            || AppNFT.hasRole(_nftId, CONTRACT_BASED_DEPLOYER, msg.sender),
+            "Sender does not have CONTRACT_BASED_DEPLOYER role for the AppNFT"
         );
         _;
     }

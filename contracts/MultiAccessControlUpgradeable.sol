@@ -59,11 +59,8 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
     }
 
     struct RoleData {
-        // address member;
-        // bytes32 Role;
         mapping(address => MemberData) memberMap;
         address[] memberList;
-        // address[] members;
         bytes32 adminRole;
     }
 
@@ -72,12 +69,11 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
         bytes32 role;
     }
 
-    // NFT id => ROLE => data
+    mapping(uint256 => bytes32[]) private nftRoleList;
     mapping(uint256 => mapping(bytes32 => RoleData)) private nftToAccountRoles;
     mapping(uint256 => mapping(bytes32 => mapping(address => bool))) hasRoleMap;
-    // mapping(uint=>mapping(bytes32 => RoleData)) private _roles;
 
-    mapping(address => UserRole[]) private accountsToNFTRoles;
+    mapping(address => UserRole[]) private accountToNFTRoles;
 
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
@@ -246,11 +242,16 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
         if (!hasRole(appID, role, account))
         {
 
+            if(nftToAccountRoles[appID][role].memberList.length == 0)
+            {
+                nftRoleList[appID].push(role);
+            }
+
             nftToAccountRoles[appID][role].memberMap[account].memberID
                  = nftToAccountRoles[appID][role].memberList.length;
 
             nftToAccountRoles[appID][role].memberMap[account].userRoleID
-                = accountsToNFTRoles[account].length;
+                = accountToNFTRoles[account].length;
 
             
             nftToAccountRoles[appID][role].memberMap[account].active = true;
@@ -259,7 +260,7 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
                 account
             );
 
-            accountsToNFTRoles[account].push(
+            accountToNFTRoles[account].push(
                 UserRole(
                     appID,
                     role
@@ -289,20 +290,46 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
 
             delete nftToAccountRoles[appID][role].memberList[memberID];
 
-            delete accountsToNFTRoles[account][userRoleID];
+            delete accountToNFTRoles[account][userRoleID];
 
             
             emit RoleRevoked(appID, role, account, _msgSender());
         }
     }
     
+    function _removeAllRoles(uint256 nftID)
+    internal
+    virtual
+    {
+        for(uint256 i = 0; i < nftRoleList[nftID].length; i++)
+        {
+            bytes32 role = nftRoleList[nftID][i];
+            address[] memory memberList = nftToAccountRoles[nftID][role].memberList;
+            for(uint256 j = 0; j < memberList.length; j++)
+            {
+                address member = memberList[j];
+
+                if(!nftToAccountRoles[nftID][role].memberMap[member].active)
+                    continue;
+                
+                uint256 userRoleID = nftToAccountRoles[nftID][role].memberMap[member].userRoleID;
+
+                console.log("checking accountToNFTRoles:", accountToNFTRoles[member].length, userRoleID);
+
+                delete accountToNFTRoles[member][userRoleID];
+            }
+
+            delete nftToAccountRoles[nftID][role];
+        }
+
+    }
 
     function getAllRolesFromAccount(address account)
     external
     view
     returns (UserRole[] memory)
     {
-        return accountsToNFTRoles[account];
+        return accountToNFTRoles[account];
     }
 
     function getAccountsWithRole(uint256 appId, bytes32 role)
