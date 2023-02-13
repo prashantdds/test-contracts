@@ -35,7 +35,8 @@ let parameters = {
         globalDAO: accounts[0],
         limitNFTSubnets: 600,
         minTimeFunds: 300,
-        supportFee: 10000,
+        supportFactor1: 10000,
+        supportFactor2: 1,
         globalSupportAddress: accounts[1],
         reqdNoticeTimeSProvider: 2592000,
         reqdCooldownSProvider: 1296000,
@@ -47,8 +48,9 @@ let parameters = {
     xctMinter: {
         slippage: 10000, // 10%
         // percentStackConversion: 10000, // 10%
-        percentStackConversion: 20000, // 10%
+        percentStackConversion: 10000, // 10%
         percentStackAdvantage: 5000, // 5%
+        stepUpFactor: 1000,
         usdcAddressPolygon: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
         wethAddressPolygon: "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
     },
@@ -279,7 +281,6 @@ const deploySubscriptionBalance = async () => {
             addresses.appNFT,
             addresses.xct,
             addresses.SubscriptionBalanceCalculator,
-            addresses.RoleControl,
             subscriptionBalance.referralPercent,
             subscriptionBalance.referralRevExpirySecs,
         ],
@@ -337,10 +338,14 @@ const deploySubscription = async () => {
             subscription.limitNFTSubnets,
             subscription.minTimeFunds,
             subscription.globalSupportAddress,
-            subscription.supportFee,
+            [
+                subscription.supportFactor1,
+                subscription.supportFactor2
+            ],
             addresses.Registration,
             addresses.appNFT,
             addresses.SubscriptionBalance,
+            addresses.SubscriptionBalanceCalculator,
             addresses.xct,
             subscription.reqdNoticeTimeSProvider,
             subscription.reqdCooldownSProvider,
@@ -383,7 +388,7 @@ const deployXCTMinter = async () => {
         wethBytecode,
         deployer
     )
-        const weth9 = await weth9Contract.attach(parameters.xctMinter.wethAddressPolygon)
+    const weth9 = await weth9Contract.attach(parameters.xctMinter.wethAddressPolygon)
     await weth9.approve(router.address, ethers.utils.parseEther("1000"))
     await stack.approve(router.address, ethers.utils.parseEther("1000"))
     await USDC.approve(router.address, ethers.utils.parseEther("1000"))
@@ -420,6 +425,7 @@ const deployXCTMinter = async () => {
             parameters.xctMinter.slippage,
             parameters.xctMinter.percentStackConversion,
             parameters.xctMinter.percentStackAdvantage,
+            parameters.xctMinter.stepUpFactor,
             router.address,
         ],
         { initializer: "initialize" }
@@ -471,7 +477,7 @@ const deployContractBasedDeployment = async () => {
     )
     const ContractBasedDeployment = await upgrades.deployProxy(
         ContractBasedDeploymentContract,
-        [addresses.RoleControl, addresses.Subscription, addresses.appNFT],
+        [addresses.Subscription, addresses.appNFT],
         { initializer: "initialize" }
     )
     await ContractBasedDeployment.deployed()
@@ -674,7 +680,7 @@ const deployContracts = async () => {
     addresses.nftToken = await deployDarkNFT()
     addresses.Registration = await deployReg()
     addresses.appNFT = await deployAppNFT()
-    addresses.RoleControl = await deployRoleControl()
+    // addresses.RoleControl = await deployRoleControl()
     addresses.SubscriptionBalanceCalculator =
         await deploySubscriptionBalanceCalculator()
     addresses.SubscriptionBalance = await deploySubscriptionBalance()
@@ -682,6 +688,7 @@ const deployContracts = async () => {
     addresses.Subscription = await deploySubscription()
     // addresses.xctMinter = await deployXCTMinter()
     addresses.ContractBasedDeployment = await deployContractBasedDeployment()
+    console.log("check 3");
     await grantSubRoleForDeployment()
     await connectSubBalToSub()
     await connectSubCalcToSub()
