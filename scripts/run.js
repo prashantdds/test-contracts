@@ -135,8 +135,6 @@ const setupUrsula = async () => {
     const stack = await helper.getStack();
     const darkMatter = await helper.getNFTToken();
     const Registration = await helper.getRegistration();
-    const appNFT = await helper.getAppNFT();
-    const RoleControl = await helper.getRoleControl();
 
 
     const provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545/");
