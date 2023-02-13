@@ -686,7 +686,7 @@ const deployContracts = async () => {
     addresses.SubscriptionBalance = await deploySubscriptionBalance()
     addresses.SubnetDAODistributor = await deploySubnetDAODistributor()
     addresses.Subscription = await deploySubscription()
-    // addresses.xctMinter = await deployXCTMinter()
+    addresses.xctMinter = await deployXCTMinter()
     addresses.ContractBasedDeployment = await deployContractBasedDeployment()
     console.log("check 3");
     await grantSubRoleForDeployment()

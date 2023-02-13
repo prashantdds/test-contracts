@@ -1,6 +1,7 @@
 pragma solidity 0.8.2;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import './MultiAccessControlUpgradeable.sol';
 
@@ -30,7 +31,7 @@ library Counters {
 
 
 contract TestAppNFT is
-    ERC721Upgradeable, MultiAccessControlUpgradeable
+    ERC721EnumerableUpgradeable, MultiAccessControlUpgradeable
 {
     using Counters for Counters.Counter;
     Counters.Counter private nextTokenID;
