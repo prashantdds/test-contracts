@@ -449,11 +449,17 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
  function updateBalance(uint256 nftID)
     public
     {
-        uint256 balanceDuration = totalPrevBalance(nftID).div(BalanceCalculator.dripRatePerSec(nftID));
+        uint256 dripRate = BalanceCalculator.dripRatePerSec(nftID);
+        uint256 balanceDuration;
+
+        if(dripRate > 0)
+            balanceDuration = totalPrevBalance(nftID).div(dripRate);
+
         uint256 balanceEndTime = nftBalances[nftID].lastBalanceUpdateTime + balanceDuration;
         if(balanceEndTime > block.timestamp) {
             balanceDuration = block.timestamp - nftBalances[nftID].lastBalanceUpdateTime;
         }
+
         uint256[] memory subnetIds = SubscriptionContract.getSubnetsOfNFT(nftID);
         bool[] memory activeSubnets = SubscriptionContract.getActiveSubnetsOfNFT(nftID);
 
@@ -465,8 +471,6 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
                 nftBalances[nftID].mintTime,
                 nftBalances[nftID].prevBalance,
                 balanceDuration
-                // ,
-                // nftBalances[nftID].lastBalanceUpdateTime
             );
 
         nftBalances[nftID].prevBalance = [
@@ -481,10 +485,15 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     function saveTimestamp(uint256 nftID)
     public
     {
-        nftBalances[nftID].lastBalanceUpdateTime = block.timestamp;
-        nftBalances[nftID].balanceEndTime = block.timestamp.add(
-            totalPrevBalance(nftID).div(BalanceCalculator.dripRatePerSec(nftID))
-        );
+        uint256 dripRate = BalanceCalculator.dripRatePerSec(nftID);
+
+        if(dripRate > 0)
+        {
+            nftBalances[nftID].lastBalanceUpdateTime = block.timestamp;
+            nftBalances[nftID].balanceEndTime = block.timestamp.add(
+                totalPrevBalance(nftID).div(dripRate)
+            );
+        }
     }
 
     function isSubscribed(uint256 nftID)

@@ -112,6 +112,8 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
             .getComputesOfSubnet(nftID, subnetList[i]);
 
             cost += getComputeCosts(subnetList[i], computeRequired, 1);
+
+            console.log("cehcking subnet:", subnetList[i], cost );
         }
 
         uint256 u_referralFactor = SubscriptionContract.u_referralFactor(nftID);
@@ -257,6 +259,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         (, , , , uint256[] memory unitPrices, , , , ) = RegistrationContract
             .getSubnetAttributes(subnetID);
 
+
         uint256 minLen = Math.min(unitPrices.length, computeRequired.length);
         for (uint256 j = 0; j < minLen; j++)
         {
@@ -264,6 +267,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                 computeRequired[j].mul(unitPrices[j])
             );
         }
+
 
         computeCost = computeCostPerSec.mul(
             duration

@@ -629,14 +629,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     )
     public
     {
-        for (uint256 i = 0; i < subnetList.length; i++)
-        {
-            subscribeSubnetInternal(
-                nftID,
-                subnetList[i],
-                deltaCompute[i]
-            );
-        }
 
         if(balanceToAdd > 0)
         {
@@ -645,6 +637,15 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         }
         else {
             SubscriptionBalance.updateBalance(nftID);
+        }
+
+        for (uint256 i = 0; i < subnetList.length; i++)
+        {
+            subscribeSubnetInternal(
+                nftID,
+                subnetList[i],
+                deltaCompute[i]
+            );
         }
 
         uint256 totalBalance = SubscriptionBalance.totalPrevBalance(nftID);
