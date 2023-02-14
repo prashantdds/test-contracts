@@ -7,6 +7,7 @@ import "./interfaces/ISubscriptionBalance.sol";
 import "./interfaces/ISubnetDAODistributor.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IRegistration.sol";
 import "./interfaces/ISubscription.sol";
 import "./interfaces/IApplicationNFT.sol";
@@ -256,7 +257,8 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         (, , , , uint256[] memory unitPrices, , , , ) = RegistrationContract
             .getSubnetAttributes(subnetID);
 
-        for (uint256 j = 0; j < computeRequired.length; j++)
+        uint256 minLen = Math.min(unitPrices.length, computeRequired.length);
+        for (uint256 j = 0; j < minLen; j++)
         {
             computeCostPerSec = computeCostPerSec.add(
                 computeRequired[j].mul(unitPrices[j])

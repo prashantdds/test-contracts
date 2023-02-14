@@ -203,6 +203,7 @@ contract XCTMinter is
     view
     returns (uint256)
     {
+        xctAmount = xctAmount.div(stepUpFactor);
         uint256 slippageFactor = (SafeMathUpgradeable.add(100000, slippage));
 
         address[] memory path = new address[](2);

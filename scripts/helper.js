@@ -50,7 +50,7 @@ let parameters = {
         // percentStackConversion: 10000, // 10%
         percentStackConversion: 10000, // 10%
         percentStackAdvantage: 5000, // 5%
-        stepUpFactor: 1000,
+        stepUpFactor: Math.pow(10,12),
         usdcAddressPolygon: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
         wethAddressPolygon: "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
     },
@@ -230,8 +230,15 @@ const deployReg = async () => {
 }
 
 const deployAppNFT = async () => {
-    AppNFTContract = await ethers.getContractFactory("TestAppNFT")
-    appNFT = await AppNFTContract.deploy()
+    AppNFTContract = await ethers.getContractFactory("TestAppNFT");
+
+    appNFT = await upgrades.deployProxy(
+        AppNFTContract,
+        [],
+        { initializer: "initialize" }
+    )
+
+    // appNFT = await AppNFTContract.deploy()
     // printLogs(`const appNFT = "${appNFT.address}"`)
     return appNFT.address
 }

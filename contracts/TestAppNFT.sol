@@ -47,6 +47,7 @@ contract TestAppNFT is
     function initialize() public initializer {
         __ERC721_init_unchained("ApplicationNFT", "AppNFT");
         __AccessControl_init_unchained();
+        nextTokenID.increment();
     }
 
     function mint(address to)
