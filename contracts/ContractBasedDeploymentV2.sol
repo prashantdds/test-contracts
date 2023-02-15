@@ -441,7 +441,7 @@ contract ContractBasedDeploymentV2 is Initializable {
             resourceParamList
         );
 
-        delete appIDToNameList[entries[nftID][appName].appID];
+        delete appIDToNameList[nftID][entries[nftID][appName].appID];
         
         delete entries[nftID][appName];
     
@@ -478,29 +478,27 @@ contract ContractBasedDeploymentV2 is Initializable {
     }
 
 
-    function getFullData(uint256 _nftId, string memory appName)
+    function getFullData(uint256 nftID, string memory appName)
         public
         view
         returns (
-            bytes32 digest,
-            uint8 hashfunction,
-            uint8 size,
-            uint256[] memory subnetList,
-            uint256[] memory resourceArray,
-            string memory lastUpdatedTime,
-            bool cidLock
+            AppWithMultiplier memory
         )
     {
-        Multihash memory entry = entries[_nftId][appName];
-        return (
-            entry.digest,
-            entry.hashFunction,
-            entry.size,
-            entry.subnetList,
-            entry.resourceArray,
-            entry.lastUpdatedTime,
-            entry.cidLock
-        );
+        AppWithMultiplier memory fullAppData;
+        fullAppData.app = entries[nftID][appName];
+
+        uint256[] memory subnetList = entries[nftID][appName].subnetList;
+
+        AppSubnet[] memory entryAppSubnets = new AppSubnet[](subnetList.length);
+
+        for(uint j = 0; j < subnetList.length; j++)
+        {
+            entryAppSubnets[j] = appSubnets[nftID][appName][subnetList[j]];
+        }
+        fullAppData.appSubnets = entryAppSubnets;
+
+        return fullAppData;
     }
 
     function getDataByIds(uint256 _nftId, uint256[] memory AppIds)
