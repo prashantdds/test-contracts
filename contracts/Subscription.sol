@@ -195,6 +195,14 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         return subscribedSubnetsOfNFT[nftID];
     }
 
+    function getNFTSubscription(uint256 nftID)
+    public
+    view
+    returns(NFTAttribute memory nftAttribute)
+    {
+        nftAttribute = nftSubscription[nftID];
+    }
+
     function getActiveSubnetsOfNFT(
         uint256 nftID
     )
