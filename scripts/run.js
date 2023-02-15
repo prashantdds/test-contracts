@@ -160,11 +160,11 @@ const setupUrsula = async () => {
     const subnetParamList = [
         {
             unitPrices: [
-                ethers.utils.parseUnits("1", 'wei'), // CPU_Standard
-                ethers.utils.parseUnits("2", 'wei'), // CPU_Intensive
-                ethers.utils.parseUnits("3", 'wei'), // GPU_Standard
-                ethers.utils.parseUnits("3", 'wei'), // Storage
-                ethers.utils.parseUnits("2", 'wei'), // Bandwidth
+                ethers.utils.parseUnits("100000", 'gwei'), // CPU_Standard
+                ethers.utils.parseUnits("200000", 'gwei'), // CPU_Intensive
+                ethers.utils.parseUnits("300000", 'gwei'), // GPU_Standard
+                ethers.utils.parseUnits("300000", 'gwei'), // Storage
+                ethers.utils.parseUnits("200000", 'gwei'), // Bandwidth
             ],
             maxClusters:10,
             stackFeesReqd: ethers.utils.parseEther("0.01"),
@@ -172,11 +172,11 @@ const setupUrsula = async () => {
         },
         {
             unitPrices: [
-                ethers.utils.parseUnits("1", 'wei'), // CPU_Standard
-                ethers.utils.parseUnits("2", 'wei'), // CPU_Intensive
-                ethers.utils.parseUnits("3", 'wei'), // GPU_Standard
-                ethers.utils.parseUnits("3", 'wei'), // Storage
-                ethers.utils.parseUnits("2", 'wei'), // Bandwidth
+                ethers.utils.parseUnits("100000", 'gwei'), // CPU_Standard
+                ethers.utils.parseUnits("200000", 'gwei'), // CPU_Intensive
+                ethers.utils.parseUnits("300000", 'gwei'), // GPU_Standard
+                ethers.utils.parseUnits("300000", 'gwei'), // Storage
+                ethers.utils.parseUnits("200000", 'gwei'), // Bandwidth
             ],
             maxClusters:10,
             stackFeesReqd: ethers.utils.parseEther("0.01"),
