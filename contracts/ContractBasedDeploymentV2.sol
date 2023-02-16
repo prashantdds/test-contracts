@@ -192,6 +192,12 @@ contract ContractBasedDeploymentV2 is Initializable {
                     }
                 }
             }
+            else {
+                for(uint256 i = 0; i < subnetList.length; i++)
+                {
+                    resourceParamList[i] = new int256[] (newResource.length);
+                }
+            }
         }
 
 
@@ -352,6 +358,10 @@ contract ContractBasedDeploymentV2 is Initializable {
 
             require(multiplier[i][0].length >= currentMultiplier.length,
                 "The number of replica values in replica array should be the greater than or equal to the count of existing replica values"
+                );
+
+            require(multiplier[i][0].length == resourceArray.length,
+                "The number of replica values entered in the current replica array should be the same of the delta resource array length"
                 );
         }
         
