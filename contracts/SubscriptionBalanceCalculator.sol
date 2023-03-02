@@ -113,7 +113,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
 
             cost += getComputeCosts(subnetList[i], computeRequired, 1);
 
-            console.log("cehcking subnet:", subnetList[i], cost );
+            // console.log("cehcking subnet:", subnetList[i], cost );
         }
 
         uint256 u_referralFactor = SubscriptionContract.u_referralFactor(nftID);
