@@ -15,7 +15,22 @@ let Registration,
     ContractBasedDeployment,
     addrList,
     appNFTID,
-    subnetID
+    subnetID,
+    startCronFlag,
+    stopCronFlag,
+    deleteAppsFlag,
+    startTime
+
+const defaulParameters = {
+    licensePercent: "100",
+    licenseFee: "100",
+    supportPercent: 10000,
+    supportFee: 1,
+    referralPercent: 4000,
+    platformPercent: 10000,
+    discountPercent: 3000,
+    computes: [1, 0, 0, 1, 0],
+}
 
 const createSubnet = async (creator, attributeParam) => {
     let attributes = {
@@ -115,15 +130,72 @@ const checkForEnoughBalance = async (nftId) => {
     const minTimeFund = Number(await Subscription.MIN_TIME_FUNDS())
 
     // console.log("secondsLeft : ", secondsLeft)
-    let deleteApp = false
-    if (secondsLeft <= 0) {
-        deleteApp = true
+
+    if (secondsLeft > minTimeFund) return { isBalance: true, secondsLeft }
+
+    return { isBalance: false, secondsLeft }
+}
+
+const cronDecisions = async (secondsLeft) => {
+    secondsLeft = Math.round(secondsLeft)
+    const currentTime = Math.round(await time.latest())
+    let nextCycleTime = Math.round(startTime + 3600)
+
+    while (nextCycleTime < currentTime) {
+        nextCycleTime = nextCycleTime + 3600
     }
 
-    if (secondsLeft > minTimeFund)
-        return { isBalance: true, secondsLeft, deleteApp }
+    const diff = nextCycleTime - currentTime
+    console.log(
+        "--> startTIme : ",
+        new Date(startTime * 1000).toLocaleTimeString(),
+        " currentTime : ",
+        new Date(currentTime * 1000).toLocaleTimeString(),
+        " nextCycleTIme : ",
+        new Date(nextCycleTime * 1000).toLocaleTimeString(),
+        " BalanceEndAt : ",
+        new Date((currentTime + secondsLeft) * 1000).toLocaleTimeString(),
+        "\n--> secondsLeftInBalance : ",
+        secondsLeft,
+        " secondsleftInNextCycle : ",
+        diff
+    )
 
-    return { isBalance: false, secondsLeft, deleteApp }
+    deleteAppsFlag = false
+    startCronFlag = false
+    startCronFlag = false
+
+    if (secondsLeft <= 0) {
+        deleteAppsFlag = true
+        console.log("Deleting Apps of NFTs")
+    } else if (diff >= secondsLeft) {
+        startCronFlag = true
+        console.log("Starting Cron")
+    } else if (diff < secondsLeft) {
+        stopCronFlag = true
+        console.log("Stopping Cron")
+    }
+    return { deleteAppsFlag, startCronFlag, stopCronFlag }
+}
+
+const getDripRateForSeconds = async (seconds) => {
+    const dripRate = Number(
+        await SubscriptionBalanceCalculator.estimateDripRatePerSecOfSubnet(
+            subnetID,
+            [
+                defaulParameters.licensePercent,
+                defaulParameters.licenseFee,
+                defaulParameters.supportPercent,
+                defaulParameters.supportFee,
+                defaulParameters.referralPercent,
+                defaulParameters.platformPercent,
+                defaulParameters.discountPercent,
+            ],
+            defaulParameters.computes
+        )
+    )
+
+    return seconds * dripRate
 }
 
 async function initContracts() {
@@ -174,10 +246,6 @@ async function initContracts() {
     const platformAddress = addrList[5]
     const referralExpiry = 60 * 60 * 24 * 4
 
-    const platformFee = 10000
-    const discountFee = 3000
-    const referralFee = 4000
-
     await helper.callStackApprove()
     await helper.callNftApprove()
     await helper.xctApproveSub()
@@ -185,9 +253,9 @@ async function initContracts() {
 
     await Subscription.addPlatformAddress(
         platformAddress.address,
-        platformFee,
-        discountFee,
-        referralFee,
+        defaulParameters.platformPercent,
+        defaulParameters.discountPercent,
+        defaulParameters.referralPercent,
         referralExpiry
     )
 
@@ -225,6 +293,7 @@ async function mintXCT(address, amount) {
 describe("ClusterOperator test cases", async function () {
     before(async function () {
         // initializing contracts
+        startTime = Math.round(await time.latest())
         await initContracts()
 
         // mint NFT
@@ -259,7 +328,7 @@ describe("ClusterOperator test cases", async function () {
                 "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
                 "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
             ],
-            ["100", "100"],
+            [defaulParameters.licensePercent, defaulParameters.licenseFee],
             appName,
             "0x10e7305fcdeb6efaaecc837b39d483e93e97d1af7102ad27fb0f0b965bff0a6f",
             [18, 32],
@@ -271,12 +340,13 @@ describe("ClusterOperator test cases", async function () {
         )
         await tx.wait()
 
-        let deleteFlag = false
         const { secondsLeft, isBalance } = await checkForEnoughBalance(appNFTID)
-        if (secondsLeft <= 0) deleteFlag = true
+        const { deleteAppsFlag, startCronFlag, stopCronFlag } =
+            await cronDecisions(secondsLeft)
+
         expect(secondsLeft).to.equal(0)
         expect(isBalance).to.equal(false)
-        expect(deleteFlag).to.equal(true)
+        expect(deleteAppsFlag).to.equal(true)
     })
 
     it("Creating app with some balance,apps should not deleted", async function () {
@@ -322,9 +392,9 @@ describe("ClusterOperator test cases", async function () {
             [false, false]
         )
         await tx.wait()
-        const deleteFlag = false
         let { secondsLeft } = await checkForEnoughBalance(appNFTID)
-        if (secondsLeft <= 0) deleteFlag = true
+        const { deleteAppsFlag, startCronFlag, stopCronFlag } =
+            await cronDecisions(secondsLeft)
         // const cronString = await secondsLeftToCronString(secondsLeft)
         // await startCronJob(appNFTID, cronString, true, deleteNFTApps)
         // console.log("creasing to : ", secondsLeft - 1)
@@ -356,7 +426,7 @@ describe("ClusterOperator test cases", async function () {
         )
 
         expect(secondsLeft).to.be.greaterThan(prevSecondsLeft)
-        expect(deleteFlag).to.equal(false)
+        expect(deleteAppsFlag).to.equal(false)
     })
 
     it("updating app with some balance,apps should not deleted", async function () {
@@ -386,9 +456,9 @@ describe("ClusterOperator test cases", async function () {
         )
         await tx.wait()
 
-        const deleteFlag = false
         const { secondsLeft } = await checkForEnoughBalance(appNFTID)
-        if (secondsLeft <= 0) deleteFlag = true
+        const { deleteAppsFlag, startCronFlag, stopCronFlag } =
+            await cronDecisions(secondsLeft)
 
         console.log(
             "updating app with some balance -> ",
@@ -396,7 +466,7 @@ describe("ClusterOperator test cases", async function () {
             secondsLeft
         )
         expect(secondsLeft).to.be.greaterThan(prevSecondsLeft)
-        expect(deleteFlag).to.equal(false)
+        expect(deleteAppsFlag).to.equal(false)
     })
 
     it("Deleting App", async function () {
@@ -408,13 +478,13 @@ describe("ClusterOperator test cases", async function () {
         const tx = await ContractBasedDeployment.deleteApp(appNFTID, appName)
         await tx.wait()
 
-        const deleteFlag = false
         const { secondsLeft } = await checkForEnoughBalance(appNFTID)
-        if (secondsLeft <= 0) deleteFlag = true
+        const { deleteAppsFlag, startCronFlag, stopCronFlag } =
+            await cronDecisions(secondsLeft)
 
         console.log("deleting app ->", prevSecondsLeft, secondsLeft)
         expect(secondsLeft).to.be.greaterThan(prevSecondsLeft)
-        expect(deleteFlag).to.equal(false)
+        expect(deleteAppsFlag).to.equal(false)
     })
 
     it("Withdrawing Balance From NFT,Balance End time should be reduce", async function () {
@@ -428,9 +498,9 @@ describe("ClusterOperator test cases", async function () {
         )
         await tx.wait()
 
-        const deleteFlag = false
         const { secondsLeft } = await checkForEnoughBalance(appNFTID)
-        if (secondsLeft <= 0) deleteFlag = true
+        const { deleteAppsFlag, startCronFlag, stopCronFlag } =
+            await cronDecisions(secondsLeft)
 
         console.log(
             "after Withdrawing Balance From NFT -> ",
@@ -451,9 +521,9 @@ describe("ClusterOperator test cases", async function () {
         )
         await tx.wait()
 
-        const deleteFlag = false
         const { secondsLeft } = await checkForEnoughBalance(appNFTID)
-        if (secondsLeft <= 0) deleteFlag = true
+        const { deleteAppsFlag, startCronFlag, stopCronFlag } =
+            await cronDecisions(secondsLeft)
 
         console.log(
             "after Adding Balance From NFT : ->",
@@ -472,9 +542,9 @@ describe("ClusterOperator test cases", async function () {
         const tx = await Registration.change_DAORate(newDaoRate)
         await tx.wait()
 
-        const deleteFlag = false
         const { secondsLeft } = await checkForEnoughBalance(appNFTID)
-        if (secondsLeft <= 0) deleteFlag = true
+        const { deleteAppsFlag, startCronFlag, stopCronFlag } =
+            await cronDecisions(secondsLeft)
 
         console.log(
             "after changing Global Dao rate -> ",
@@ -483,5 +553,54 @@ describe("ClusterOperator test cases", async function () {
         )
 
         expect(secondsLeft).to.be.lessThan(prevSecondsLeft)
+    })
+
+    it("Should start a cron after we deduct amount", async function () {
+        const tx = await SubscriptionBalance.withdrawBalance(
+            addrList[0].address,
+            appNFTID,
+            ethers.utils.parseEther("6")
+        )
+        await tx.wait()
+        const { secondsLeft } = await checkForEnoughBalance(appNFTID)
+        const { deleteAppsFlag, startCronFlag, stopCronFlag } =
+            await cronDecisions(secondsLeft)
+        expect(startCronFlag).to.equal(true)
+    })
+    it("Should stop a cron again after we adding amount", async function () {
+        const tx = await SubscriptionBalance.addBalance(
+            addrList[0].address,
+            appNFTID,
+            ethers.utils.parseEther("2")
+        )
+        await tx.wait()
+        const { secondsLeft } = await checkForEnoughBalance(appNFTID)
+        const { deleteAppsFlag, startCronFlag, stopCronFlag } =
+            await cronDecisions(secondsLeft)
+        expect(stopCronFlag).to.equal(true)
+    })
+    it("after we jump into next cycle it should start a cron ", async function () {
+        const { secondsLeft: prevSecondsLeft } = await checkForEnoughBalance(
+            appNFTID
+        )
+        const currentTime = await time.latest()
+
+        await time.increaseTo(currentTime + Math.round(prevSecondsLeft) - 120)
+        const { secondsLeft } = await checkForEnoughBalance(appNFTID)
+        const { deleteAppsFlag, startCronFlag, stopCronFlag } =
+            await cronDecisions(secondsLeft)
+        expect(startCronFlag).to.equal(true)
+    })
+    it("again cron should be stopped as we're adding balance ", async function () {
+        const tx = await SubscriptionBalance.addBalance(
+            addrList[0].address,
+            appNFTID,
+            ethers.utils.parseEther("2")
+        )
+        await tx.wait()
+        const { secondsLeft } = await checkForEnoughBalance(appNFTID)
+        const { deleteAppsFlag, startCronFlag, stopCronFlag } =
+            await cronDecisions(secondsLeft)
+        expect(stopCronFlag).to.equal(true)
     })
 })
