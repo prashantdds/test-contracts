@@ -179,7 +179,7 @@ const cronDecisions = async (secondsLeft) => {
 }
 
 const getDripRateForSeconds = async (seconds) => {
-    const dripRate = Number(
+    const dripRate =
         await SubscriptionBalanceCalculator.estimateDripRatePerSecOfSubnet(
             subnetID,
             [
@@ -193,9 +193,16 @@ const getDripRateForSeconds = async (seconds) => {
             ],
             defaulParameters.computes
         )
+
+    const totalPrevBalance = await SubscriptionBalance.totalPrevBalance(
+        appNFTID
     )
 
-    return seconds * dripRate
+    const balance = dripRate * seconds
+
+    const balanceToAdd = Number(balance - totalPrevBalance)
+
+    return balanceToAdd
 }
 
 async function initContracts() {
@@ -307,6 +314,12 @@ describe("ClusterOperator test cases", async function () {
 
         // creating subnet
         subnetID = await createSubnet(addrList[0])
+
+        // minting xct for passing balanceToAdd
+        await mintXCT(
+            addrList[0].address,
+            ethers.utils.parseEther("1000000000")
+        )
     })
 
     it("with 0 balance, seconds left should be 0. apps should be deleted as balance is 0", async function () {
@@ -352,16 +365,6 @@ describe("ClusterOperator test cases", async function () {
     it("Creating app with some balance,apps should not deleted", async function () {
         let { secondsLeft: prevSecondsLeft } = await checkForEnoughBalance(
             appNFTID
-        )
-
-        // minting xct for passing balanceToAdd
-        await mintXCT(
-            addrList[0].address,
-            ethers.utils.parseEther("1000000000")
-        )
-        console.log(
-            " balance : ",
-            Number(await xct.balanceOf(addrList[0].address))
         )
         const appName = "explorer2"
         // console.log(
@@ -442,8 +445,13 @@ describe("ClusterOperator test cases", async function () {
         //     "appName : ",
         //     appName
         // )
+
+        // fetching balance to add for one hour
+        // const balanceToAdd = await getDripRateForSeconds(3600)
+
+        // console.log("balance to add : ", balanceToAdd)
         const tx = await ContractBasedDeployment.updateApp(
-            ethers.utils.parseEther("4"),
+            ethers.utils.parseEther("4"), // balanceToAdd.toString()
             appNFTID,
             appName,
             "0x10e7305fcdeb6efaaecc837b39d483e93e97d1af7102ad27fb0f0b965bff0a6f",
