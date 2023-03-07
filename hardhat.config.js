@@ -44,7 +44,7 @@ module.exports = {
         //  gasPrice:7.3,
     },
     mocha: {
-        timeout: 100000000,
+        timeout: 70000,
     },
     defaultNetwork: "hardhat",
 

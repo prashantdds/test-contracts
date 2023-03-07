@@ -28,7 +28,7 @@ const defaulParameters = {
     supportFee: 1,
     referralPercent: 4000,
     platformPercent: 10000,
-    discountPercent: 3000,
+    discountPercent: 0,
     computes: [1, 0, 0, 1, 0],
 }
 
@@ -63,10 +63,7 @@ const createSubnet = async (creator, attributeParam) => {
     )
     const nftID = transferEvent?.args[2].toNumber()
 
-    // const curBalance = await stack.balanceOf(creator.address)
-    // if (curBalance.lt(attributes.stackFeesReqd)) {
     await stack.transfer(creator.address, attributes.stackFeesReqd)
-    // }
 
     await stack
         .connect(creator)
@@ -103,33 +100,16 @@ const checkForEnoughBalance = async (nftId) => {
         Number(
             (await SubscriptionBalance.nftBalances(nftId)).lastBalanceUpdateTime
         ) + balanceDuration
-    // console.log("balanceDuration : ", balanceDuration)
-    // console.log(
-    //     "balanceEnd : ",
-    //     (await SubscriptionBalance.nftBalances(nftId)).lastBalanceUpdateTime,
-    //     Number(
-    //         (await SubscriptionBalance.nftBalances(nftId)).lastBalanceUpdateTime
-    //     )
-    // )
+
     balanceEndTime = new Date(balanceEndTime * 1000)
     const latestTime = await time.latest()
     const blockTime = new Date(latestTime * 1000)
     const currentTime = new Date()
 
-    // console.log(
-    //     "currentTime : ",
-    //     currentTime.toLocaleTimeString(),
-    //     " BlockTime : ",
-    //     blockTime.toLocaleTimeString(),
-    //     " EndTime : ",
-    //     balanceEndTime.toLocaleTimeString()
-    // )
     const dif = balanceEndTime.getTime() - blockTime.getTime()
-    // await time.increase()
+
     const secondsLeft = dif / 1000
     const minTimeFund = Number(await Subscription.MIN_TIME_FUNDS())
-
-    // console.log("secondsLeft : ", secondsLeft)
 
     if (secondsLeft > minTimeFund) return { isBalance: true, secondsLeft }
 
@@ -162,7 +142,7 @@ const cronDecisions = async (secondsLeft) => {
     )
 
     deleteAppsFlag = false
-    startCronFlag = false
+    stopCronFlag = false
     startCronFlag = false
 
     if (secondsLeft <= 0) {
@@ -194,15 +174,9 @@ const getDripRateForSeconds = async (seconds) => {
             defaulParameters.computes
         )
 
-    const totalPrevBalance = await SubscriptionBalance.totalPrevBalance(
-        appNFTID
-    )
+    const balance = Number(dripRate * seconds)
 
-    const balance = dripRate * seconds
-
-    const balanceToAdd = Number(balance - totalPrevBalance)
-
-    return balanceToAdd
+    return balance.toString()
 }
 
 async function initContracts() {
@@ -306,7 +280,7 @@ describe("ClusterOperator test cases", async function () {
         // mint NFT
         const nftTr = await appNFT.mint(addrList[0].address)
         const nftRec = await nftTr.wait()
-        // console.log("nftRec : ", nftRec)
+
         const transferEvent = nftRec.events.find(
             (event) => event.event == "Transfer"
         )
@@ -324,14 +298,6 @@ describe("ClusterOperator test cases", async function () {
 
     it("with 0 balance, seconds left should be 0. apps should be deleted as balance is 0", async function () {
         const appName = "explorer1"
-        // console.log(
-        //     "subnet  : ",
-        //     subnetID,
-        //     "appNFT : ",
-        //     appNFTID,
-        //     "appName : ",
-        //     appName
-        // )
         const tx = await ContractBasedDeployment.createApp(
             0,
             appNFTID,
@@ -367,16 +333,11 @@ describe("ClusterOperator test cases", async function () {
             appNFTID
         )
         const appName = "explorer2"
-        // console.log(
-        //     "subnet  : ",
-        //     subnetID,
-        //     "appNFT : ",
-        //     appNFTID,
-        //     "appName : ",
-        //     appName
-        // )
+
+        const balanceToAdd = await getDripRateForSeconds(1200)
+
         const tx = await ContractBasedDeployment.createApp(
-            ethers.utils.parseEther("4"),
+            balanceToAdd,
             appNFTID,
             [
                 "0x0000000000000000000000000000000000000000",
@@ -398,29 +359,6 @@ describe("ClusterOperator test cases", async function () {
         let { secondsLeft } = await checkForEnoughBalance(appNFTID)
         const { deleteAppsFlag, startCronFlag, stopCronFlag } =
             await cronDecisions(secondsLeft)
-        // const cronString = await secondsLeftToCronString(secondsLeft)
-        // await startCronJob(appNFTID, cronString, true, deleteNFTApps)
-        // console.log("creasing to : ", secondsLeft - 1)
-        // const timeRN = await time.latest()
-        // console.log(
-        //     "-> ",
-        //     new Date((await time.latest()) * 1000).toLocaleTimeString()
-        // )
-
-        // await time.increaseTo(timeRN + Math.round(secondsLeft - 1))
-        // console.log(
-        //     "-> ",
-        //     new Date((await time.latest()) * 1000).toLocaleTimeString()
-        // )
-        // const justWait = new Promise((resolve, reject) => {
-        //     setTimeout(() => {
-        //         console.log("5000 ms wait over")
-        //         resolve()
-        //     }, 5000)
-        // })
-        // await justWait
-        // const { secondsLeft: k } = await checkForEnoughBalance(appNFTID)
-        // console.log("now : ", k)
 
         console.log(
             "creating app with some balance -> ",
@@ -437,21 +375,11 @@ describe("ClusterOperator test cases", async function () {
             appNFTID
         )
         const appName = "explorer2"
-        // console.log(
-        //     "subnet  : ",
-        //     subnetID,
-        //     "appNFT : ",
-        //     appNFTID,
-        //     "appName : ",
-        //     appName
-        // )
-
         // fetching balance to add for one hour
-        // const balanceToAdd = await getDripRateForSeconds(3600)
+        const balanceToAdd = await getDripRateForSeconds(600)
 
-        // console.log("balance to add : ", balanceToAdd)
         const tx = await ContractBasedDeployment.updateApp(
-            ethers.utils.parseEther("4"), // balanceToAdd.toString()
+            balanceToAdd,
             appNFTID,
             appName,
             "0x10e7305fcdeb6efaaecc837b39d483e93e97d1af7102ad27fb0f0b965bff0a6f",
@@ -499,10 +427,12 @@ describe("ClusterOperator test cases", async function () {
         let { secondsLeft: prevSecondsLeft } = await checkForEnoughBalance(
             appNFTID
         )
+
+        const balance = await getDripRateForSeconds(prevSecondsLeft - 300)
         const tx = await SubscriptionBalance.withdrawBalance(
             addrList[0].address,
             appNFTID,
-            ethers.utils.parseEther("1")
+            balance
         )
         await tx.wait()
 
@@ -518,14 +448,17 @@ describe("ClusterOperator test cases", async function () {
         expect(secondsLeft).to.be.lessThan(prevSecondsLeft)
     })
 
-    it("Adding Balance From NFT,Balance End time should increase", async function () {
+    it("Adding Balance to NFT,Balance End time should increase", async function () {
         let { secondsLeft: prevSecondsLeft } = await checkForEnoughBalance(
             appNFTID
         )
+
+        const balanceToAdd = await getDripRateForSeconds(600)
+
         const tx = await SubscriptionBalance.addBalance(
             addrList[0].address,
             appNFTID,
-            ethers.utils.parseEther("1")
+            balanceToAdd
         )
         await tx.wait()
 
@@ -564,24 +497,49 @@ describe("ClusterOperator test cases", async function () {
     })
 
     it("Should start a cron after we deduct amount", async function () {
-        const tx = await SubscriptionBalance.withdrawBalance(
-            addrList[0].address,
-            appNFTID,
-            ethers.utils.parseEther("6")
+        const { secondsLeft: prevSecondsLeft } = await checkForEnoughBalance(
+            appNFTID
         )
-        await tx.wait()
+
+        if (prevSecondsLeft > 1800) {
+            const myBalance = Number(
+                await SubscriptionBalance.totalPrevBalance(appNFTID)
+            )
+            const balanceToAdd = Number(await getDripRateForSeconds(1800))
+
+            const bal = BigInt(Math.abs(myBalance - balanceToAdd))
+
+            const tx = await SubscriptionBalance.withdrawBalance(
+                addrList[0].address,
+                appNFTID,
+                bal
+            )
+            await tx.wait()
+        }
         const { secondsLeft } = await checkForEnoughBalance(appNFTID)
         const { deleteAppsFlag, startCronFlag, stopCronFlag } =
             await cronDecisions(secondsLeft)
         expect(startCronFlag).to.equal(true)
     })
     it("Should stop a cron again after we adding amount", async function () {
-        const tx = await SubscriptionBalance.addBalance(
-            addrList[0].address,
-            appNFTID,
-            ethers.utils.parseEther("2")
+        const { secondsLeft: prevSecondsLeft } = await checkForEnoughBalance(
+            appNFTID
         )
-        await tx.wait()
+        const myBalance = Number(
+            await SubscriptionBalance.totalPrevBalance(appNFTID)
+        )
+
+        const balanceToAdd = Number(await getDripRateForSeconds(4000))
+
+        if (prevSecondsLeft < 3600) {
+            const bal = BigInt(Math.abs(balanceToAdd - myBalance))
+            const tx = await SubscriptionBalance.addBalance(
+                addrList[0].address,
+                appNFTID,
+                bal
+            )
+            await tx.wait()
+        }
         const { secondsLeft } = await checkForEnoughBalance(appNFTID)
         const { deleteAppsFlag, startCronFlag, stopCronFlag } =
             await cronDecisions(secondsLeft)
@@ -600,10 +558,12 @@ describe("ClusterOperator test cases", async function () {
         expect(startCronFlag).to.equal(true)
     })
     it("again cron should be stopped as we're adding balance ", async function () {
+        const balanceToAdd = await getDripRateForSeconds(4000)
+
         const tx = await SubscriptionBalance.addBalance(
             addrList[0].address,
             appNFTID,
-            ethers.utils.parseEther("2")
+            balanceToAdd
         )
         await tx.wait()
         const { secondsLeft } = await checkForEnoughBalance(appNFTID)
