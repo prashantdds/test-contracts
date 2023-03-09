@@ -378,19 +378,27 @@ describe("ClusterOperator test cases", async function () {
         // fetching balance to add for one hour
         const balanceToAdd = await getDripRateForSeconds(600)
 
-        const tx = await ContractBasedDeployment.updateApp(
-            balanceToAdd,
+        const tx = await SubscriptionBalance.addBalance(
+            addrList[0].address,
             appNFTID,
-            appName,
-            "0x10e7305fcdeb6efaaecc837b39d483e93e97d1af7102ad27fb0f0b965bff0a6f",
-            [18, 32],
-            [subnetID],
-            [[[1, 1, 1, 1, 1]]],
-            [1, 0, 0, 1, 0],
-            1676095289671,
-            false
+            balanceToAdd
         )
+
         await tx.wait()
+
+        // const tx = await ContractBasedDeployment.updateApp(
+        //     balanceToAdd,
+        //     appNFTID,
+        //     appName,
+        //     "0x10e7305fcdeb6efaaecc837b39d483e93e97d1af7102ad27fb0f0b965bff0a6f",
+        //     [18, 32],
+        //     [subnetID],
+        //     [[[1, 1, 1, 1, 1]]],
+        //     [1, 0, 0, 1, 0],
+        //     1676095289671,
+        //     false
+        // )
+        // await tx.wait()
 
         const { secondsLeft } = await checkForEnoughBalance(appNFTID)
         const { deleteAppsFlag, startCronFlag, stopCronFlag } =
@@ -532,7 +540,7 @@ describe("ClusterOperator test cases", async function () {
         const balanceToAdd = Number(await getDripRateForSeconds(4000))
 
         if (prevSecondsLeft < 3600) {
-            const bal = BigInt(Math.abs(balanceToAdd - myBalance))
+            const bal = BigInt(Math.abs(myBalance - balanceToAdd))
             const tx = await SubscriptionBalance.addBalance(
                 addrList[0].address,
                 appNFTID,
