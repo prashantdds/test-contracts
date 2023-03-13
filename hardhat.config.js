@@ -43,6 +43,9 @@ module.exports = {
         gasMultiplier: 2,
         //  gasPrice:7.3,
     },
+    mocha: {
+        timeout: 70000,
+    },
     defaultNetwork: "hardhat",
 
     networks: {
@@ -57,9 +60,9 @@ module.exports = {
         hardhat: {
             allowUnlimitedContractSize: true,
             forking: {
-              url: "https://polygon-mainnet.g.alchemy.com/v2/BRnyQKRn-PuNxoiwE--0P7YEHI9amUbp",
-            }
-          }
+                url: "https://polygon-mainnet.g.alchemy.com/v2/BRnyQKRn-PuNxoiwE--0P7YEHI9amUbp",
+            },
+        },
     },
     etherscan: {
         apiKey: "WGAQCNUDQCFRQJH9D72G94BZ83STGRJCX6",
