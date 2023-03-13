@@ -26,6 +26,29 @@ interface IRegistration {
         uint256[] unitPrices;
     }
 
+    function getUnitPrices(uint256 subnetID)
+    external
+    view
+    returns(
+        uint256[] memory
+    );
+
+    function getUnitPricesList(uint256[] memory subnetList)
+    external
+    view
+    returns(
+        uint256[][] memory
+    );
+
+    function checkSubnetStatus1(uint256 subnetID)
+    external
+    view
+    returns(bool);
+
+    function checkSubnetStatus(uint256[] memory subnetList)
+    external
+    view
+    returns(bool[] memory);
 
     function totalSubnets() external view returns (uint256);
 

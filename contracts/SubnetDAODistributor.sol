@@ -4,6 +4,7 @@ pragma solidity 0.8.2;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interfaces/IBalanceCalculator.sol";
+import "./interfaces/ISubscriptionBalance.sol";
 import "./interfaces/IRegistration.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
@@ -18,6 +19,7 @@ contract SubnetDAODistributor is PausableUpgradeable, TokensRecoverable {
     using SafeMathUpgradeable for uint256;
 
     IBalanceCalculator public SubscriptionBalanceCalculator;
+    ISubscriptionBalance public SubscriptionBalance;
     IERC20Upgradeable public XCTToken;
     IRegistration public Registration;
 
@@ -47,12 +49,14 @@ contract SubnetDAODistributor is PausableUpgradeable, TokensRecoverable {
 
     function initialize(
         IERC20Upgradeable _XCTToken,
+        ISubscriptionBalance _SubscriptionBalance,
         IBalanceCalculator _SubscriptionBalanceCalculator,
         IRegistration _Registration
     ) public initializer {
         XCTToken = _XCTToken;
         Registration = _Registration;
         SubscriptionBalanceCalculator = _SubscriptionBalanceCalculator;
+        SubscriptionBalance = _SubscriptionBalance;
     }
 
     function getWeightsFor(uint256 subnetId, address revenueAddress)
@@ -109,7 +113,7 @@ contract SubnetDAODistributor is PausableUpgradeable, TokensRecoverable {
     }
 
     function collectRevenueToDistribute(uint256 subnetId) public {
-        SubscriptionBalanceCalculator.receiveRevenueForAddress(address(this));
+        SubscriptionBalance.receiveRevenueForAddress(address(this));
         uint256 currBalance = XCTToken.balanceOf(address(this));
         // assign received revenue to subnet id as per the commit
         require(

@@ -5,7 +5,7 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "hardhat/console.sol";
+
 /**
  * @dev Contract module that allows children to implement role-based access
  * control mechanisms. This is a lightweight version that doesn't allow enumerating role
@@ -313,8 +313,6 @@ abstract contract MultiAccessControlUpgradeable is Initializable, ContextUpgrade
                     continue;
                 
                 uint256 userRoleID = nftToAccountRoles[nftID][role].memberMap[member].userRoleID;
-
-                console.log("checking accountToNFTRoles:", accountToNFTRoles[member].length, userRoleID);
 
                 delete accountToNFTRoles[member][userRoleID];
             }

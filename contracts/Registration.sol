@@ -264,6 +264,57 @@ contract Registration is
         );
     }
 
+    function getUnitPrices(uint256 subnetID)
+    external
+    view
+    returns(
+        uint256[] memory
+    )
+    {
+        return subnetAttributes[subnetID].unitPrices;
+    }
+
+    function getUnitPricesList(uint256[] memory subnetList)
+    external
+    view
+    returns(
+        uint256[][] memory
+    )
+    {
+        uint256[][] memory priceList = new uint256[][](subnetList.length);
+
+        for(uint i = 0; i < subnetList.length; i++)
+        {
+            priceList[i] = subnetAttributes[subnetList[i]].unitPrices;
+        }
+
+        return priceList;
+    }
+
+    function checkSubnetStatus1(uint256 subnetID)
+    external
+    view
+    returns(bool)
+    {
+        return subnetAttributes[subnetID].subnetStatusListed;
+    }
+    
+    function checkSubnetStatus(uint256[] memory subnetList)
+    external
+    view
+    returns(bool[] memory)
+    {
+        uint256 subLen = subnetList.length;
+        bool[] memory subnetActiveList = new bool[](subLen);
+
+        for(uint i = 0; i < subLen; i++)
+        {
+            // uint256 subnetID = subnetList[i];
+            subnetActiveList[i] = subnetAttributes[subnetList[i]].subnetStatusListed;
+        }
+        return subnetActiveList;
+    }
+
     function getClusterAttributes(uint256 _subnetId, uint256 _clusterId)
         external
         view

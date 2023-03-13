@@ -41,23 +41,32 @@ interface IBalanceCalculator {
     returns (uint256);
 
     function getUpdatedBalance(
-        uint256 nftId,
-        uint256[] memory subnetIds,
-        bool[] memory activeSubnets,
-        uint256 mintTime,
-        uint256[3] memory prevBalance,
+        uint256 nftID,
+        uint256 lastUpdateTime,
+        uint256 totalBalance,
+        uint256 accumComputeCost,
+        uint256 accumDuration
+    )
+    external
+    returns (uint256);
+
+    function distributeRevenue(
+        uint256 nftID,
+        uint256 revenue,
         uint256 duration
-    ) external returns (uint256[3] memory);
+    )
+    external
+    returns (uint256);
 
+    function getUpdatedSubnetBalance(
+        uint256 nftID,
+        uint256 lastUpdateTime,
+        uint256 totalBalance,
+        uint256[] memory subnetList
+    )
+    external
+    returns (uint256, uint256, uint256);
 
-    function getRealtimeBalance(
-        uint256 nftId,
-        uint256[] memory subnetIds,
-        bool[] memory activeSubnets,
-        uint256[3] memory prevBalance,
-        uint256 duration,
-        uint256 mintTime
-    ) external view returns (uint256[3] memory);
 
     function getRealtimeCostIncurred(
         uint256 nftID,
@@ -67,8 +76,4 @@ interface IBalanceCalculator {
         uint256 mintTime
     ) external view returns (uint256);
 
-    function receiveRevenueForAddress(address _userAddress) external;
-
-    function withdrawBalance(address to, uint256 amount)
-    external;
 }

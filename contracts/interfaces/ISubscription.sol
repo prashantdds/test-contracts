@@ -3,6 +3,24 @@ pragma solidity 0.8.2;
 
 interface ISubscription {
 
+    struct NFTAttribute {
+        uint256 createTime;
+        address[] factorAddressList;
+    }
+
+    struct PlatformAddress {
+        uint256 platformPercentage;
+        uint256 discountPercentage;
+        uint256 referralPercentage;
+        uint256 referralExpiryDuration;
+        bool active;
+    }
+
+    function getCreateTime(uint256 nftID)
+    external
+    view
+    returns (uint256);
+
    function isBridgeRole()
     external
     view
@@ -15,58 +33,20 @@ interface ISubscription {
     view
     returns(uint256[] memory);
 
-    function getActiveSubnetsOfNFT(
-        uint256 nftID
-    )
+    function getNFTSubscription(uint256 nftID)
     external
     view
-    returns (bool[] memory);
+    returns(NFTAttribute memory nftAttribute);
 
-    function getComputesOfSubnet(uint256 NFTid, uint256 subnetId) external view returns(uint256[] memory);
+    function getPlatformFactors(address platformAddress)
+    external
+    view
+    returns (
+        PlatformAddress memory
+    );
+
     function hasRole(bytes32 role, address account) external view returns(bool);
 
-    function r_licenseFactor(uint256 nftID) external view returns (uint256[] memory);
-    function t_supportFactor(uint256 nftID) external view returns (uint256[] memory);
-
-    function u_referralFactor(uint256 nftID)
-    external
-    view
-    returns (uint256);
-
-    function v_platformFactor(uint256 nftID)
-    external
-    view
-    returns (uint256);
-
-    function w_discountFactor(uint256 nftID)
-    external
-    view
-    returns (uint256);
-
-    function getReferralAddress(uint256 nftID)
-        external
-        view
-        returns (address);
-    function getSupportAddress(uint256 nftID)
-        external
-        view
-        returns (address);
-
-    function getLicenseAddress(uint256 nftID)
-        external
-        view
-        returns (address);
-
-    function getPlatformAddress(uint256 nftID)
-        external
-        view
-        returns (address);
-
-    function getReferralDuration(uint256 nftID)
-    external
-    view
-    returns(uint256);
-    
     function getSupportFeesForNFT(uint256 nftID, uint256 subnetID)
     view
     external
@@ -75,27 +55,25 @@ interface ISubscription {
     function GLOBAL_DAO_ADDRESS() external view returns (address);
 
     function subscribeBatch(
-        address subscriber,
-        uint256 _balanceToAdd,
         uint256 nftID,
-        uint256[] memory subnetID,
-        address referralAddress,
-        address licenseAddress,
-        address supportAddress,
-        address platformAddress,
-        uint256[] memory licenseFee,
-        int256[][] memory _deltaCompute
-    )
-    external;
+        address[] memory addressList,
+        uint256[] memory licenseFactor
+    ) external;
 
-    function subscribeToSubnetList(
-        address subscriber,
-        uint256 balanceToAdd,
-        uint256 nftID,
-        uint256[] memory subnetList,
-        int256[][] memory deltaCompute
-    )
-    external;
+    function getLicenseFactor(uint256 nftID)
+    external
+    view
+    returns (uint256[] memory);
+
+    function getSupportFactor(uint256 nftID)
+    external
+    view
+    returns (uint256[] memory);
+
+    function getNFTFactorAddress(uint256 nftID, uint256 factorID)
+    external
+    view
+    returns(address);
 }
 
 
