@@ -6,7 +6,7 @@ require("dotenv").config()
 require("@openzeppelin/hardhat-upgrades")
 require("@nomiclabs/hardhat-etherscan")
 require("@nomiclabs/hardhat-solhint")
-require("@b10k.io/hardhat-uniswap-v2-deploy-plugin")
+// require("@b10k.io/hardhat-uniswap-v2-deploy-plugin")
 
 module.exports = {
     solidity: {
