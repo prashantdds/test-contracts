@@ -160,7 +160,7 @@ const setupUrsula = async () => {
     const Registration = await helper.getRegistration()
 
     const provider = new ethers.providers.JsonRpcProvider(
-        "http://https://smart-contracts-production.up.railway.app/:8545/"
+        "http://https://smart-contracts-production.up.railway.app:8545/"
     )
     const cluster1 = new ethers.Wallet(
         "540f8aa51ab241b53bd0bac13bfb9c3816306c49e57e33c0f5a0fadc20634711",
