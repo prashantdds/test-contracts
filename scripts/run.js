@@ -2,7 +2,6 @@ const { deploy } = require("@openzeppelin/hardhat-upgrades/dist/utils")
 const { ethers } = require("hardhat")
 const helper = require("./helper")
 
-
 const getAmountIfLess = async (
     erc20,
     account,
@@ -15,34 +14,41 @@ const getAmountIfLess = async (
         await erc20.transfer(account.address, balanceToAdd)
     }
     //approve subscription balance to withdraw erc20 out of depositor's wallet
-    await erc20.connect(account).approve(
-        contractToApprove.address,
-        balanceToAdd
-    );
+    await erc20
+        .connect(account)
+        .approve(contractToApprove.address, balanceToAdd)
 }
 
 const getNFTID = async (erc721, transactionHash) => {
-    const transferFilter = erc721.filters.Transfer();
-    const transferLogList = await erc721.queryFilter(transferFilter, -10, "latest");
-    const transferLog = transferLogList.find(log => log.transactionHash == transactionHash);
-    const nftID = transferLog.args[2].toNumber();
-    return nftID;
+    const transferFilter = erc721.filters.Transfer()
+    const transferLogList = await erc721.queryFilter(
+        transferFilter,
+        -10,
+        "latest"
+    )
+    const transferLog = transferLogList.find(
+        (log) => log.transactionHash == transactionHash
+    )
+    const nftID = transferLog.args[2].toNumber()
+    return nftID
 }
 
-const mintNFT = async(erc721, addrObj, contract) => {
-    tr = await erc721.mint(addrObj.address);
-    rec = await tr.wait();
+const mintNFT = async (erc721, addrObj, contract) => {
+    tr = await erc721.mint(addrObj.address)
+    rec = await tr.wait()
 
-    await erc721.connect(addrObj).setApprovalForAll(
-        contract.address,
-        true
-    );
+    await erc721.connect(addrObj).setApprovalForAll(contract.address, true)
 
-    return getNFTID(erc721, rec.transactionHash);
+    return getNFTID(erc721, rec.transactionHash)
 }
 
-const createSubnet = async(darkMatter, stack, Registration, creator, attributeParam) => {
-
+const createSubnet = async (
+    darkMatter,
+    stack,
+    Registration,
+    creator,
+    attributeParam
+) => {
     let attributes = {
         subnetLocalDAO: creator.address,
         subnetType: 1,
@@ -53,23 +59,28 @@ const createSubnet = async(darkMatter, stack, Registration, creator, attributePa
             ethers.utils.parseEther("0.0001"),
             ethers.utils.parseEther("0.0002"),
             ethers.utils.parseEther("0.0003"),
-            ethers.utils.parseEther("0.0004")
+            ethers.utils.parseEther("0.0004"),
         ],
         otherAttributes: [],
-        maxClusters : 3,
+        maxClusters: 3,
         whiteListedClusters: [creator.address],
         supportFeeRate: 5000,
         stackFeesReqd: ethers.utils.parseEther("0.01"),
-        subnetName: 'def-subnet'
-    };
+        subnetName: "def-subnet",
+    }
 
-    attributes = {...attributes, ...attributeParam};
-    
-    const nftID = await mintNFT(darkMatter, creator, Registration);
-    
-    await getAmountIfLess(stack, creator, helper.parameters.registration.reqdStackFeesForSubnet, Registration);
+    attributes = { ...attributes, ...attributeParam }
 
-    console.log("subnetName: ", attributes.subnetName);
+    const nftID = await mintNFT(darkMatter, creator, Registration)
+
+    await getAmountIfLess(
+        stack,
+        creator,
+        helper.parameters.registration.reqdStackFeesForSubnet,
+        Registration
+    )
+
+    console.log("subnetName: ", attributes.subnetName)
 
     const op = await Registration.connect(creator).createSubnet(
         nftID,
@@ -84,33 +95,43 @@ const createSubnet = async(darkMatter, stack, Registration, creator, attributePa
         attributes.whiteListedClusters,
         attributes.stackFeesReqd,
         attributes.subnetName
-    );
+    )
 
-    const tr = await op.wait();
-    const subnetCreatedEvent = tr.events.find(event => event.event == "SubnetCreated");
-    const subnetId = subnetCreatedEvent.args[0].toNumber();
-    return subnetId;
+    const tr = await op.wait()
+    const subnetCreatedEvent = tr.events.find(
+        (event) => event.event == "SubnetCreated"
+    )
+    const subnetId = subnetCreatedEvent.args[0].toNumber()
+    return subnetId
 }
 
-const signupCluster = async (darkMatterNFT, stack, Registration, subnetID, subnetFees, clusterAddress, attributeParam) =>{
-
-    const bobArray = [3,90,20,244,156,57,237,234,225,127,203,179,183,142,240,2,76,127,172,131,75,113,184,97,91,117,208,166,152,28,244,173,73];
-
+const signupCluster = async (
+    darkMatterNFT,
+    stack,
+    Registration,
+    subnetID,
+    subnetFees,
+    clusterAddress,
+    attributeParam
+) => {
+    const bobArray = [
+        3, 90, 20, 244, 156, 57, 237, 234, 225, 127, 203, 179, 183, 142, 240, 2,
+        76, 127, 172, 131, 75, 113, 184, 97, 91, 117, 208, 166, 152, 28, 244,
+        173, 73,
+    ]
 
     let attributes = {
         walletAddress: clusterAddress.address,
         operatorAddress: clusterAddress.address,
         publicKey: bobArray,
         dnsip: "testDNSIP",
-        clusterName: "def-cluster"
-    };
-    attributes = {...attributes, ...attributeParam};
+        clusterName: "def-cluster",
+    }
+    attributes = { ...attributes, ...attributeParam }
 
+    const nftID = await mintNFT(darkMatterNFT, clusterAddress, Registration)
 
-    const nftID = await mintNFT(darkMatterNFT, clusterAddress, Registration);
-
-    await getAmountIfLess(stack, clusterAddress, subnetFees, Registration);
-
+    await getAmountIfLess(stack, clusterAddress, subnetFees, Registration)
 
     tr = await Registration.connect(clusterAddress).clusterSignUp(
         subnetID,
@@ -120,34 +141,34 @@ const signupCluster = async (darkMatterNFT, stack, Registration, subnetID, subne
         attributes.publicKey,
         nftID,
         attributes.clusterName
-    );
-    rec = await tr.wait();
+    )
+    rec = await tr.wait()
 
-    const clusterSignedUpEvent = rec.events.find(event => event.event == "ClusterSignedUp");
-    const clusterID = clusterSignedUpEvent.args[1].toNumber();
-    return clusterID;
+    const clusterSignedUpEvent = rec.events.find(
+        (event) => event.event == "ClusterSignedUp"
+    )
+    const clusterID = clusterSignedUpEvent.args[1].toNumber()
+    return clusterID
 }
 
 const setupUrsula = async () => {
-    const addrList = await ethers.getSigners();
-    const deployer = addrList[0];
-    
-    const stack = await helper.getStack();
-    const darkMatter = await helper.getNFTToken();
-    const Registration = await helper.getRegistration();
+    const addrList = await ethers.getSigners()
+    const deployer = addrList[0]
 
+    const stack = await helper.getStack()
+    const darkMatter = await helper.getNFTToken()
+    const Registration = await helper.getRegistration()
 
-    const provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545/");
+    const provider = new ethers.providers.JsonRpcProvider(
+        "http://https://smart-contracts-production.up.railway.app/:8545/"
+    )
     const cluster1 = new ethers.Wallet(
-            "540f8aa51ab241b53bd0bac13bfb9c3816306c49e57e33c0f5a0fadc20634711",
-            provider
-    );
-    
-    const subnetList = [addrList[1], addrList[2]];
-    const clusterList= [
-        [cluster1],
-        [cluster1]
-    ];
+        "540f8aa51ab241b53bd0bac13bfb9c3816306c49e57e33c0f5a0fadc20634711",
+        provider
+    )
+
+    const subnetList = [addrList[1], addrList[2]]
+    const clusterList = [[cluster1], [cluster1]]
 
     const platformAddress = addrList[5]
     const referralExpiry = 60 * 60 * 24 * 4
@@ -156,70 +177,83 @@ const setupUrsula = async () => {
     const discountFee = 3000
     const referralFee = 4000
 
-
     const subnetParamList = [
         {
             unitPrices: [
-                ethers.utils.parseUnits("100000", 'gwei'), // CPU_Standard
-                ethers.utils.parseUnits("200000", 'gwei'), // CPU_Intensive
-                ethers.utils.parseUnits("300000", 'gwei'), // GPU_Standard
-                ethers.utils.parseUnits("300000", 'gwei'), // Storage
-                ethers.utils.parseUnits("200000", 'gwei'), // Bandwidth
+                ethers.utils.parseUnits("100000", "gwei"), // CPU_Standard
+                ethers.utils.parseUnits("200000", "gwei"), // CPU_Intensive
+                ethers.utils.parseUnits("300000", "gwei"), // GPU_Standard
+                ethers.utils.parseUnits("300000", "gwei"), // Storage
+                ethers.utils.parseUnits("200000", "gwei"), // Bandwidth
             ],
-            maxClusters:10,
+            maxClusters: 10,
             stackFeesReqd: ethers.utils.parseEther("0.01"),
-            subnetName: 'marvel'
+            subnetName: "marvel",
         },
         {
             unitPrices: [
-                ethers.utils.parseUnits("100000", 'gwei'), // CPU_Standard
-                ethers.utils.parseUnits("200000", 'gwei'), // CPU_Intensive
-                ethers.utils.parseUnits("300000", 'gwei'), // GPU_Standard
-                ethers.utils.parseUnits("300000", 'gwei'), // Storage
-                ethers.utils.parseUnits("200000", 'gwei'), // Bandwidth
+                ethers.utils.parseUnits("100000", "gwei"), // CPU_Standard
+                ethers.utils.parseUnits("200000", "gwei"), // CPU_Intensive
+                ethers.utils.parseUnits("300000", "gwei"), // GPU_Standard
+                ethers.utils.parseUnits("300000", "gwei"), // Storage
+                ethers.utils.parseUnits("200000", "gwei"), // Bandwidth
             ],
-            maxClusters:10,
+            maxClusters: 10,
             stackFeesReqd: ethers.utils.parseEther("0.01"),
-            subnetName: 'authority'
-        }
+            subnetName: "authority",
+        },
     ]
-    
-    for(var i = 0; i < subnetList.length; i++)
-    {
-        const subnetAddrObj = subnetList[i];
-        const subnetParam = subnetParamList[i];
+
+    for (var i = 0; i < subnetList.length; i++) {
+        const subnetAddrObj = subnetList[i]
+        const subnetParam = subnetParamList[i]
 
         await deployer.sendTransaction({
             to: subnetAddrObj.address,
             value: ethers.utils.parseEther("1.0"), // Sends exactly 1.0 ether
-        });
-        
-        console.log("before creating subnet");
-        const subnetID = await createSubnet(darkMatter, stack, Registration, subnetAddrObj, {
-            ...subnetParam
-        });
-        console.log("subnetID: ", subnetID);
+        })
 
-        for(var j = 0; j < clusterList[i].length; j++)
-        {
-            const clusterObj = clusterList[i][j];
+        console.log("before creating subnet")
+        const subnetID = await createSubnet(
+            darkMatter,
+            stack,
+            Registration,
+            subnetAddrObj,
+            {
+                ...subnetParam,
+            }
+        )
+        console.log("subnetID: ", subnetID)
+
+        for (var j = 0; j < clusterList[i].length; j++) {
+            const clusterObj = clusterList[i][j]
 
             await deployer.sendTransaction({
                 to: clusterObj.address,
                 value: ethers.utils.parseEther("1.0"), // Sends exactly 1.0 ether
-            });
+            })
 
-            console.log("before signup cluster");
-            const clusterID = await signupCluster(darkMatter, stack, Registration, subnetID, subnetParam.stackFeesReqd, clusterObj, 
+            console.log("before signup cluster")
+            const clusterID = await signupCluster(
+                darkMatter,
+                stack,
+                Registration,
+                subnetID,
+                subnetParam.stackFeesReqd,
+                clusterObj,
                 {
-                    clusterName: subnetParam.subnetName + '-c' + j
-            });
+                    clusterName: subnetParam.subnetName + "-c" + j,
+                }
+            )
 
-            await Registration.connect(subnetAddrObj).approveListingCluster(subnetID, clusterID, 100);
+            await Registration.connect(subnetAddrObj).approveListingCluster(
+                subnetID,
+                clusterID,
+                100
+            )
 
-            console.log("clusterID : ", clusterID);
+            console.log("clusterID : ", clusterID)
         }
-
     }
 
     await Subscription.addPlatformAddress(
@@ -229,17 +263,15 @@ const setupUrsula = async () => {
         referralFee,
         referralExpiry
     )
-
 }
 
 async function main() {
-
     // helper.setAddresses(
     //     {
-    //         deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',    
+    //         deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     //         xct: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
-    //         stack: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',       
-    //         nftToken: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',    
+    //         stack: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+    //         nftToken: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',
     //         Registration: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
     //         appNFT: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6',
     //         RoleControl: '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
@@ -258,8 +290,7 @@ async function main() {
     await helper.callNftApprove()
     await helper.xctApproveSub()
     await helper.xctApproveSubBal()
-    await setupUrsula();
-
+    await setupUrsula()
 }
 
 main()
