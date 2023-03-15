@@ -63,6 +63,10 @@ module.exports = {
                 url: "https://polygon-mainnet.g.alchemy.com/v2/BRnyQKRn-PuNxoiwE--0P7YEHI9amUbp",
             },
         },
+        railway: {
+            url: "https://smart-contracts-production.up.railway.app/",
+            accounts: [`${process.env.PKEY}`],
+        },
     },
     etherscan: {
         apiKey: "WGAQCNUDQCFRQJH9D72G94BZ83STGRJCX6",
