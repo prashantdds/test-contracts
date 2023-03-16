@@ -13,6 +13,7 @@ import "./interfaces/IApplicationNFT.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IContractBasedDeployment.sol";
+import "./interfaces/IERC721.sol";
 
 
 contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
@@ -30,9 +31,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
     struct NFTBalance {
         uint256 lastBalanceUpdateTime;
-        uint256[3] prevBalance; // prevBalance[0] = Credit wallet, prevBalance[1] = External Deposit, prevBalance[3] = Owner wallet
-        // uint256 mintTime;
-        // uint256 balanceEndTime;
+        uint256[3] prevBalance;
     }
 
     struct NFTCredits
@@ -51,9 +50,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
     event ReceivedRevenue(address benficiary, uint256 bal);
 
-    // NFT id => NFTBalance
     mapping(uint256 => NFTBalance) public nftBalances;
-    // Credit provider => NFT id => expiry
     mapping(address => mapping(uint256 => NFTCredits)) public creditsExpiry;
 
 
@@ -61,7 +58,8 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
     event BalanceAdded(uint256 NFTId, uint256 balanceType, uint256 bal);
     event BalanceWithdrawn(uint256 NFTId, uint256 balanceType, uint256 bal);
-    event SettledBalanceFor(uint256 NFTId);
+    event BalanceUpdate(uint256 nftID);
+
 
 
     function initialize(
@@ -137,7 +135,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     }
 
     function checkBalanceLeft(uint256 nftID)
-    public
+    external
     view
     returns (uint256)
     {
@@ -147,6 +145,19 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         uint256 prevBalance = totalPrevBalance(nftID);
         if (prevBalance < cost) return 0;
         return prevBalance.sub(cost);
+    }
+
+    function getBalanceEndTime(uint256 nftID)
+    external
+    view
+    returns(uint256)
+    {
+        uint256 dripRate = BalanceCalculator.dripRatePerSec(nftID);
+        if(dripRate == 0)
+            return nftBalances[nftID].lastBalanceUpdateTime;
+
+        uint256 balDur = totalPrevBalance(nftID).div(dripRate);
+        return nftBalances[nftID].lastBalanceUpdateTime + balDur;
     }
 
     function subscribeNew(
@@ -166,10 +177,9 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     function addBalanceWithoutUpdate(address nftOwner, uint256 nftID, uint256 balanceToAdd)
     public
     onlyAppDeployment
-        returns (bool)
     {
         _addBalance(nftOwner, nftID, balanceToAdd);
-        return true;
+        emit BalanceAdded(nftID, 2, balanceToAdd);
     }
 
 
@@ -185,7 +195,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     {
         XCTToken.transferFrom(
             sender,
-            address(BalanceCalculator),
+            address(this),
             _balanceToAdd
         );
 
@@ -217,30 +227,30 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         _withdrawBalance(nftID, bal);
     }
 
-    // function withdrawBalanceLinked(
-    //     address nftOwner,
-    //     uint256 nftID,
-    //     uint256 _bal,
-    //     address customNFTcontract,
-    //     uint256 customNFTid
-    // ) public whenNotPaused {
-    //     require(
-    //         nftOwner == _msgSender()
-    //         || isBridgeRole()
-    //         || ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
-    //         ,
-    //         "The nftOwner address should be the function caller"
-    //     );
-    //     require(
-    //         LinkContract.isLinkedTo(customNFTcontract, customNFTid, nftID),
-    //         "Not linked custom NFT in LinkNFT smart contract"
-    //     );
-    //     require(
-    //         IERC721(customNFTcontract).ownerOf(customNFTid) == nftOwner,
-    //         "Sender not the owner of Custom NFT id"
-    //     );
-    //     _withdrawBalance(nftID, _bal);
-    // }
+    function withdrawBalanceLinked(
+        address nftOwner,
+        uint256 nftID,
+        uint256 _bal,
+        address customNFTcontract,
+        uint256 customNFTid
+    ) public whenNotPaused {
+        require(
+            nftOwner == _msgSender()
+            || isBridgeRole()
+            || ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
+            ,
+            "The nftOwner address should be the function caller"
+        );
+        require(
+            LinkContract.isLinkedTo(customNFTcontract, customNFTid, nftID),
+            "Not linked custom NFT in LinkNFT smart contract"
+        );
+        require(
+            IERC721(customNFTcontract).ownerOf(customNFTid) == nftOwner,
+            "Sender not the owner of Custom NFT id"
+        );
+        _withdrawBalance(nftID, _bal);
+    }
 
     function withdrawBalance(address nftOwner, uint256 nftID, uint256 _bal)
         public
@@ -298,7 +308,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
         XCTToken.transferFrom(
             sender,
-            address(BalanceCalculator),
+            address(this),
             _balanceToAdd
         );
 
@@ -328,7 +338,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
         XCTToken.transferFrom(
             sender,
-            address(BalanceCalculator),
+            address(this),
             _balanceToAdd
         );
 
@@ -391,25 +401,11 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         if(accumStore.accumCost == 0)
             return;
 
-        uint256 spentBal = BalanceCalculator.distributeRevenue(
+        BalanceCalculator.distributeRevenue(
             nftID,
             accumStore.accumCost,
             accumStore.accumDuration
         );
-
-
-        uint256[3] memory prevBalance = nftBalances[nftID].prevBalance;
-        prevBalance = 
-        calculateUpdatedPrevBal(
-            spentBal,
-            prevBalance
-        );
-
-        nftBalances[nftID].prevBalance = [
-            prevBalance[0],
-            prevBalance[1],
-            prevBalance[2]
-        ];
 
         nftAccumCost[nftID] = NFTAccumCost(0, 0);
     }
@@ -435,8 +431,10 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
                     accumStore.accumDuration
                 );
 
-        if(spent == 0)
+        if(spent == 0) {
+            nftBalances[nftID].lastBalanceUpdateTime = block.timestamp;
             return;
+        }
 
 
         uint256[3] memory prevBalanceUpdated = 
@@ -454,10 +452,12 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         }
 
         nftBalances[nftID].lastBalanceUpdateTime = block.timestamp;
+
+        nftAccumCost[nftID] = NFTAccumCost(0, 0);
     }
 
 
-    function updateSubnetBalance(uint256 nftID, uint256[] memory subnetList)
+    function updateBalanceImmediate(uint256 nftID)
     onlyAppDeployment
     public
     {
@@ -472,16 +472,17 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         }
         
         (spent, accumCost, accumDuration) = BalanceCalculator
-                .getUpdatedSubnetBalance(
+                .getUpdatedBalanceImmediate(
                     nftID,
                     nftBalances[nftID].lastBalanceUpdateTime,
-                    spent,
-                    subnetList
+                    spent
                 );
 
-        if(spent == 0)
+        if(spent == 0) {
+            nftBalances[nftID].lastBalanceUpdateTime = block.timestamp;
             return;
-
+        }
+            
 
         NFTAccumCost memory nftAccumStore = nftAccumCost[nftID];
         nftAccumCost[nftID] = NFTAccumCost(
@@ -504,6 +505,10 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         }
 
         nftBalances[nftID].lastBalanceUpdateTime = block.timestamp;
+
+        emit BalanceUpdate(
+            nftID
+        );
     }
 
     /* ========== BALANCE OF REV ========== */
@@ -589,6 +594,12 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
 
     /* ========== MODIFIERS ========== */
+
+    // modifier gasCheck() {
+    //     gas = gasleft();
+    //     _;
+    //     gas -= gasleft();
+    // }
 
     modifier onlySubscription() {
         require(

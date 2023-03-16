@@ -10,6 +10,11 @@ interface ISubscriptionBalance {
         uint256 endOfXCTBalance;
     }
 
+    function getBalanceEndTime(uint256 nftID)
+    external
+    view
+    returns(uint256);
+
     function nftBalances(uint256 nftId)
         external
         view
@@ -26,8 +31,7 @@ interface ISubscriptionBalance {
     ) external;
 
     function addBalanceWithoutUpdate(address nftOwner, uint256 nftID, uint256 balanceToAdd)
-    external
-    returns (bool);
+    external;
 
     function addBalance(address nftOwner, uint256 nftID, uint256 _balanceToAdd)
         external
@@ -42,7 +46,10 @@ interface ISubscriptionBalance {
 
     function updateBalance(uint256 _nftId) external;
 
-    function updateSubnetBalance(uint256 nftID, uint256[] memory subnetList) external;
+    function updateBalanceImmediate(
+        uint256 nftID
+    )
+    external;
 
     function addSubnetToNFT(uint256 _nftId, uint256 _subnetId)
         external

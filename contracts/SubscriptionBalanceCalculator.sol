@@ -16,6 +16,7 @@ import "./interfaces/IApplicationNFT.sol";
 contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
+
     IRegistration public RegistrationContract;
     ISubscription public SubscriptionContract;
     ISubscriptionBalance public SubscriptionBalance;
@@ -45,7 +46,16 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     uint256 public constant SUPPORT_ADDR_ID = 2;
     uint256 public constant PLATFORM_ADDR_ID = 3;
 
-    mapping(address => uint256) public balanceOfRev;
+
+    // struct Factor{
+    //     uint256 factor1;
+    //     uint256 factor2;
+    //     uint256 referralExpiryTime;
+    //     uint256 discount;
+    //     bool active;
+    // }
+
+    // mapping(address => uint256) public cachedFactor;
 
     function initialize(
         IRegistration _RegistrationContract
@@ -215,7 +225,6 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         uint256[] memory unitPrices = RegistrationContract
             .getUnitPrices(subnetID);
 
-
         uint256 minLen = Math.min(unitPrices.length, computeRequired.length);
         for (uint256 j = 0; j < minLen; j++)
         {
@@ -229,14 +238,26 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         );
     }
 
-    function addRevBalance(
-        address recv,
-        uint256 addAmount
-    )
-    public
-    {
-        balanceOfRev[recv] = balanceOfRev[recv].add(addAmount);
-    }
+    // function saveFactorInCache(
+    //     uint256 nftID
+    // )
+    // external
+    // {
+    //     uint256 createTime = SubscriptionContract.getCreateTime(nftID);
+    //     address platformAddress = SubscriptionContract.getNFTFactorAddress(nftID, PLATFORM_ADDR_ID);
+    //     ISubscription.PlatformAddress memory platformAttrib
+    //         = SubscriptionContract.getPlatformFactors(platformAddress);
+    
+    
+    //     uint256[] memory supportFactor = SubscriptionContract.getSupportFactor(nftID);
+    //     uint256[] memory licenseFactor = SubscriptionContract.getLicenseFactor(nftID);
+
+    //     uint256 dripRate = supportFactor[0]
+    //         .add(licenseFactor[0])
+    //         .add(platformAttrib.platformPercentage)
+    //         .add(platformAttrib.referralPercentage)
+    //         .add(100000);
+    // }
 
     function distributeRevenue(
         uint256 nftID,
@@ -312,7 +333,6 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     onlySubscriptionBalance
     returns (uint256, uint256, uint256)
     {
-
         uint256 totalComputeCost;
         uint256[] memory computeCost = new uint256[](subnetList.length);
 
@@ -326,6 +346,9 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
             totalComputeCost += cost;
         }
 
+        if(totalComputeCost == 0)
+            return (0, 0, 0);
+
         uint256 createTime = SubscriptionContract.getCreateTime(nftID);
         address platformAddress = SubscriptionContract.getNFTFactorAddress(nftID, PLATFORM_ADDR_ID);
         ISubscription.PlatformAddress memory platformAttrib
@@ -334,6 +357,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     
         uint256[] memory supportFactor = SubscriptionContract.getSupportFactor(nftID);
         uint256[] memory licenseFactor = SubscriptionContract.getLicenseFactor(nftID);
+
 
         if(createTime == 0)
             return (0, 0, 0);
@@ -345,6 +369,7 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
             .add(platformAttrib.platformPercentage)
             .add(platformAttrib.referralPercentage)
             .add(100000);
+
         
         if(createTime.add(platformAttrib.referralExpiryDuration) > block.timestamp)
         {
@@ -352,18 +377,17 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         }
 
 
-        if(totalComputeCost == 0 || dripRate == 0)
-            return (0, 0, 0);
-
         dripRate = dripRate.mul(totalComputeCost).div(100000);
         dripRate = dripRate.add(supportFactor[1]).add(licenseFactor[1]);
 
-        createTime = 0;
-        createTime = totalBalance.div(dripRate);
 
+        createTime = totalBalance.div(dripRate);
         if((lastUpdateTime + createTime) > block.timestamp) {
             createTime = block.timestamp - lastUpdateTime;
         }
+
+        if(createTime == 0)
+            return (0, 0, 0);
 
         for(uint i = 0; i < subnetList.length; i++)
         {
@@ -373,14 +397,37 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
                 subnetList[i],
                 curCost
             );
-
         }
 
         totalComputeCost = totalComputeCost.mul(createTime);
+        dripRate = dripRate.mul(createTime);
 
-        return (totalComputeCost, totalComputeCost, createTime);
+        SubscriptionBalance.addRevBalance(address(SubnetDAODistributor), totalComputeCost);
+
+
+        return (dripRate, totalComputeCost, createTime);
     }
 
+    function getUpdatedBalanceImmediate(
+        uint256 nftID,
+        uint256 lastUpdateTime,
+        uint256 totalBalance
+    )
+    external
+    onlySubscriptionBalance
+    returns (uint256, uint256, uint256)
+    {
+        uint256[] memory subnetList = AppDeployment.getActiveSubnetsOfNFT(nftID);
+
+        (uint256 totalCostIncurred, uint256 remCost, uint256 balanceDuration) = getUpdatedSubnetBalance(
+                nftID,
+                lastUpdateTime,
+                totalBalance,
+                subnetList
+        );
+
+        return (totalCostIncurred, remCost, balanceDuration);
+    }
 
     function getUpdatedBalance(
         uint256 nftID,
@@ -404,16 +451,14 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
 
         accumComputeCost += remCost;
         accumDuration += balanceDuration;
-
-        uint256 totalCost = distributeRevenue(
+        
+        distributeRevenue(
             nftID,
             accumComputeCost,
             accumDuration
         );
 
-        totalCost += totalCostIncurred;
-
-        return totalCost;
+        return totalCostIncurred;
     }
 }
 

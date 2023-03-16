@@ -44,8 +44,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     uint256 public constant PLATFORM_ADDR_ID = 3;
 
     struct NFTAttribute {
-        // uint256[] licenseFactor;
-        // uint256[] supportFactor;
         uint256 createTime;
         address[] factorAddressList;
     }
@@ -411,8 +409,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         nftSupportFactor[nftID] = supportFactor;
 
         nftSubscription[nftID] = NFTAttribute(
-            // licenseFactor,
-            // supportFactor,
             block.timestamp,
             addressList
         );

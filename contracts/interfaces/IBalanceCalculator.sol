@@ -67,6 +67,13 @@ interface IBalanceCalculator {
     external
     returns (uint256, uint256, uint256);
 
+    function getUpdatedBalanceImmediate(
+        uint256 nftID,
+        uint256 lastUpdateTime,
+        uint256 totalBalance
+    )
+    external
+    returns (uint256, uint256, uint256);
 
     function getRealtimeCostIncurred(
         uint256 nftID,
