@@ -473,7 +473,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         address[] memory rlsAddresses,
         uint256[] memory licenseFactor
     )
-    internal
+    public
     {
         Subscription.subscribeBatch(
             nftID,
@@ -556,6 +556,37 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         );
     }
 
+    function createAppBatch(
+        uint256 balanceToAdd,
+        uint256 nftID,
+        bytes32[] memory appName,
+        bytes32[] memory digest,
+        uint8[2][] memory hashAndSize,
+        uint256[][] memory subnetList,
+        uint8[][][] memory multiplier,
+        uint16[][] memory resourceArray,
+        bool[] memory cidLock
+    )
+    external
+    {
+        for(uint i = 0; i < appName.length; i++)
+        {
+            createApp(
+                balanceToAdd,
+                nftID,
+                appName[i],
+                digest[i],
+                hashAndSize[i],
+                subnetList[i],
+                multiplier[i],
+                resourceArray[i],
+                cidLock[i]
+            );
+
+            if(balanceToAdd > 0)
+                balanceToAdd = 0;
+        }
+    }
 
     function createApp(
         uint256 balanceToAdd,
@@ -568,7 +599,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         uint16[] memory resourceArray,
         bool cidLock
     )
-    external
+    public
     hasPermission(nftID)
     {
         uint16 appCount = nftAppCount[nftID];
@@ -576,6 +607,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
             "wrong multiplier length");
         require(appCount < 255, "app count exceeded 256");
         require(!appNameCheck[nftID][appName], "App name already exists");
+
 
         uint256 appID = appIDToNameList[nftID];
         
@@ -782,6 +814,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         external
         hasPermission(nftID)
     {
+        SubscriptionBalance.updateBalanceImmediate(nftID);
         removeSubnet(nftID, appID, true);
 
         entries[nftID][appID].active = false;

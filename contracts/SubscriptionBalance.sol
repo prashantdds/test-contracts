@@ -14,6 +14,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IContractBasedDeployment.sol";
 import "./interfaces/IERC721.sol";
+import "./interfaces/ISubnetDAODistributor.sol";
 
 
 contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
@@ -28,6 +29,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     IBalanceCalculator public BalanceCalculator;
     bytes32 public BILLING_MANAGER_ROLE;
     ILinkContract public LinkContract;
+    ISubnetDAODistributor SubnetDAODistributor;
 
     struct NFTBalance {
         uint256 lastBalanceUpdateTime;
@@ -87,6 +89,11 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     function setContractBasedDeployment(address _AppDeployment) external onlyOwner {
         ContractBasedDeployment = IContractBasedDeployment(_AppDeployment);
     }
+
+    function setSubnetDAODistributor(address _SubnetDAODistributor) external onlyOwner {
+        SubnetDAODistributor = ISubnetDAODistributor(_SubnetDAODistributor);
+    }
+
 
     function isBridgeRole()
     public
@@ -555,18 +562,18 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
     function addRevBalance(address account, uint256 balance)
     external
-    onlyBalanceCalculator
+    onlyCalculatorOrDistributor
     {
-        balanceOfRev[account] += balance;
+        balanceOfRev[account] = balanceOfRev[account].add(balance);
     }
 
     function addRevBalanceBulk(address[] memory accountList, uint256[] memory balanceList)
     external
-    onlyBalanceCalculator
+    onlyCalculatorOrDistributor
     {
         for(uint i = 0; i < accountList.length; i++)
         {
-            balanceOfRev[accountList[i]] += balanceList[i];
+            balanceOfRev[accountList[i]] = balanceOfRev[accountList[i]].add(balanceList[i]);
         }
     }
 
@@ -609,10 +616,12 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         _;
     }
 
-    modifier onlyBalanceCalculator() {
+    modifier onlyCalculatorOrDistributor() {
         require(
-            address(BalanceCalculator) == _msgSender(),
-            "Only BalanceCalculator call this function"
+            address(BalanceCalculator) == _msgSender()
+            || address(SubnetDAODistributor) == _msgSender()
+            ,
+            "Do not have access to call this"
         );
         _;
     }

@@ -14,8 +14,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract Registration is
     AccessControlUpgradeable,
-    PausableUpgradeable,
-    TokensRecoverable
+    PausableUpgradeable
 {
     using SafeMathUpgradeable for uint256;
 
@@ -264,6 +263,16 @@ contract Registration is
         );
     }
 
+    function getClusterCount(uint256 subnetID)
+    external
+    view
+    returns(
+        uint256
+    )
+    {
+        return totalClustersSigned[subnetID];
+    }
+
     function getUnitPrices(uint256 subnetID)
     external
     view
@@ -290,14 +299,6 @@ contract Registration is
 
         return priceList;
     }
-
-    function checkSubnetStatus1(uint256 subnetID)
-    external
-    view
-    returns(bool)
-    {
-        return subnetAttributes[subnetID].subnetStatusListed;
-    }
     
     function checkSubnetStatus(uint256[] memory subnetList)
     external
@@ -309,7 +310,6 @@ contract Registration is
 
         for(uint i = 0; i < subLen; i++)
         {
-            // uint256 subnetID = subnetList[i];
             subnetActiveList[i] = subnetAttributes[subnetList[i]].subnetStatusListed;
         }
         return subnetActiveList;
@@ -431,7 +431,6 @@ contract Registration is
     }
 
 
-
     function getAllSubnetNamesAndIDs()
     external
     view
@@ -484,7 +483,7 @@ contract Registration is
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             hasRole(SUBNET_ATTR_ROLE, _msgSender()) ||
-            hasRole(subnetAttributes[subnetId].SUBNET_ATTR_ROLE, _msgSender()), "address does not have the role to modify subnet attributes");
+            hasRole(subnetAttributes[subnetId].SUBNET_ATTR_ROLE, _msgSender()), "No permission to modify subnet");
         if (_attributeNo == 1)
             subnetAttributes[subnetId].subnetType = _subnetType;
         else if (_attributeNo == 2)
@@ -542,7 +541,7 @@ contract Registration is
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             hasRole(WHITELIST_ROLE, _msgSender()) ||
             hasRole(subnetAttributes[subnetId].WHITELIST_ROLE, _msgSender()),
-            "Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses"
+            "No permissions for whitelist"
         );
         for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
             whiteListedClusters[subnetId].push(_whitelistAddresses[i]);
@@ -554,8 +553,9 @@ contract Registration is
         external
     {
         require(
-            hasRole(WHITELIST_ROLE, _msgSender()),
-            "Only WHITELIST_ROLE can edit whitelisted addresses"
+            // hasRole(GLOBAL_DAO_ADDRESS, _msgSender()),
+            GLOBAL_DAO_ADDRESS == _msgSender(),
+            "Only called by global DAO"
         );
         approvedDarkMatterNFTTypes[_NFTTypes] = allow;
     }
@@ -567,13 +567,13 @@ contract Registration is
     ) external {
         require(
             whiteListedClusters[subnetId][_index] == _blacklistAddress,
-            "Address do not match with index provided"
+            "Invalid index given"
         );
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             hasRole(WHITELIST_ROLE, _msgSender()) ||
             hasRole(subnetAttributes[subnetId].WHITELIST_ROLE, _msgSender()),
-            "Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses"
+            "No permissions for whitelist"
         );
 
         for (
@@ -600,11 +600,28 @@ contract Registration is
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             hasRole(WHITELIST_ROLE, _msgSender()) ||
             hasRole(subnetAttributes[subnetId].WHITELIST_ROLE, _msgSender()),
-            "Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses"
+            "No permissions for whitelist"
         );
         address[] memory AllAddresses;
         whiteListedClusters[subnetId] = AllAddresses;
         emit ResetWhitelistCluster(subnetId);
+    }
+
+
+    function isClusterListed(uint256 subnetID, uint256 clusterID)
+    public
+    view
+    returns(bool)
+    {
+        return subnetClusters[subnetID][clusterID].listed == 2;
+    }
+
+    function getClusterWalletAddress(uint256 subnetID, uint256 clusterID)
+    public
+    view
+    returns(address)
+    {
+        return subnetClusters[subnetID][clusterID].walletAddress;
     }
 
     function totalClusterSpotsAvailable(uint256 subnetId)
@@ -637,13 +654,13 @@ contract Registration is
             string memory empty = "";
             require(
                 keccak256(bytes(_DNSIP)) != keccak256(bytes(empty)),
-                "DNS/IP cannot be empty for non sovereign subnets"
+                "Sovereign subnet needs DNS/IP"
             );
         }
 
         require(
             totalClusterSpotsAvailable(subnetId) > 0,
-            "No spots available, maxSlots reached for subnet"
+            "Max cluster limit reached"
         );
 
         subnetAttributes[subnetId].DarkMatterNFTType.transferFrom(
@@ -661,6 +678,18 @@ contract Registration is
 
         uint256 clusterId = totalClustersSigned[subnetId];
         address ownerAddress = _msgSender();
+
+        for (uint256 i = 0; i < whiteListedClusters[subnetId].length; i++)
+            if (whiteListedClusters[subnetId][i] == ownerAddress) {
+                subnetClusters[subnetId][clusterId].listed = 2; // whitelisted clusters are approved as they signup
+                SubnetDAODistributor.setClusterWeight(
+                    subnetId,
+                    clusterId,
+                    DefaultWhitelistedClusterWeight
+                );
+                break;
+            }
+
         subnetClusters[subnetId][clusterId].walletAddress = walletAddress;
         subnetClusters[subnetId][clusterId].ownerAddress = ownerAddress;
         subnetClusters[subnetId][clusterId].operatorAddress = operatorAddress;
@@ -671,17 +700,6 @@ contract Registration is
         subnetClusters[subnetId][clusterId].publicKey = publicKey;
 
         totalClustersSigned[subnetId] = totalClustersSigned[subnetId].add(1);
-
-        for (uint256 i = 0; i < whiteListedClusters[subnetId].length; i++)
-            if (whiteListedClusters[subnetId][i] == ownerAddress) {
-                subnetClusters[subnetId][clusterId].listed = 2; // whitelisted clusters are approved as they signup
-                SubnetDAODistributor.addWeight(
-                    subnetId,
-                    walletAddress,
-                    DefaultWhitelistedClusterWeight
-                );
-                break;
-            }
 
         emit ClusterSignedUp(
             subnetId,
@@ -758,21 +776,21 @@ contract Registration is
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             hasRole(CLUSTER_LIST_ROLE, _msgSender()) ||
-            hasRole(subnetAttributes[subnetId].CLUSTER_LIST_ROLE, _msgSender()), "Do not have required role to call this function");
+            hasRole(subnetAttributes[subnetId].CLUSTER_LIST_ROLE, _msgSender()), "No permissions to call this");
         require(
             subnetClusters[subnetId][clusterId].listed != 2,
-            "Already approved either by whitelisting or by calling this function"
+            "Cluster already approved"
         );
         require(
             subnetClusters[subnetId][clusterId].listed !=3 || totalClusterSpotsAvailable(subnetId) > 0,
-            "No spots available, maxSlots reached for subnet"
+            "Cluster limit reached"
         );
-        subnetClusters[subnetId][clusterId].listed = 2;
-        SubnetDAODistributor.addWeight(
+        SubnetDAODistributor.setClusterWeight(
             subnetId,
-            subnetClusters[subnetId][clusterId].walletAddress,
+            clusterId,
             _weight
         );
+        subnetClusters[subnetId][clusterId].listed = 2;
         emit ChangedListingCluster(subnetId, clusterId, _msgSender(), 2);
     }
 
@@ -782,7 +800,12 @@ contract Registration is
             hasRole(CLUSTER_LIST_ROLE, _msgSender()) ||
             hasRole(subnetAttributes[subnetId].CLUSTER_LIST_ROLE, _msgSender()) ||
                 subnetClusters[subnetId][clusterId].ownerAddress == _msgSender(),
-            "Sender is not Cluster owner or has CLUSTER_LIST_ROLE"
+            "No roles to call this"
+        );
+        SubnetDAODistributor.setClusterWeight(
+            subnetId,
+            clusterId,
+            0
         );
         subnetClusters[subnetId][clusterId].listed = 3;
         emit ChangedListingCluster(subnetId, clusterId, _msgSender(), 3);
@@ -795,7 +818,7 @@ contract Registration is
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             hasRole(PRICE_ROLE, _msgSender()) ||
-            hasRole(subnetAttributes[subnetId].PRICE_ROLE, _msgSender()), "Do not have the roles to call this function");
+            hasRole(subnetAttributes[subnetId].PRICE_ROLE, _msgSender()), "No roles to call this");
         requestPriceChange[subnetId].timestamp = block.timestamp;
         requestPriceChange[subnetId].unitPrices = _unitPrices;
 
@@ -836,7 +859,7 @@ contract Registration is
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             hasRole(WITHDRAW_STACK_ROLE, _msgSender()),
-            "Do not have the roles to call this function"
+            "No roles to call this"
         );
         balanceOfStackLocked[
             subnetClusters[subnetId][clusterId].walletAddress
@@ -860,14 +883,14 @@ contract Registration is
         // if subnet delisted cluster operator can withdraw..
         require(
             !subnetAttributes[subnetId].subnetStatusListed,
-            "Cannot withdraw Stack locked if subnet is not delisted"
+            "Subnet is not delisted"
         );
 
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             // subnetClusters[subnetId][clusterId].ClusterDAO == _msgSender(),
             subnetClusters[subnetId][clusterId].ownerAddress == _msgSender(),
-            "Only cluster operator can withdraw Stack locked"
+            "Not the cluster owner"
         );
         address walletAddress = subnetClusters[subnetId][clusterId].walletAddress;
         uint256 bal = balanceOfStackLocked[walletAddress] = 0;
@@ -929,14 +952,5 @@ contract Registration is
 
     function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
-    }
-
-    function onERC721Received(
-        address _operator,
-        address _from,
-        uint256 _id,
-        bytes calldata _data
-    ) external returns (bytes4) {
-        return 0x150b7a02;
     }
 }

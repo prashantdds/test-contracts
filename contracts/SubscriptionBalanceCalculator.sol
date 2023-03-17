@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IRegistration.sol";
 import "./interfaces/ISubscription.sol";
 import "./interfaces/IApplicationNFT.sol";
+import "hardhat/console.sol";
 
 contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
@@ -402,8 +403,9 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         totalComputeCost = totalComputeCost.mul(createTime);
         dripRate = dripRate.mul(createTime);
 
-        SubscriptionBalance.addRevBalance(address(SubnetDAODistributor), totalComputeCost);
+        // SubscriptionBalance.addRevBalance(address(SubnetDAODistributor), totalComputeCost);
 
+        console.log("spent: ", dripRate);
 
         return (dripRate, totalComputeCost, createTime);
     }
