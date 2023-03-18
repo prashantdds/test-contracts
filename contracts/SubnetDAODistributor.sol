@@ -10,7 +10,6 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "./TokensRecoverable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import "hardhat/console.sol";
 
 // 1 part of (1+r+s+t+u) Revenue is collected in contract and
 // assigned to revenue addresses
@@ -107,7 +106,6 @@ contract SubnetDAODistributor is PausableUpgradeable, TokensRecoverable {
 
         for(uint256 i = 0; i < totalClusters; i++)
         {
-            console.log("subnetID cluster assign: ", Registration.isClusterListed(subnetID, i), i, weights[subnetID][i]);
             if(Registration.isClusterListed(subnetID, i))
             {
                 address walletAddress = Registration.getClusterWalletAddress(subnetID, i);
