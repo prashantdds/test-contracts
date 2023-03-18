@@ -679,22 +679,30 @@ contract Registration is
         uint256 clusterId = totalClustersSigned[subnetId];
         address ownerAddress = _msgSender();
 
-        for (uint256 i = 0; i < whiteListedClusters[subnetId].length; i++)
-            if (whiteListedClusters[subnetId][i] == ownerAddress) {
-                subnetClusters[subnetId][clusterId].listed = 2; // whitelisted clusters are approved as they signup
-                SubnetDAODistributor.setClusterWeight(
-                    subnetId,
-                    clusterId,
-                    DefaultWhitelistedClusterWeight
-                );
-                break;
-            }
+        {
+            bool isWhitelisted = false;
+            for (uint256 i = 0; i < whiteListedClusters[subnetId].length; i++)
+                if (whiteListedClusters[subnetId][i] == ownerAddress) {
+                    subnetClusters[subnetId][clusterId].listed = 2; // whitelisted clusters are approved as they signup
+                    SubnetDAODistributor.setClusterWeight(
+                        subnetId,
+                        clusterId,
+                        DefaultWhitelistedClusterWeight
+                    );
+                    isWhitelisted = true;
+                    break;
+                }
+
+                if(!isWhitelisted)
+                {
+                    subnetClusters[subnetId][clusterId].listed = 1;
+                }
+        }
 
         subnetClusters[subnetId][clusterId].walletAddress = walletAddress;
         subnetClusters[subnetId][clusterId].ownerAddress = ownerAddress;
         subnetClusters[subnetId][clusterId].operatorAddress = operatorAddress;
         subnetClusters[subnetId][clusterId].DNSIP = _DNSIP;
-        subnetClusters[subnetId][clusterId].listed = 1;
         subnetClusters[subnetId][clusterId].NFTidLocked = nftId;
         subnetClusters[subnetId][clusterId].clusterName = clusterName;
         subnetClusters[subnetId][clusterId].publicKey = publicKey;

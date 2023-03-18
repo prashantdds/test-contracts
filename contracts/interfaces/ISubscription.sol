@@ -54,7 +54,7 @@ interface ISubscription {
 
     function GLOBAL_DAO_ADDRESS() external view returns (address);
 
-    function subscribeBatch(
+    function subscribe(
         uint256 nftID,
         address[] memory addressList,
         uint256[] memory licenseFactor

@@ -380,7 +380,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         );
     }
 
-    function subscribeBatch(
+    function subscribe(
         uint256 nftID,
         address[] memory addressList,
         uint256[] memory licenseFactor
@@ -481,12 +481,12 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole(),
-            "The nftOwner address should be the function caller"
+            "Caller is not NFT owner"
         );
 
         require(
             requestChangeMap[nftID].supportAddress != address(0),
-            "No change request to support address made"
+            "No support change requested"
         );
         require(
             requestChangeMap[nftID].SupportAddressApplyTime.add(
@@ -519,7 +519,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole(),
-            "The nftOwner address should be the function caller"
+            "Caller is not nft owner"
         );
         require(
             nftSubscription[nftID].createTime > 0,
@@ -527,13 +527,13 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         );
         require(
             newSupportAddress != address(0),
-            "support address should be provided with a non zero address value"
+            "Empty support address given"
         );
         require(
             requestChangeMap[nftID].SupportAddressRequestTime.add(
                 CHANGE_REQUEST_DURATION.supportAddressNoticeDuration
             ) < block.timestamp,
-            "Cannot request before support address change notice time passed"
+            "Notice period not over yet"
         );
         
         requestChangeMap[nftID].SupportAddressRequestTime = block.timestamp;

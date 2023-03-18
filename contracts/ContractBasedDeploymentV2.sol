@@ -142,10 +142,10 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         for(uint i; i < maxlen;)
         {
             uint32 val = nftSubnetResource[nftID][subnetID][i];
-            uint256 oldVal = val;
+            uint32 oldVal = val;
 
-            val -= (oldMul[i] * curResource[i]);
-            val += (newMul[i] * newResource[i]);
+            val -= (uint32(oldMul[i]) * curResource[i]);
+            val += (uint32(newMul[i]) * newResource[i]);
 
 
             if(oldVal != val)
@@ -171,7 +171,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
                 continue;
             }
 
-            nftSubnetResource[nftID][subnetID][i] += (newMul[i] * newResource[i]);
+            nftSubnetResource[nftID][subnetID][i] += (uint32(newMul[i]) * newResource[i]);
 
             unchecked {
                 ++i;
@@ -189,7 +189,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
                 continue;
             }
 
-            nftSubnetResource[nftID][subnetID].push(newMul[i] * newResource[i]);
+            nftSubnetResource[nftID][subnetID].push(uint32(newMul[i]) * newResource[i]);
 
             unchecked {
                 ++i;
@@ -240,8 +240,8 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         {
             uint32 val = subnetResource[i];
 
-            val -= (oldMul[i] * curResource[i]);
-            val += (oldMul[i] * newResource[i]);
+            val -= (uint32(oldMul[i]) * curResource[i]);
+            val += (uint32(oldMul[i]) * newResource[i]);
 
             subnetResource[i] = val;
 
@@ -475,7 +475,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
     )
     public
     {
-        Subscription.subscribeBatch(
+        Subscription.subscribe(
             nftID,
             rlsAddresses,
             licenseFactor
@@ -610,7 +610,8 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
 
 
         uint256 appID = appIDToNameList[nftID];
-        
+        require(appID > 0, "Subscription not done");
+
         calculateResource(
             nftID,
             appID,
@@ -1026,7 +1027,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
             || AppNFT.hasRole(_nftId, CONTRACT_BASED_DEPLOYER, msg.sender)
             || msg.sender == BRIDGE_ADDRESS
             ,
-            "Sender does not have CONTRACT_BASED_DEPLOYER role for the AppNFT"
+            "No permissions to call this"
         );
         _;
     }

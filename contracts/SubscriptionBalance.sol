@@ -225,7 +225,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             || isBridgeRole()
             || ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
             ,
-            "The nftOwner address should be the function caller"
+            "Caller not the NFT owner"
         );
 
         updateBalance(nftID);
@@ -246,7 +246,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             || isBridgeRole()
             || ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
             ,
-            "The nftOwner address should be the function caller"
+            "Caller not the NFT owner"
         );
         require(
             LinkContract.isLinkedTo(customNFTcontract, customNFTid, nftID),
@@ -268,7 +268,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             || isBridgeRole()
             || ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
             ,
-            "The nftOwner address should be the function caller"
+            "Caller not the NFT owner"
         );
         _withdrawBalance(nftID, _bal);
     }
@@ -554,8 +554,6 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             temp2 = min(temp, totalCostIncurred);
             prevBalanceUpdated[i] = temp.sub(temp2);
             totalCostIncurred = totalCostIncurred.sub(temp2);
-            
-            if(totalCostIncurred == 0) break;
         }
 
     }

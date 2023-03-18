@@ -26,6 +26,23 @@ interface IRegistration {
         uint256[] unitPrices;
     }
 
+    function isClusterListed(uint256 subnetID, uint256 clusterID)
+    external
+    view
+    returns(bool);
+
+    function getClusterWalletAddress(uint256 subnetID, uint256 clusterID)
+    external
+    view
+    returns(address);
+
+    function getClusterCount(uint256 subnetID)
+    external
+    view
+    returns(
+        uint256
+    );
+
     function getUnitPrices(uint256 subnetID)
     external
     view

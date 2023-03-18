@@ -12,7 +12,6 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IRegistration.sol";
 import "./interfaces/ISubscription.sol";
 import "./interfaces/IApplicationNFT.sol";
-import "hardhat/console.sol";
 
 contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
@@ -140,9 +139,11 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
             .add(r_licenseFactor[0])
             .add(v_platformFactor)
             .add(u_referralFactor)
-            .sub(w_discountFactor)
             .add(100000);
-    
+
+        if(nftAttrib.createTime.add(platformAttrib.referralExpiryDuration) > block.timestamp) {
+            factor = factor.sub(w_discountFactor);
+        }
 
         if(cost == 0)
             return 0;
@@ -179,8 +180,11 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
             .add(r_licenseFactor[0])
             .add(v_platformFactor)
             .add(u_referralFactor)
-            .sub(w_discountFactor)
             .add(100000);
+
+        if(nftAttrib.createTime.add(platformAttrib.referralExpiryDuration) > block.timestamp) {
+            factor = factor.sub(w_discountFactor);
+        }
 
         return factor.mul(cost).div(100000) + r_licenseFactor[1] + t_supportFactor[1];
     }
@@ -404,8 +408,6 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         dripRate = dripRate.mul(createTime);
 
         // SubscriptionBalance.addRevBalance(address(SubnetDAODistributor), totalComputeCost);
-
-        console.log("spent: ", dripRate);
 
         return (dripRate, totalComputeCost, createTime);
     }
