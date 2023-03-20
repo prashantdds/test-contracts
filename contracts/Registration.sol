@@ -554,13 +554,14 @@ contract Registration is
     {
         require(
             // hasRole(GLOBAL_DAO_ADDRESS, _msgSender()),
+            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             GLOBAL_DAO_ADDRESS == _msgSender(),
             "Only called by global DAO"
         );
         approvedDarkMatterNFTTypes[_NFTTypes] = allow;
     }
 
-    function removeClusterFromWhitelisted(
+    function removeClusterFromWhitelist(
         uint256 subnetId,
         address _blacklistAddress,
         uint256 _index
@@ -662,6 +663,14 @@ contract Registration is
             totalClusterSpotsAvailable(subnetId) > 0,
             "Max cluster limit reached"
         );
+        require(
+            walletAddress != address(0),
+            "wallet address is empty"
+        );
+        require(
+            operatorAddress != address(0),
+            "operator address is empty"
+        );
 
         subnetAttributes[subnetId].DarkMatterNFTType.transferFrom(
             _msgSender(),
@@ -730,7 +739,7 @@ contract Registration is
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             // subnetClusters[subnetId][clusterId].ClusterDAO == _msgSender(),
             subnetClusters[subnetID][clusterID].ownerAddress == _msgSender(),
-            "Sender is not Cluster owner"
+            "No permissions to call this"
         );
         subnetClusters[subnetID][clusterID].clusterName = clusterName;
 
@@ -746,7 +755,7 @@ contract Registration is
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             // subnetClusters[subnetId][clusterId].ClusterDAO == _msgSender(),
             subnetClusters[subnetId][clusterId].ownerAddress == _msgSender(),
-            "Sender is not Cluster owner"
+            "No permissions to call this"
         );
         subnetClusters[subnetId][clusterId].DNSIP = newDNSIP;
         emit ChangedDNSIP(subnetId, clusterId, newDNSIP);
@@ -762,7 +771,7 @@ contract Registration is
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             subnetClusters[subnetId][clusterId].ownerAddress == _msgSender(),
-            "Not the cluster owner"
+            "No permissions to call this"
         );
         subnetClusters[subnetId][clusterId].ownerAddress = newOwnerAddress;
         subnetClusters[subnetId][clusterId].walletAddress = newWalletAddress;
@@ -786,6 +795,10 @@ contract Registration is
             hasRole(CLUSTER_LIST_ROLE, _msgSender()) ||
             hasRole(subnetAttributes[subnetId].CLUSTER_LIST_ROLE, _msgSender()), "No permissions to call this");
         require(
+            subnetClusters[subnetId][clusterId].ownerAddress != address(0),
+            "cluster does not exist"
+        );
+        require(
             subnetClusters[subnetId][clusterId].listed != 2,
             "Cluster already approved"
         );
@@ -808,7 +821,7 @@ contract Registration is
             hasRole(CLUSTER_LIST_ROLE, _msgSender()) ||
             hasRole(subnetAttributes[subnetId].CLUSTER_LIST_ROLE, _msgSender()) ||
                 subnetClusters[subnetId][clusterId].ownerAddress == _msgSender(),
-            "No roles to call this"
+            "No permissions to call this"
         );
         SubnetDAODistributor.setClusterWeight(
             subnetId,
@@ -826,7 +839,7 @@ contract Registration is
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             hasRole(PRICE_ROLE, _msgSender()) ||
-            hasRole(subnetAttributes[subnetId].PRICE_ROLE, _msgSender()), "No roles to call this");
+            hasRole(subnetAttributes[subnetId].PRICE_ROLE, _msgSender()), "No permissions to call this");
         requestPriceChange[subnetId].timestamp = block.timestamp;
         requestPriceChange[subnetId].unitPrices = _unitPrices;
 
@@ -867,7 +880,7 @@ contract Registration is
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
             hasRole(WITHDRAW_STACK_ROLE, _msgSender()),
-            "No roles to call this"
+            "No permissions to call this"
         );
         balanceOfStackLocked[
             subnetClusters[subnetId][clusterId].walletAddress
@@ -921,7 +934,7 @@ contract Registration is
         emit WithdrawnStackFromCluster(subnetId, clusterId, _msgSender(), bal);
     }
 
-    function change_REQD_STACK_FEES_FOR_SUBNET(
+    function changeSubnetFees(
         uint256 _REQD_STACK_FEES_FOR_SUBNET
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         REQD_STACK_FEES_FOR_SUBNET = _REQD_STACK_FEES_FOR_SUBNET;

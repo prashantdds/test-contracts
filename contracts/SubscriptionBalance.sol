@@ -31,6 +31,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     ILinkContract public LinkContract;
     ISubnetDAODistributor SubnetDAODistributor;
 
+
     struct NFTBalance {
         uint256 lastBalanceUpdateTime;
         uint256[3] prevBalance;
@@ -93,14 +94,14 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     function setSubnetDAODistributor(address _SubnetDAODistributor) external onlyOwner {
         SubnetDAODistributor = ISubnetDAODistributor(_SubnetDAODistributor);
     }
-
+    
 
     function isBridgeRole()
     public
     view
     returns (bool)
     {
-        return SubscriptionContract.isBridgeRole();
+        return SubscriptionContract.checkBridgeRole(_msgSender());
     }
 
     function setLinkContract(ILinkContract _newLinkContract)
@@ -223,7 +224,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole()
-            || ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
+            || (nftOwner == _msgSender() && ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner))
             ,
             "Caller not the NFT owner"
         );
@@ -231,7 +232,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         updateBalance(nftID);
 
         uint256 bal = nftBalances[nftID].prevBalance[2];
-        _withdrawBalance(nftID, bal);
+        _withdrawBalance(nftOwner, nftID, bal);
     }
 
     function withdrawBalanceLinked(
@@ -244,7 +245,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         require(
             nftOwner == _msgSender()
             || isBridgeRole()
-            || ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
+            || (nftOwner == _msgSender() && ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner))
             ,
             "Caller not the NFT owner"
         );
@@ -256,7 +257,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
             IERC721(customNFTcontract).ownerOf(customNFTid) == nftOwner,
             "Sender not the owner of Custom NFT id"
         );
-        _withdrawBalance(nftID, _bal);
+        _withdrawBalance(nftOwner, nftID, _bal);
     }
 
     function withdrawBalance(address nftOwner, uint256 nftID, uint256 _bal)
@@ -266,14 +267,14 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole()
-            || ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner)
+            || (nftOwner == _msgSender() && ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner))
             ,
             "Caller not the NFT owner"
         );
-        _withdrawBalance(nftID, _bal);
+        _withdrawBalance(nftOwner, nftID, _bal);
     }
 
-    function _withdrawBalance(uint256 nftID, uint256 _bal)
+    function _withdrawBalance(address nftOwner, uint256 nftID, uint256 _bal)
         internal
         whenNotPaused
     {
@@ -281,7 +282,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
         require(nftBalances[nftID].prevBalance[2] >= _bal, "Withdraw amount is greater than the balance.");
 
-        XCTToken.transfer(_msgSender(), _bal);
+        XCTToken.transfer(nftOwner, _bal);
 
         nftBalances[nftID].prevBalance = [
             nftBalances[nftID].prevBalance[0],
@@ -304,11 +305,11 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         require(
             sender == _msgSender()
             || isBridgeRole(),
-            "The sender address should be the function caller"
+            "Sender should be caller"
         );
         require(
             creditsExpiry[sender][nftID].expiryTimestamp < _expiryUnixTimestamp,
-            "Credits expiry cannot be set lesser than previous expiry"
+            "Invalid credits expiry value"
         );
 
         updateBalance(nftID);
@@ -338,7 +339,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         require(
             sender == _msgSender()
             || isBridgeRole(),
-            "The sender address should be the function caller"
+            "Sender should be caller"
         );
         
         updateBalance(nftID);
@@ -365,7 +366,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         require(
             sender == _msgSender()
             || isBridgeRole(),
-            "The sender address should be the function caller"
+            "Sender should be caller"
         );
         require(
             creditsExpiry[sender][nftID].expiryTimestamp < block.timestamp,
@@ -609,7 +610,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     modifier onlySubscription() {
         require(
             address(SubscriptionContract) == _msgSender(),
-            "Only SubscriptionContract can call this function"
+            "Only callable by Subscription"
         );
         _;
     }
@@ -627,7 +628,7 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
     modifier onlyAppDeployment() {
         require(
             address(ContractBasedDeployment) == _msgSender(),
-            "Only callable by app deployment"
+            "Only callable by AppDeployment"
         );
         _;
     }

@@ -81,8 +81,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     address[] public platformAddressList;
     mapping(address => PlatformAddress) public platformAddressMap;
 
-    uint256 public LIMIT_NFT_SUBNETS;
-    uint256 public MIN_TIME_FUNDS;
 
     struct changeRequestTimeDuration
     {
@@ -205,6 +203,14 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         return hasRole(BRIDGE_ROLE, _msgSender());
     }
 
+    function checkBridgeRole(address bridge)
+    public
+    view
+    returns (bool)
+    {
+        return hasRole(BRIDGE_ROLE, bridge);
+    }
+
     function getBytes32OfRole(string memory roleName)
         external
         pure
@@ -263,25 +269,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         GLOBAL_DAO_ADDRESS = newGlobalDAO;
     }
 
-    function admin_changeNFTSubnetLimit(uint256 newSubnetLimit)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        emit ChangedNFTSubnetLimit(
-            LIMIT_NFT_SUBNETS,
-            newSubnetLimit
-        );
-        LIMIT_NFT_SUBNETS = newSubnetLimit;
-    }
-
-    function admin_changeMinTimeFunds(uint256 newMinTimeFunds)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        emit ChangedMinTimeFunds(MIN_TIME_FUNDS, newMinTimeFunds);
-        MIN_TIME_FUNDS = newMinTimeFunds;
-    }
-
     function admin_changeSupportAddressCooldown(uint256 supportAddressCooldownDuration)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
@@ -310,8 +297,8 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(_msgSender() == GLOBAL_DAO_ADDRESS
         || isBridgeRole()
         ,
-         "Only the global dao address can add the support address");
-        require(supportFactor[0] >= 5000, "The default support fee should be greater than or equal to 5%");
+         "No permissions to call this");
+        require(supportFactor[0] >= 5000, "Default support fee is >= 5%");
         supportAddressDefault[supportAddress].supportFactor = supportFactor;
         supportAddressDefault[supportAddress].active = true;
         supportAddressList.push(supportAddress);
@@ -329,7 +316,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(_msgSender() == GLOBAL_DAO_ADDRESS
         || isBridgeRole()
         ,
-        "Only the global dao address can add the platform address");
+        "No permissions to call this");
         
         platformAddressList.push(platformAddress);
         platformAddressMap[platformAddress] = PlatformAddress(
@@ -341,16 +328,16 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         );
     }
 
-    function setSupportFeesForNFT(address supportAddress, uint256 nftID, uint256[] memory supportFactor)
+    function setSupportFactorForNFT(address supportAddress, uint256 nftID, uint256[] memory supportFactor)
     external
     {
-        require(supportAddressDefault[supportAddress].active, "You are not added as a support partner");
+        require(supportAddressDefault[supportAddress].active, "Not a support partner");
         require(
             supportAddress == _msgSender()
             || isBridgeRole(),
-            "Only the support address can call this function"
+            "No permissions to call this"
         );
-        require(supportFactor[0] >= 5000, "The support fee should be greater than or equal to 5%");
+        require(supportFactor[0] >= 5000, "Support fee is not >= 5%");
 
         supportAddressToNFT[supportAddress][nftID].supportFactor = supportFactor;
         supportAddressToNFT[supportAddress][nftID].active = true;
@@ -363,11 +350,11 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole(),
-            "The nftOwner address should be the function caller"
+            "No permissions to call this"
         );
 
         address supportAddress = nftSubscription[nftID].factorAddressList[SUPPORT_ADDR_ID];
-        require(supportAddressToNFT[supportAddress][nftID].active, "Support address has not changed fees");
+        require(supportAddressToNFT[supportAddress][nftID].active, "Support fees not changed");
         SubscriptionBalance.updateBalance(nftID);
 
         uint256[] memory supportFactor = supportAddressToNFT[supportAddress][nftID].supportFactor;
@@ -461,7 +448,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole(),
-            "The nftOwner address should be the function caller"
+            "No permissions to call this"
         );
         require(
             nftSubscription[nftID].factorAddressList[REFERRAL_ADDR_ID] == address(0),
@@ -481,7 +468,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole(),
-            "Caller is not NFT owner"
+            "No permissions to call this"
         );
 
         require(
@@ -519,7 +506,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole(),
-            "Caller is not nft owner"
+            "No permissions to call this"
         );
         require(
             nftSubscription[nftID].createTime > 0,
@@ -557,7 +544,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(
             (caller == _msgSender() && (nftSubscription[nftID].factorAddressList[LICENSE_ADDR_ID] == caller))
             || isBridgeRole(),
-            "only called by licenser"
+            "No permissions to call this"
         );
         require(
             nftSubscription[nftID].createTime > 0,
@@ -575,8 +562,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
 
     function initialize(
         address _GlobalDAO,
-        uint256 _LIMIT_NFT_SUBNETS,
-        uint256 _MIN_TIME_FUNDS,
         address _globalSupportAddress,
         uint256[] memory _globalSupportFactor,
         IRegistration _RegistrationContract,
@@ -599,8 +584,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
 
         GLOBAL_DAO_ADDRESS = _GlobalDAO;
 
-        LIMIT_NFT_SUBNETS = _LIMIT_NFT_SUBNETS;
-        MIN_TIME_FUNDS = _MIN_TIME_FUNDS;
         RegistrationContract = _RegistrationContract;
         ApplicationNFT = _ApplicationNFT;
         SubscriptionBalance = _SubscriptionBalance;

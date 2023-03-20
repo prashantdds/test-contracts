@@ -67,13 +67,12 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
     modifier onlySubscriptionBalance() {
         require(
             address(SubscriptionBalance) == _msgSender(),
-            "Only SubscriptionBalance can call this function"
+            "Only callable by SubBalance"
         );
         _;
     }
 
     function setSubscriptionContract(address _Subscription) external onlyOwner {
-        require(address(SubscriptionContract) == address(0), "Already set");
         SubscriptionContract = ISubscription(_Subscription);
     }
 
@@ -81,14 +80,12 @@ contract SubscriptionBalanceCalculator is OwnableUpgradeable {
         external
         onlyOwner
     {
-        require(address(SubscriptionBalance) == address(0), "Already set");
         SubscriptionBalance = ISubscriptionBalance(_SubscriptionBalance);
     }
 
     function setSubnetDAODistributor(
         ISubnetDAODistributor _SubnetDAODistributor
     ) external onlyOwner {
-        require(address(SubnetDAODistributor) == address(0), "Already set");
         SubnetDAODistributor = _SubnetDAODistributor;
     }
 

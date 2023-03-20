@@ -376,8 +376,6 @@ const deploySubscription = async () => {
         SubscriptionContract,
             [
                 subscription.globalDAO,
-                subscription.limitNFTSubnets,
-                subscription.minTimeFunds,
                 subscription.globalSupportAddress,
                 [
                     subscription.supportFactor1,
@@ -445,9 +443,9 @@ const deployXCTMinter = async () => {
         deployer
     )
     const weth9 = await weth9Contract.attach(parameters.xctMinter.wethAddressPolygon)
-    await weth9.approve(router.address, ethers.utils.parseEther("1000"))
-    await stack.approve(router.address, ethers.utils.parseEther("1000"))
-    await USDC.approve(router.address, ethers.utils.parseEther("1000"))
+    await weth9.approve(router.address, ethers.utils.parseEther("100000"))
+    await stack.approve(router.address, ethers.utils.parseEther("100000"))
+    await USDC.approve(router.address, ethers.utils.parseEther("100000"))
 
     await router.addLiquidityETH(
         stack.address,
@@ -457,7 +455,74 @@ const deployXCTMinter = async () => {
         deployer.address,
         ethers.constants.MaxUint256,
         { value: ethers.utils.parseEther("100") }
-    )
+    );
+
+    const now = new Date()
+    console.log(now.getTime())
+    var time = now.getTime() * 1000 + 60 * 60 * 24;
+
+
+
+    // const path = [0, 0, 0]
+    // path[0] = stack.addres;
+    // path[1] = parameters.xctMinter.wethAddressPolygon;
+    // path[2] = USDC.address;
+
+    const path = [0, 0]
+    path[0] = parameters.xctMinter.wethAddressPolygon;
+    // path[1] = parameters.xctMinter.wethAddressPolygon;
+    path[1] = USDC.address;
+
+    // uint256 amountForStack = _tokenAmount.mul(percentConv).div(100000);
+    
+
+    console.log("before get amounts out");
+    var amounts = await router.getAmountsOut(
+        ethers.utils.parseEther("100"),
+        path
+    );
+    
+    console.log("amounts: ", amounts);
+
+    const slippageFactor = 90;
+
+
+    console.log("swap amount");
+    let beforeUSDC = await USDC.balanceOf(deployer.address);
+    await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
+        amounts[1].mul(slippageFactor).div(100),
+        path,
+        deployer.address,
+        time,
+        {
+            value: ethers.utils.parseEther("100")
+        }
+    );
+    let afterUSDC = await USDC.balanceOf(deployer.address);
+    afterUSDC = afterUSDC.sub(beforeUSDC);
+    console.log("after USDC: ", afterUSDC);
+
+
+    let stackBalance = await stack.balanceOf(deployer.address);
+    console.log("before add liquidity: ", time, stackBalance);
+
+
+
+    await router.addLiquidity(
+        stack.address,
+        USDC.address,
+
+        ethers.utils.parseEther("10"),
+        // ethers.utils.parseEther("10"),
+        afterUSDC.div(2),
+        ethers.utils.parseEther("0.1"),
+        ethers.utils.parseEther("0.1"),
+        deployer.address,
+        time
+      );
+    console.log("after add liquidity");
+
+    
     // await router.addLiquidityETH(
     //     USDC.address,
     //     ethers.utils.parseEther("1000"),
@@ -496,6 +561,33 @@ const deployXCTMinter = async () => {
 
     await xct.approve(XCTMinter.address, ethers.utils.parseEther("100"))
     await stack.approve(XCTMinter.address, ethers.utils.parseEther("100"))
+
+
+
+    // let usdcPath = [0, 0, 0]
+    let usdcPath = [0, 0]
+    // usdcPath[0] = parameters.xctMinter.wethAddressPolygon;
+    usdcPath[0] = stack.address
+    // usdcPath[1] = parameters.xctMinter.wethAddressPolygon;
+    // path[1] = parameters.xctMinter.wethAddressPolygon;
+    usdcPath[1] = USDC.address;
+
+    // uint256 amountForStack = _tokenAmount.mul(percentConv).div(100000);
+    
+
+    amounts = await router.getAmountsOut(
+        // ethers.utils.parseEther("1").mul(95000).div(100000),
+        ethers.utils.parseEther("1"),
+        usdcPath
+    );
+
+
+    console.log("before buy xct: ", amounts, usdcPath);
+    let xctBeforeBal = await xct.balanceOf(deployer.address);
+    await XCTMinter.buyXCT(stack.address, ethers.utils.parseEther("1"));
+    let xctAfterBal = await xct.balanceOf(deployer.address);
+    xctAfterBal = xctAfterBal.sub(xctBeforeBal);
+    console.log("after buy xct", xctAfterBal);
 
     return XCTMinter.address
 }
@@ -545,6 +637,13 @@ const connectSubBalToAppDep = async () => {
     const SubscriptionBalance = await getSubscriptionBalance();
 
     const op = await SubscriptionBalance.setContractBasedDeployment(addresses.ContractBasedDeployment);
+
+    // printLogs(op.hash)
+}
+
+const connectSubBalToSubDist = async () => {
+    const SubscriptionBalance = await getSubscriptionBalance();
+    const op = await SubscriptionBalance.setSubnetDAODistributor(addresses.SubnetDAODistributor);
 
     // printLogs(op.hash)
 }
@@ -769,7 +868,6 @@ const deployContracts = async () => {
     addresses.nftToken = await deployDarkNFT()
     addresses.Registration = await deployReg()
     addresses.appNFT = await deployAppNFT()
-    // addresses.RoleControl = await deployRoleControl()
     addresses.SubscriptionBalanceCalculator =
         await deploySubscriptionBalanceCalculator()
     addresses.SubscriptionBalance = await deploySubscriptionBalance()
@@ -787,6 +885,7 @@ const deployContracts = async () => {
     await connectSubBalToAppDep();
     await connectSubBalCalcToAppDep();
     await connectSubBalToBalCalc();
+    await connectSubBalToSubDist();
 
     printLogs(addresses)
 }

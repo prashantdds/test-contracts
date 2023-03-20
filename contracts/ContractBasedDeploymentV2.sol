@@ -25,8 +25,8 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
 
     address BRIDGE_ADDRESS;
 
-    bytes32 public constant CONTRACT_BASED_DEPLOYER =
-        keccak256("CONTRACT_BASED_DEPLOYER");
+    bytes32 public constant DEPLOYER =
+        keccak256("DEPLOYER");
         
 
     struct Multihash {
@@ -108,6 +108,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         ISubscriptionBalance _SubscriptionBalance,
         IRegistration _Registration
     ) public initializer {
+        __Ownable_init();
         Subscription = _Subscription;
         SubscriptionBalance = _SubscriptionBalance;
         AppNFT = _AppNFT;
@@ -473,7 +474,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         address[] memory rlsAddresses,
         uint256[] memory licenseFactor
     )
-    public
+    internal
     {
         Subscription.subscribe(
             nftID,
@@ -694,6 +695,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         uint16[] memory resourceArray
     )
     external
+    hasPermission(nftID)
     {
         require(entries[nftID][appID].active, "App doesnt exist");
         require(paramSubnetList.length == multiplier.length,
@@ -726,7 +728,9 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         uint256[] memory paramSubnetList,
         uint8[][] memory multiplier
     )
-    external {
+    external
+    hasPermission(nftID)
+    {
 
         require(entries[nftID][appID].active, "App doesnt exist");
         require(paramSubnetList.length == multiplier.length,
@@ -756,8 +760,8 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
     }
 
     function setSubnetLock(uint256 nftID)
-    hasPermission(nftID)
     external
+    hasPermission(nftID)
     {
         nftSubnetLock[nftID] = true;
     }
@@ -823,6 +827,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
     
         emit DeleteApp(nftID, appID);
     }
+
 
     function getComputesOfSubnet(uint256 nftID, uint256 subnetID) external view returns(uint32[] memory)
     {
@@ -1024,7 +1029,17 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
     modifier hasPermission(uint256 _nftId) {
         require(
             AppNFT.ownerOf(_nftId) == msg.sender
-            || AppNFT.hasRole(_nftId, CONTRACT_BASED_DEPLOYER, msg.sender)
+            || AppNFT.hasRole(_nftId, DEPLOYER, msg.sender)
+            || msg.sender == BRIDGE_ADDRESS
+            ,
+            "No permissions to call this"
+        );
+        _;
+    }
+
+    modifier hasSubscribePermission(uint256 _nftId) {
+        require(
+            AppNFT.ownerOf(_nftId) == msg.sender
             || msg.sender == BRIDGE_ADDRESS
             ,
             "No permissions to call this"

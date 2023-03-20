@@ -40,8 +40,6 @@ contract TestAppNFT is
     bytes32 public constant DEPLOYER = keccak256("DEPLOYER");
     bytes32 public constant ACCESS_MANAGER = keccak256("ACCESS_MANAGER");
     bytes32 public constant BILLING_MANAGER = keccak256("BILLING_MANAGER");
-    bytes32 public constant CONTRACT_BASED_DEPLOYER =
-        keccak256("CONTRACT_BASED_DEPLOYER");
 
 
     function initialize() public initializer {

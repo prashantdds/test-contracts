@@ -120,7 +120,6 @@ contract SubnetDAODistributor is PausableUpgradeable, TokensRecoverable {
     modifier hasPermission(uint256 subnetID) {
         require(
             msg.sender == address(Registration) || Registration.hasPermissionToClusterList(subnetID, msg.sender),
-            // "Registration: Only Registration contract or WHITELIST_ROLE or Local DAO can add/reset weights to whitelisted addresses"
             "No permission to change weights"
         );
         _;
