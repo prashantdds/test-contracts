@@ -74,6 +74,12 @@ interface ISubscription {
     external
     view
     returns(address);
+
+
+    function checkBridgeRole(address bridge)
+    external
+    view
+    returns (bool);
 }
 
 
