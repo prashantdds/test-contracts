@@ -63,7 +63,6 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
     mapping(uint256 => uint256[]) public nftAllSubnets;
     mapping(uint256 => uint16) public nftAppCount;
     mapping(uint256 => bool) nftSubnetLock;
-    mapping(uint256 => uint256[]) nftSubnetLastUpdateTime;
 
     mapping(uint256 => uint256) public lastAppID;
 
@@ -347,7 +346,6 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
                         if((subnetBitmap2 & 1) == 0)
                         {
                             nftAllSubnets[nftID][j] = subnetID;
-                            nftSubnetLastUpdateTime[nftID][i] = block.timestamp;
                             paramBitmap |= 1 << j;
                             nftSubnetEntry[nftID][subnetID] = SubnetEntryID(
                                 j,1
@@ -365,7 +363,6 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
                     if(subnetBitmap2 == 0)
                     {
                         nftAllSubnets[nftID].push(subnetID);
-                        nftSubnetLastUpdateTime[nftID].push(block.timestamp);
                         nftSubnetEntry[nftID][subnetID] = SubnetEntryID(
                             uint8(subListLen),
                             1
@@ -376,12 +373,12 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
                     }
                 }
             }
-            else {
-                 if((paramBitmap & (1 << subnetEntry.entryID)) > 0)
+        else {
+                if((paramBitmap & (1 << subnetEntry.entryID)) > 0)
                 {
                     revert("duplicate subnet ids");
                 }
-                paramBitmap |= 1 << subnetEntry.entryID;
+                paramBitmap = paramBitmap | ( 1 << subnetEntry.entryID);
                 if((appBitmap & (1 << subnetEntry.entryID)) == 0)
                 {
                     nftSubnetEntry[nftID][subnetID].appCount = subnetEntry.appCount + 1;
@@ -499,6 +496,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         }
     }
 
+
     function subscribeAndCreateApp(
         uint256 balanceToAdd,
         uint256 nftID,
@@ -518,7 +516,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         uint16 appCount = nftAppCount[nftID];
         require(subnetList.length == multiplier.length,
             "wrong multiplier length");
-        require(appCount < 255, "app count exceeded 256");
+        require(appCount < 255, "app count exceeded 255");
         require(!appNameCheck[nftID][appName], "app name already exists");
 
         subscribe(
