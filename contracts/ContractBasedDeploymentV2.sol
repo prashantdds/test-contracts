@@ -23,7 +23,6 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
     IApplicationNFT AppNFT;
     IRegistration Registration;
 
-    address BRIDGE_ADDRESS;
 
     bytes32 public constant DEPLOYER =
         keccak256("DEPLOYER");
@@ -66,7 +65,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
     mapping(uint256 => bool) nftSubnetLock;
     mapping(uint256 => uint256[]) nftSubnetLastUpdateTime;
 
-    mapping(uint256 => uint256) public appIDToNameList;
+    mapping(uint256 => uint256) public lastAppID;
 
     event CreateApp(
         uint256 nftID,
@@ -79,6 +78,18 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         uint16[] resourceArray,
         bool cidLock
         );
+
+    event CreateAppBatch(
+        uint256 nftID,
+        uint256[] appID,
+        bytes32[] appName,
+        bytes32[] digest,
+        uint8[2][] hashAndSize,
+        uint256[][] subnetList,
+        uint8[][][] multiplier,
+        uint16[][] resourceArray,
+        bool[] cidLock
+    );
 
     event UpdateApp(
         FullAppData appData
@@ -517,7 +528,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
             licenseFactor
         );
 
-        uint256 appID = appIDToNameList[nftID];
+        uint256 appID = lastAppID[nftID];
 
         calculateResource(
             nftID,
@@ -538,7 +549,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
             true
         );
 
-        appIDToNameList[nftID] = appID + 1;
+        lastAppID[nftID] = appID + 1;
         nftAppCount[nftID] = appCount + 1;
         
         appNameCheck[nftID][appName] = true;
@@ -569,24 +580,69 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         bool[] memory cidLock
     )
     external
+    hasPermission(nftID)
     {
+        {
+            uint16 appCount = nftAppCount[nftID];
+            require(appCount + appName.length < 255, "app count exceeded 256");
+
+            nftAppCount[nftID] = appCount + uint16(appName.length);
+        }
+
+        uint256 appID = lastAppID[nftID];
+        require(appID > 0, "Subscription not done");
+
+        uint256[] memory appIDList = new uint256[](appName.length);
+        
         for(uint i = 0; i < appName.length; i++)
         {
-            createApp(
-                balanceToAdd,
+            require(!appNameCheck[nftID][appName[i]], "App name already exists");
+            require(subnetList[i].length == multiplier[i].length,
+            "wrong multiplier length");
+
+            calculateResource(
                 nftID,
-                appName[i],
-                digest[i],
-                hashAndSize[i],
-                subnetList[i],
+                appID,
                 multiplier[i],
                 resourceArray[i],
-                cidLock[i]
+                subnetList[i]
             );
 
-            if(balanceToAdd > 0)
-                balanceToAdd = 0;
+            entries[nftID][appID] = Multihash(
+                appName[i],
+                block.timestamp,
+                digest[i],
+                resourceArray[i],
+                hashAndSize[i][0],
+                hashAndSize[i][1],
+                cidLock[i],
+                true
+            );
+
+            appNameCheck[nftID][appName[i]] = true;
+            appIDList[i] = appID;
+            appID += 1;
         }
+
+        if(balanceToAdd > 0)
+        {
+            SubscriptionBalance.addBalanceWithoutUpdate(msg.sender, nftID, balanceToAdd);
+        }
+
+        lastAppID[nftID] = appID;
+
+
+        emit CreateAppBatch(
+            nftID,
+            appIDList,
+            appName,
+            digest,
+            hashAndSize,
+            subnetList,
+            multiplier,
+            resourceArray,
+            cidLock
+        );
     }
 
     function createApp(
@@ -610,7 +666,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         require(!appNameCheck[nftID][appName], "App name already exists");
 
 
-        uint256 appID = appIDToNameList[nftID];
+        uint256 appID = lastAppID[nftID];
         require(appID > 0, "Subscription not done");
 
         calculateResource(
@@ -637,7 +693,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
             true
         );
 
-        appIDToNameList[nftID] = appID + 1;
+        lastAppID[nftID] = appID + 1;
         nftAppCount[nftID] = appCount + 1;
         appNameCheck[nftID][appName] = true;
 
@@ -991,7 +1047,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
     {
         FullAppData[] memory fullAppList;
         uint appListLen;
-        uint256 appCount = appIDToNameList[nftID];
+        uint256 appCount = lastAppID[nftID];
 
         for(uint i = 0; i < appCount; i++)
         {
@@ -1022,15 +1078,11 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         return nftAllSubnets[nftID];
     }
 
-    function setBridge(address bridge) external onlyOwner {
-        BRIDGE_ADDRESS = bridge;
-    }
-
     modifier hasPermission(uint256 _nftId) {
         require(
             AppNFT.ownerOf(_nftId) == msg.sender
             || AppNFT.hasRole(_nftId, DEPLOYER, msg.sender)
-            || msg.sender == BRIDGE_ADDRESS
+            || Subscription.checkBridgeRole(msg.sender)
             ,
             "No permissions to call this"
         );
@@ -1040,7 +1092,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
     modifier hasSubscribePermission(uint256 _nftId) {
         require(
             AppNFT.ownerOf(_nftId) == msg.sender
-            || msg.sender == BRIDGE_ADDRESS
+            || Subscription.checkBridgeRole(msg.sender)
             ,
             "No permissions to call this"
         );

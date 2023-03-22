@@ -264,14 +264,15 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
         public
         whenNotPaused
     {
+        address actualNFTOwner = ApplicationNFT.ownerOf(nftID);
         require(
-            (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
+            (nftOwner == _msgSender() && (actualNFTOwner == nftOwner))
             || isBridgeRole()
             || (nftOwner == _msgSender() && ApplicationNFT.hasRole(nftID, BILLING_MANAGER_ROLE, nftOwner))
             ,
             "Caller not the NFT owner"
         );
-        _withdrawBalance(nftOwner, nftID, _bal);
+        _withdrawBalance(actualNFTOwner, nftID, _bal);
     }
 
     function _withdrawBalance(address nftOwner, uint256 nftID, uint256 _bal)
@@ -601,11 +602,6 @@ contract SubscriptionBalance is OwnableUpgradeable, PausableUpgradeable {
 
     /* ========== MODIFIERS ========== */
 
-    // modifier gasCheck() {
-    //     gas = gasleft();
-    //     _;
-    //     gas -= gasleft();
-    // }
 
     modifier onlySubscription() {
         require(
