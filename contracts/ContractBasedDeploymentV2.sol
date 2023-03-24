@@ -91,7 +91,14 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
     );
 
     event UpdateApp(
-        FullAppData appData
+        uint256 balanceToAdd,
+        uint256 nftID,
+        uint256 appID,
+        bytes32 digest,
+        uint8[] hashAndSize,
+        uint256[] subnetList,
+        uint8[][] multiplier,
+        uint16[] resourceArray
     );
 
     event UpdateCID(
@@ -860,8 +867,20 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         entries[nftID][appID].resourceArray = resourceArray;
         entries[nftID][appID].timestamp = block.timestamp;
 
+
+        uint256[] memory subnetList;
+        uint8[][] memory currentReplicaList;
+        (subnetList, currentReplicaList) = getCurrentReplica(nftID, appID);
+
         emit UpdateApp(
-            getApp(nftID, appID)
+            balanceToAdd,
+            nftID,
+            appID,
+            digest,
+            hashAndSize,
+            subnetList,
+            currentReplicaList,
+            resourceArray
         );
     }
 
