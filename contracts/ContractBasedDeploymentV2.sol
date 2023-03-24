@@ -94,6 +94,7 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         uint256 balanceToAdd,
         uint256 nftID,
         uint256 appID,
+        bytes32 appName,
         bytes32 digest,
         uint8[] hashAndSize,
         uint256[] subnetList,
@@ -871,11 +872,13 @@ contract ContractBasedDeploymentV2 is OwnableUpgradeable {
         uint256[] memory subnetList;
         uint8[][] memory currentReplicaList;
         (subnetList, currentReplicaList) = getCurrentReplica(nftID, appID);
+        bytes32 appName = entries[nftID][appID].appName;
 
         emit UpdateApp(
             balanceToAdd,
             nftID,
             appID,
+            appName,
             digest,
             hashAndSize,
             subnetList,
