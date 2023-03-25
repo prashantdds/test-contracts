@@ -153,7 +153,7 @@ const signupCluster = async (
 
 const setupUrsula = async () => {
     const provider = new ethers.providers.JsonRpcProvider(
-        "https://test-contracts-production.up.railway.app"
+        "test-contracts-production.up.railway.app"
     )
 
     const cluster1 = new ethers.Wallet(
