@@ -163,28 +163,36 @@ const getXCTMinter = async () => {
 
 const deployXCT = async () => {
     const ERC20 = await ethers.getContractFactory("TestXCTERC20")
-    const xct = await upgrades.deployProxy(ERC20, [], {
+    // const XCT = await ERC20.deploy();
+    const XCT = await upgrades.deployProxy(ERC20, [], {
         initializer: "initialize",
     })
-    await xct.deployed()
-    // printLogs(`const xct = "${xct.address}"`)
-    return xct.address
+    await XCT.deployed()
+    // await XCT.initialize();
+    printLogs(`const xct = "${XCT.address}"`)
+    return XCT.address
 }
 
 const deployStack = async () => {
+    console.log("before deploy stack");
     const ERC20 = await ethers.getContractFactory("TestERC20")
+    console.log("after factory");
+    // const stack = await ERC20.deploy();
+    console.log("after call deploy");
     const stack = await upgrades.deployProxy(ERC20, [], {
         initializer: "initialize",
     })
     await stack.deployed()
-    // printLogs(`const stack = "$ {stack.address}"`)
+    console.log("after deployed");
+    // await stack.initialize();
+    printLogs(`const stack = "${stack.address}"`)
     return stack.address
 }
 
 const deployDarkNFT = async () => {
     const NFT = await ethers.getContractFactory("TestDarkMatter")
     const nftToken = await NFT.deploy()
-    // printLogs(`const nftToken = "${nftToken.address}"`) // 0x527e794667Cb9958E058A824d991a3cf595039C0
+    printLogs(`const nftToken = "${nftToken.address}"`) // 0x527e794667Cb9958E058A824d991a3cf595039C0
     return nftToken.address
 }
 
@@ -195,7 +203,7 @@ const callStackApprove = async () => {
         addresses.Registration,
         ethers.utils.parseEther("1000000000")
     )
-    // printLogs("op: ", op.hash)
+    printLogs("op: ", op.hash)
 }
 
 const callNftApprove = async () => {
@@ -203,7 +211,7 @@ const callNftApprove = async () => {
     const nftToken = await getNFTToken()
 
     const op = await nftToken.setApprovalForAll(addresses.Registration, true)
-    // printLogs("op: ", op.hash)
+    printLogs("op: ", op.hash)
 }
 
 const deployReg = async () => {
@@ -223,9 +231,20 @@ const deployReg = async () => {
         ],
         { initializer: "initialize" }
     )
+    // Registration = await RegistrationContract.deploy();
     await Registration.deployed()
 
-    // printLogs(`const Registration = "${Registration.address}"`) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
+    // await Registration.initialize(
+    //     addresses.nftToken,
+    //     addresses.stack,
+    //     registration.globalDAO,
+    //     registration.coolDownTimeForPriceChange,
+    //     registration.daoRate,
+    //     registration.reqdStackFeesForSubnet,
+    //     registration.defaultWhitelistedClusterWeight,
+    // );
+
+    printLogs(`const Registration = "${Registration.address}"`) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
     return Registration.address
 }
 
@@ -239,7 +258,11 @@ const deployAppNFT = async () => {
     )
 
     // appNFT = await AppNFTContract.deploy()
-    // printLogs(`const appNFT = "${appNFT.address}"`)
+    await appNFT.deployed();
+
+    // await appNFT.initialize();
+
+    printLogs(`const appNFT = "${appNFT.address}"`)
     return appNFT.address
 }
 
@@ -248,15 +271,21 @@ const deploySubscriptionBalanceCalculator = async () => {
     SubscriptionBalanceCalculatorContract = await ethers.getContractFactory(
         "SubscriptionBalanceCalculator"
     )
+    // SubscriptionBalanceCalculator = await SubscriptionBalanceCalculatorContract.deploy();
     SubscriptionBalanceCalculator = await upgrades.deployProxy(
         SubscriptionBalanceCalculatorContract,
-        [addresses.Registration, addresses.appNFT, addresses.xct],
+        [addresses.Registration],
         { initializer: "initialize" }
     )
-    await SubscriptionBalanceCalculator.deployed()
-    // printLogs(
-    // `const SubscriptionBalanceCalculator = "${SubscriptionBalanceCalculator.address}"`
-    // ) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
+    await SubscriptionBalanceCalculator.deployed();
+
+    // await SubscriptionBalanceCalculator.initialize(
+    //     addresses.Registration
+    // );
+
+    printLogs(
+    `const SubscriptionBalanceCalculator = "${SubscriptionBalanceCalculator.address}"`
+    ) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
 
     return SubscriptionBalanceCalculator.address
 }
@@ -272,13 +301,6 @@ const deploySubscriptionBalance = async () => {
         "SubscriptionBalance"
     )
 
-    // IRegistration _RegistrationContract,
-    // IERC721 _ApplicationNFT,
-    // IERC20Upgradeable _XCTToken,
-    // IBalanceCalculator _BalanceCalculator,
-    // uint256 _ReferralPercent, - 5%
-    // uint256 _ReferralRevExpirySecs - 63072000 - 2 yrs
-
     const subscriptionBalance = parameters.subscriptionBalance
 
     SubscriptionBalance = await upgrades.deployProxy(
@@ -287,14 +309,22 @@ const deploySubscriptionBalance = async () => {
             addresses.Registration,
             addresses.appNFT,
             addresses.xct,
-            addresses.SubscriptionBalanceCalculator,
-            subscriptionBalance.referralPercent,
-            subscriptionBalance.referralRevExpirySecs,
+            // addresses.SubscriptionBalanceCalculator,
         ],
         { initializer: "initialize" }
     )
-    await SubscriptionBalance.deployed()
-    // printLogs(`const SubscriptionBalance = "${SubscriptionBalance.address}"`) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
+
+    // SubscriptionBalance = await SubscriptionBalanceContract.deploy();
+    await SubscriptionBalance.deployed();
+
+    // await SubscriptionBalance.initialize(
+    //     addresses.Registration,
+    //     addresses.appNFT,
+    //     addresses.xct,
+    //     addresses.SubscriptionBalanceCalculator,
+    // )
+
+    printLogs(`const SubscriptionBalance = "${SubscriptionBalance.address}"`) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
 
     return SubscriptionBalance.address
 }
@@ -309,58 +339,75 @@ const deploySubnetDAODistributor = async () => {
     SubnetDAODistributorContract = await ethers.getContractFactory(
         "SubnetDAODistributor"
     )
+    // SubnetDAODistributor = await SubnetDAODistributorContract.deploy();
     SubnetDAODistributor = await upgrades.deployProxy(
         SubnetDAODistributorContract,
         [
             addresses.xct,
+            addresses.SubscriptionBalance,
             addresses.SubscriptionBalanceCalculator,
             addresses.Registration,
         ],
         { initializer: "initialize" }
     )
     await SubnetDAODistributor.deployed()
-    // printLogs(
-    //     `const SubnetDAODistributor = "${SubnetDAODistributor.address}"`
-    // ) //
+
+    // await SubnetDAODistributor.initialize(
+    //         addresses.xct,
+    //         addresses.SubscriptionBalance,
+    //         addresses.SubscriptionBalanceCalculator,
+    //         addresses.Registration
+    // );
+
+    printLogs(
+        `const SubnetDAODistributor = "${SubnetDAODistributor.address}"`
+    ) //
     return SubnetDAODistributor.address
 }
 
 const deploySubscription = async () => {
-    // address _GlobalDAO,
-    // uint256 _LIMIT_NFT_SUBNETS,
-    // uint256 _MIN_TIME_FUNDS,
-    // IRegistration _RegistrationContract,
-    // IERC721 _ApplicationNFT,
-    // ISubscriptionBalance _SubscriptionBalance,
-    // IERC20Upgradeable _XCT,
-    // uint256 _REQD_NOTICE_TIME_S_PROVIDER,
-    // uint256 _REQD_COOLDOWN_S_PROVIDER
+
     const subscription = parameters.subscription
 
     SubscriptionContract = await ethers.getContractFactory("Subscription")
+    // Subscription = await SubscriptionContract.deploy();
+
     Subscription = await upgrades.deployProxy(
         SubscriptionContract,
-        [
-            subscription.globalDAO,
-            subscription.limitNFTSubnets,
-            subscription.minTimeFunds,
-            subscription.globalSupportAddress,
             [
-                subscription.supportFactor1,
-                subscription.supportFactor2
+                subscription.globalDAO,
+                subscription.globalSupportAddress,
+                [
+                    subscription.supportFactor1,
+                    subscription.supportFactor2
+                ],
+                addresses.Registration,
+                addresses.appNFT,
+                addresses.SubscriptionBalance,
+                addresses.SubscriptionBalanceCalculator,
+                addresses.xct,
+                subscription.reqdNoticeTimeSProvider,
+                subscription.reqdCooldownSProvider,
             ],
-            addresses.Registration,
-            addresses.appNFT,
-            addresses.SubscriptionBalance,
-            addresses.SubscriptionBalanceCalculator,
-            addresses.xct,
-            subscription.reqdNoticeTimeSProvider,
-            subscription.reqdCooldownSProvider,
-        ],
-        { initializer: "initialize" }
-    )
+            { initializer: "initialize" }
+        );
+
     await Subscription.deployed()
-    // printLogs(`const Subscription = "${Subscription.address}"`) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
+
+    printLogs(`const Subscription = "${Subscription.address}"`) // 0xAF69888E27433CCfDc48DD3acEc8BA937DFF74A9
+
+    // SubscriptionContractV2 = await ethers.getContractFactory("SubscriptionV2");
+
+    // console.log("before upgrade: ", Subscription.address);
+    // await upgrades.upgradeProxy(
+    //     Subscription.address,
+    //     SubscriptionContractV2
+    //   );
+
+    // console.log("after upgrade");
+    // SubscriptionV2 = await SubscriptionContractV2.attach(
+    //     Subscription.address
+    // );
 
     return Subscription.address
 }
@@ -396,9 +443,9 @@ const deployXCTMinter = async () => {
         deployer
     )
     const weth9 = await weth9Contract.attach(parameters.xctMinter.wethAddressPolygon)
-    await weth9.approve(router.address, ethers.utils.parseEther("1000"))
-    await stack.approve(router.address, ethers.utils.parseEther("1000"))
-    await USDC.approve(router.address, ethers.utils.parseEther("1000"))
+    await weth9.approve(router.address, ethers.utils.parseEther("100000"))
+    await stack.approve(router.address, ethers.utils.parseEther("100000"))
+    await USDC.approve(router.address, ethers.utils.parseEther("100000"))
 
     await router.addLiquidityETH(
         stack.address,
@@ -408,7 +455,74 @@ const deployXCTMinter = async () => {
         deployer.address,
         ethers.constants.MaxUint256,
         { value: ethers.utils.parseEther("100") }
-    )
+    );
+
+    const now = new Date()
+    console.log(now.getTime())
+    var time = now.getTime() * 1000 + 60 * 60 * 24;
+
+
+
+    // const path = [0, 0, 0]
+    // path[0] = stack.addres;
+    // path[1] = parameters.xctMinter.wethAddressPolygon;
+    // path[2] = USDC.address;
+
+    const path = [0, 0]
+    path[0] = parameters.xctMinter.wethAddressPolygon;
+    // path[1] = parameters.xctMinter.wethAddressPolygon;
+    path[1] = USDC.address;
+
+    // uint256 amountForStack = _tokenAmount.mul(percentConv).div(100000);
+    
+
+    console.log("before get amounts out");
+    var amounts = await router.getAmountsOut(
+        ethers.utils.parseEther("100"),
+        path
+    );
+    
+    console.log("amounts: ", amounts);
+
+    const slippageFactor = 90;
+
+
+    console.log("swap amount");
+    let beforeUSDC = await USDC.balanceOf(deployer.address);
+    await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
+        amounts[1].mul(slippageFactor).div(100),
+        path,
+        deployer.address,
+        time,
+        {
+            value: ethers.utils.parseEther("100")
+        }
+    );
+    let afterUSDC = await USDC.balanceOf(deployer.address);
+    afterUSDC = afterUSDC.sub(beforeUSDC);
+    console.log("after USDC: ", afterUSDC);
+
+
+    let stackBalance = await stack.balanceOf(deployer.address);
+    console.log("before add liquidity: ", time, stackBalance);
+
+
+
+    await router.addLiquidity(
+        stack.address,
+        USDC.address,
+
+        ethers.utils.parseEther("10"),
+        // ethers.utils.parseEther("10"),
+        afterUSDC.div(2),
+        ethers.utils.parseEther("0.1"),
+        ethers.utils.parseEther("0.1"),
+        deployer.address,
+        time
+      );
+    console.log("after add liquidity");
+
+    
     // await router.addLiquidityETH(
     //     USDC.address,
     //     ethers.utils.parseEther("1000"),
@@ -437,7 +551,7 @@ const deployXCTMinter = async () => {
         ],
         { initializer: "initialize" }
     )
-    await XCTMinter.deployed()
+    // await XCTMinter.deployed()
 
     // grant MINTER_ROLE to XCTMinter contract
     await xct.grantRole(
@@ -447,6 +561,33 @@ const deployXCTMinter = async () => {
 
     await xct.approve(XCTMinter.address, ethers.utils.parseEther("100"))
     await stack.approve(XCTMinter.address, ethers.utils.parseEther("100"))
+
+
+
+    // let usdcPath = [0, 0, 0]
+    let usdcPath = [0, 0]
+    // usdcPath[0] = parameters.xctMinter.wethAddressPolygon;
+    usdcPath[0] = stack.address
+    // usdcPath[1] = parameters.xctMinter.wethAddressPolygon;
+    // path[1] = parameters.xctMinter.wethAddressPolygon;
+    usdcPath[1] = USDC.address;
+
+    // uint256 amountForStack = _tokenAmount.mul(percentConv).div(100000);
+    
+
+    amounts = await router.getAmountsOut(
+        // ethers.utils.parseEther("1").mul(95000).div(100000),
+        ethers.utils.parseEther("1"),
+        usdcPath
+    );
+
+
+    console.log("before buy xct: ", amounts, usdcPath);
+    let xctBeforeBal = await xct.balanceOf(deployer.address);
+    await XCTMinter.buyXCT(stack.address, ethers.utils.parseEther("1"));
+    let xctAfterBal = await xct.balanceOf(deployer.address);
+    xctAfterBal = xctAfterBal.sub(xctBeforeBal);
+    console.log("after buy xct", xctAfterBal);
 
     return XCTMinter.address
 }
@@ -460,7 +601,7 @@ const deployRoleControl = async () => {
         [addresses.appNFT],
         { initializer: "initialize" }
     )
-    await RoleControl.deployed()
+    // await RoleControl.deployed()
 
     if (checkNoPrint()) printLogs("RoleControl: ", RoleControl.address)
     return RoleControl.address
@@ -474,7 +615,7 @@ const grantRoleForContractBasedDeployment = async (nftId, address, role32) => {
     else RoleInBytes32 = await RoleControl.CONTRACT_BASED_DEPLOYER()
 
     const op = await RoleControl.grantRole(nftId, RoleInBytes32, address)
-    // printLogs(op.hash)
+    printLogs(op.hash)
 }
 
 const deployContractBasedDeployment = async () => {
@@ -484,13 +625,50 @@ const deployContractBasedDeployment = async () => {
     )
     const ContractBasedDeployment = await upgrades.deployProxy(
         ContractBasedDeploymentContract,
-        [addresses.Subscription, addresses.appNFT],
+        [addresses.Subscription, addresses.appNFT, addresses.SubscriptionBalance, addresses.Registration],
         { initializer: "initialize" }
     )
-    await ContractBasedDeployment.deployed()
+    // await ContractBasedDeployment.deployed()
     printLogs(`ContractBasedDeployment: "${ContractBasedDeployment.address}"`)
     return ContractBasedDeployment.address
 }
+
+const connectSubBalToAppDep = async () => {
+    const SubscriptionBalance = await getSubscriptionBalance();
+
+    const op = await SubscriptionBalance.setContractBasedDeployment(addresses.ContractBasedDeployment);
+
+    // printLogs(op.hash)
+}
+
+const connectSubBalToSubDist = async () => {
+    const SubscriptionBalance = await getSubscriptionBalance();
+    const op = await SubscriptionBalance.setSubnetDAODistributor(addresses.SubnetDAODistributor);
+
+    // printLogs(op.hash)
+}
+
+const connectSubBalToBalCalc = async () => {
+    const SubscriptionBalance = await getSubscriptionBalance();
+    const op = await SubscriptionBalance.setBalanceCalculator(addresses.SubscriptionBalanceCalculator);
+
+    // printLogs(op.hash)
+}
+
+const connectSubBalCalcToAppDep = async () => {
+    printLogs("connect SubscriptionBalance to Subscription")
+    const SubscriptionBalanceCalculator = await getSubscriptionBalanceCalculator()
+
+    const op = await SubscriptionBalanceCalculator.setAppDeployment(
+        addresses.ContractBasedDeployment
+    )
+    // printLogs(op.hash)
+    // await SubscriptionBalanceCalculator.setSubscriptionContract(addresses.Subscription);
+    // await SubscriptionBalanceCalculator.setSubscriptionBalanceContract(addresses.SubscriptionBalance);
+    // await SubscriptionBalanceCalculator.setSubnetDAODistributor(addresses.SubnetDAODistributor);
+    // await Registration.set_SubnetDAODistributorContract(addresses.SubnetDAODistributor);
+}
+
 
 const connectSubBalToSub = async () => {
     printLogs("connect SubscriptionBalance to Subscription")
@@ -569,8 +747,11 @@ const xctApproveSubBal = async () => {
 }
 
 const grantSubRoleForDeployment = async (address) => {
+    console.log("granting sub role for deployment");
     const Subscription = await getSubscription()
+    console.log("subscription: ", Subscription.address);
     const SUBSCRIBE_ROLE = await Subscription.SUBSCRIBE_ROLE()
+    console.log("SUBSCRIBE ROLE: ", SUBSCRIBE_ROLE);
     await Subscription.grantRole(
         SUBSCRIBE_ROLE,
         addresses.ContractBasedDeployment
@@ -687,7 +868,6 @@ const deployContracts = async () => {
     addresses.nftToken = await deployDarkNFT()
     addresses.Registration = await deployReg()
     addresses.appNFT = await deployAppNFT()
-    // addresses.RoleControl = await deployRoleControl()
     addresses.SubscriptionBalanceCalculator =
         await deploySubscriptionBalanceCalculator()
     addresses.SubscriptionBalance = await deploySubscriptionBalance()
@@ -702,6 +882,10 @@ const deployContracts = async () => {
     await connectSubCalcToSubBal()
     await connectSubCalcToSubDAO()
     await connectRegToSubDAO()
+    await connectSubBalToAppDep();
+    await connectSubBalCalcToAppDep();
+    await connectSubBalToBalCalc();
+    await connectSubBalToSubDist();
 
     printLogs(addresses)
 }
@@ -731,8 +915,12 @@ module.exports = {
     deployDarkNFT,
     callStackApprove,
     callNftApprove,
-    // deployReg,
-    // deployAppNFT,
+    deployReg,
+    deployAppNFT,
+    deploySubscriptionBalanceCalculator,
+    deploySubscriptionBalance,
+    deploySubnetDAODistributor,
+    deploySubscription,
     deployContracts,
     deployRoleControl,
     grantRoleForContractBasedDeployment,
@@ -740,6 +928,11 @@ module.exports = {
     setNoPrint,
     setParameters,
     grantSubRoleForDeployment,
+    connectSubBalToSub,
+    connectSubCalcToSub,
+    connectSubCalcToSubBal,
+    connectSubCalcToSubDAO,
+    connectRegToSubDAO,
     getXCTMinter,
     deployXCTMinter,
     setupXCTMinter,

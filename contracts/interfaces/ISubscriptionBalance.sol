@@ -10,6 +10,11 @@ interface ISubscriptionBalance {
         uint256 endOfXCTBalance;
     }
 
+    function getBalanceEndTime(uint256 nftID)
+    external
+    view
+    returns(uint256);
+
     function nftBalances(uint256 nftId)
         external
         view
@@ -23,7 +28,10 @@ interface ISubscriptionBalance {
 
     function subscribeNew(
         uint256 nftID
-    ) external returns (bool);
+    ) external;
+
+    function addBalanceWithoutUpdate(address nftOwner, uint256 nftID, uint256 balanceToAdd)
+    external;
 
     function addBalance(address nftOwner, uint256 nftID, uint256 _balanceToAdd)
         external
@@ -38,17 +46,17 @@ interface ISubscriptionBalance {
 
     function updateBalance(uint256 _nftId) external;
 
+    function updateBalanceImmediate(
+        uint256 nftID
+    )
+    external;
+
     function addSubnetToNFT(uint256 _nftId, uint256 _subnetId)
         external
         returns (bool);
 
 
     function isBalancePresent(uint256 _nftId) external view returns (bool);
-
-    function isSubscribed(uint256 nftID)
-    external
-    view
-    returns (bool);
 
     function estimateUpdatedBalance(uint256 NFTid)
         external
@@ -61,4 +69,17 @@ interface ISubscriptionBalance {
         returns (uint256);
     
     function totalPrevBalance(uint256 nftID) external view returns (uint256);
+
+
+    function addRevBalance(address account, uint256 balance)
+    external;
+
+    function receiveRevenue()
+    external;
+
+    function receiveRevenueForAddressBulk(address[] memory _userAddresses)
+    external;
+
+    function receiveRevenueForAddress(address _userAddress)
+    external;
 }

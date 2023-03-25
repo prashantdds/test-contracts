@@ -11,7 +11,6 @@ import "./interfaces/ISubscriptionBalance.sol";
 import "./interfaces/IBalanceCalculator.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "hardhat/console.sol";
 
 contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     using SafeMathUpgradeable for uint256;
@@ -38,31 +37,21 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
 
     address public GLOBAL_DAO_ADDRESS;
 
-    struct NFTAttribute {
-        address referralAddress;
-        address licenseAddress;
-        address supportAddress;
-        address platformAddress;
-        uint256[] licenseFactor;
-        uint256[] supportFactor;
-        uint256 createTime;
-    }
+    uint256 public constant ADDR_LIMIT = 4;
+    uint256 public constant LICENSE_ADDR_ID = 0;
+    uint256 public constant REFERRAL_ADDR_ID = 1;
+    uint256 public constant SUPPORT_ADDR_ID = 2;
+    uint256 public constant PLATFORM_ADDR_ID = 3;
 
-    struct NFTSubnetAttribute {
-        uint256[] computeRequired;
-        bool subscribed;
-        uint256 subnetArrayID;
+    struct NFTAttribute {
+        uint256 createTime;
+        address[] factorAddressList;
     }
 
     mapping(uint256 => NFTAttribute) public nftSubscription;
 
-    // NFT id => SubnetID => NFTSubnetAttribute
-    mapping(uint256 => mapping(uint256 => NFTSubnetAttribute))
-    public userSubscription;
 
-    // NFT ids => subnetids for view purpose only
-    mapping(uint256 => uint256[]) public subscribedSubnetsOfNFT;
-    mapping(uint256 => bool[]) public activeSubnetsOfNFT;
+    mapping(uint256 => uint256[]) nftLicenseFactor;
 
     struct SupportFactor {
         uint256[] supportFactor;
@@ -79,6 +68,8 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     mapping(address => mapping(uint256 => SupportFactor)) public supportAddressToNFT;
     mapping(uint256 => mapping(address => bool)) supportPercentChangeMap;
 
+    mapping(uint256 => uint256[]) nftSupportFactor;
+
     struct PlatformAddress {
         uint256 platformPercentage;
         uint256 discountPercentage;
@@ -90,8 +81,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     address[] public platformAddressList;
     mapping(address => PlatformAddress) public platformAddressMap;
 
-    uint256 public LIMIT_NFT_SUBNETS;
-    uint256 public MIN_TIME_FUNDS;
 
     struct changeRequestTimeDuration
     {
@@ -135,10 +124,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
 
     event Subscribed(
         uint256 nftID,
-        address referralAddress,
-        address licenseAddress,
-        address supportAddress,
-        address platformAddress,
+        address[] factorAddressList,
         uint256[] licenseFactor,
         uint256[] supportFactor
     );
@@ -185,14 +171,20 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address supportAddress
     );
 
-    function getSubnetsOfNFT(
-        uint256 nftID
-    )
-    public
+    function getCreateTime(uint256 nftID)
+    external
     view
-    returns(uint256[] memory)
+    returns (uint256)
     {
-        return subscribedSubnetsOfNFT[nftID];
+        return nftSubscription[nftID].createTime;
+    }
+
+    function getNFTFactorAddress(uint256 nftID, uint256 factorID)
+    external
+    view
+    returns(address)
+    {
+        return nftSubscription[nftID].factorAddressList[factorID];
     }
 
     function getNFTSubscription(uint256 nftID)
@@ -203,22 +195,20 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         nftAttribute = nftSubscription[nftID];
     }
 
-    function getActiveSubnetsOfNFT(
-        uint256 nftID
-    )
-    public
-    view
-    returns (bool[] memory)
-    {
-        return activeSubnetsOfNFT[nftID];
-    }
-
     function isBridgeRole()
     public
     view
     returns (bool)
     {
         return hasRole(BRIDGE_ROLE, _msgSender());
+    }
+
+    function checkBridgeRole(address bridge)
+    public
+    view
+    returns (bool)
+    {
+        return hasRole(BRIDGE_ROLE, bridge);
     }
 
     function getBytes32OfRole(string memory roleName)
@@ -229,106 +219,30 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         return keccak256(bytes(roleName));
     }
 
-    function getSubscribedSubnetsOfNFT(uint256 nftID)
+    function getLicenseFactor(uint256 nftID)
     external
-    returns(
-        uint256[] memory,
-        bool[] memory
+    view
+    returns (uint256[] memory)
+    {
+        return nftLicenseFactor[nftID];
+    }
+
+    function getSupportFactor(uint256 nftID)
+    external
+    view
+    returns (uint256[] memory)
+    {
+        return nftSupportFactor[nftID];
+    }
+
+    function getPlatformFactors(address platformAddress)
+    external
+    view
+    returns (
+        PlatformAddress memory
     )
     {
-        return(
-            subscribedSubnetsOfNFT[nftID],
-            activeSubnetsOfNFT[nftID]
-        );
-    }
-
-    function getReferralAddress(uint256 nftID)
-        public
-        view
-        returns (address)
-    {
-        return nftSubscription[nftID].referralAddress;
-    }
-
-    function getLicenseAddress(uint256 nftID)
-        public
-        view
-        returns (address)
-    {
-        return nftSubscription[nftID].licenseAddress;
-    }
-
-    function getSupportAddress(uint256 nftID)
-        public
-        view
-        returns (address)
-    {
-        return nftSubscription[nftID].supportAddress;
-    }
-
-    function getPlatformAddress(uint256 nftID)
-        public
-        view
-        returns (address)
-    {
-        return nftSubscription[nftID].platformAddress;
-    }
-
-    function getReferralDuration(uint256 nftID)
-    public
-    view
-    returns(uint256)
-    {
-        return platformAddressMap[nftSubscription[nftID].platformAddress].referralExpiryDuration;
-    }
-
-    function r_licenseFactor(uint256 nftID)
-        public
-        view
-        returns (uint256[] memory)
-    {
-        return nftSubscription[nftID].licenseFactor;
-    }
-
-    function t_supportFactor(uint256 nftID)
-        public
-        view
-        returns (uint256[] memory)
-    {
-        return nftSubscription[nftID].supportFactor;
-    }
-
-    function u_referralFactor(uint256 nftID)
-    public
-    view
-    returns (uint256)
-    {
-        return platformAddressMap[nftSubscription[nftID].platformAddress].referralPercentage;
-    }
-
-    function v_platformFactor(uint256 nftID)
-    public
-    view
-    returns (uint256)
-    {
-        return platformAddressMap[nftSubscription[nftID].platformAddress].platformPercentage;
-    }
-
-    function w_discountFactor(uint256 nftID)
-    public
-    view
-    returns (uint256)
-    {
-        address platformAddress = nftSubscription[nftID].platformAddress;
-        address referralAddress = nftSubscription[nftID].referralAddress;
-        uint256 createTime      = nftSubscription[nftID].createTime;
-        uint256 referralExpiryDuration = platformAddressMap[platformAddress].referralExpiryDuration;
-
-        if(referralAddress != address(0) && ((createTime + referralExpiryDuration) > block.timestamp))
-        {
-            return platformAddressMap[platformAddress].discountPercentage;
-        }
-        return 0;
+        return platformAddressMap[platformAddress];
     }
 
     function getSupportFeesForNFT(address supportAddress, uint256 nftID)
@@ -347,46 +261,12 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         }
     }
 
-    function getComputesOfSubnet(uint256 nftID, uint256 subnetID)
-        external
-        view
-        returns (uint256[] memory)
-    {
-        return userSubscription[nftID][subnetID].computeRequired;
-    }
-
-    function checkSubscribed(uint256 nftID, uint256 subnetID)
-    external
-    view
-    returns (bool)
-    {
-        return userSubscription[nftID][subnetID].subscribed;
-    }
 
     function admin_changeGlobalDAO(address newGlobalDAO)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         GLOBAL_DAO_ADDRESS = newGlobalDAO;
-    }
-
-    function admin_changeNFTSubnetLimit(uint256 newSubnetLimit)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        emit ChangedNFTSubnetLimit(
-            LIMIT_NFT_SUBNETS,
-            newSubnetLimit
-        );
-        LIMIT_NFT_SUBNETS = newSubnetLimit;
-    }
-
-    function admin_changeMinTimeFunds(uint256 newMinTimeFunds)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        emit ChangedMinTimeFunds(MIN_TIME_FUNDS, newMinTimeFunds);
-        MIN_TIME_FUNDS = newMinTimeFunds;
     }
 
     function admin_changeSupportAddressCooldown(uint256 supportAddressCooldownDuration)
@@ -411,64 +291,14 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         CHANGE_REQUEST_DURATION.supportAddressNoticeDuration = supportAddressNoticeDuration;
     }
 
-    function changeSubscriptionStatus(
-        uint256 nftID,
-        uint256 subnetID,
-        bool allow
-    ) external onlyRole(CHANGE_SUBSCRIPTION_ROLE) {
-        userSubscription[nftID][subnetID].subscribed = allow;
-        emit Changed_CHANGE_SUBSCRIPTION(nftID, subnetID, allow);
-    }
-
-    function addDeltaComputes(
-        uint256 nftID,
-        uint256 subnetID,
-        int256[] memory deltaCompute
-    )
-    internal
-    returns (uint256[] memory)
-    {
-
-        uint256[] memory compute = new uint256[](deltaCompute.length);
-
-        if(!userSubscription[nftID][subnetID].subscribed)
-        {
-            for(uint256 i = 0; i < deltaCompute.length; i++)
-            {
-                require(deltaCompute[i] >= 0, "Cannot subscribe with negative resource values");
-                compute[i] = uint256(deltaCompute[i]);
-            }
-            return compute;
-        }
-
-        uint256[] memory subscribedCompute = userSubscription[nftID][subnetID].computeRequired;
-        
-        for(uint256 i = 0; i < subscribedCompute.length; i++)
-        {
-            int256 val = int256(subscribedCompute[i]) + deltaCompute[i];
-            require(val >= 0, "Withdrawing more resources than purchased");
-            
-            compute[i] = uint256(val);
-        }
-
-        for(uint256 i = subscribedCompute.length; i < deltaCompute.length; i++)
-        {
-            require(deltaCompute[i] >= 0, "Cannot subscribe with negative resource values");
-            compute[i] = uint256(deltaCompute[i]);
-        }
-    
-        return compute;
-    }
-
-
     function addSupportAddress(address supportAddress, uint256[] memory supportFactor)
     public
     {
         require(_msgSender() == GLOBAL_DAO_ADDRESS
         || isBridgeRole()
         ,
-         "Only the global dao address can add the support address");
-        require(supportFactor[0] >= 5000, "The default support fee should be greater than or equal to 5%");
+         "No permissions to call this");
+        require(supportFactor[0] >= 5000, "Default support fee is >= 5%");
         supportAddressDefault[supportAddress].supportFactor = supportFactor;
         supportAddressDefault[supportAddress].active = true;
         supportAddressList.push(supportAddress);
@@ -486,7 +316,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(_msgSender() == GLOBAL_DAO_ADDRESS
         || isBridgeRole()
         ,
-        "Only the global dao address can add the platform address");
+        "No permissions to call this");
         
         platformAddressList.push(platformAddress);
         platformAddressMap[platformAddress] = PlatformAddress(
@@ -498,58 +328,49 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         );
     }
 
-    function setSupportFeesForNFT(address supportAddress, uint256 nftID, uint256[] memory supportFactor)
+    function setSupportFactorForNFT(address supportAddress, uint256 nftID, uint256[] memory supportFactor)
     external
     {
-        require(supportAddressDefault[supportAddress].active, "You are not added as a support partner");
+        require(supportAddressDefault[supportAddress].active, "Not a support partner");
         require(
             supportAddress == _msgSender()
             || isBridgeRole(),
-            "Only the support address can call this function"
+            "No permissions to call this"
         );
-        require(supportFactor[0] >= 5000, "The support fee should be greater than or equal to 5%");
+        require(supportFactor[0] >= 5000, "Support fee is not >= 5%");
 
         supportAddressToNFT[supportAddress][nftID].supportFactor = supportFactor;
         supportAddressToNFT[supportAddress][nftID].active = true;
     }
 
     
-    function approveNewSupportFactor(address nftOwner, uint256 nftID, uint256 subnetID)
+    function approveNewSupportFactor(address nftOwner, uint256 nftID)
     external
     {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole(),
-            "The nftOwner address should be the function caller"
+            "No permissions to call this"
         );
 
-        address supportAddress = nftSubscription[nftID].supportAddress;
-        require(supportAddressToNFT[supportAddress][nftID].active, "Support address has not changed fees");
+        address supportAddress = nftSubscription[nftID].factorAddressList[SUPPORT_ADDR_ID];
+        require(supportAddressToNFT[supportAddress][nftID].active, "Support fees not changed");
         SubscriptionBalance.updateBalance(nftID);
 
-
-        nftSubscription[nftID].supportFactor = supportAddressToNFT[supportAddress][nftID].supportFactor;
+        uint256[] memory supportFactor = supportAddressToNFT[supportAddress][nftID].supportFactor;
+        nftSupportFactor[nftID] = supportFactor;
         supportAddressToNFT[supportAddress][nftID].active = false;
 
         emit NFTSupportFactorChanged(
             nftID,
-            nftSubscription[nftID].supportFactor
+            supportFactor
         );
-
     }
 
-
-    function subscribeBatch(
-        address subscriber,
-        uint256 balanceToAdd,
+    function subscribe(
         uint256 nftID,
-        uint256[] memory subnetList,
-        address referralAddress,
-        address licenseAddress,
-        address supportAddress,
-        address platformAddress,
-        uint256[] memory licenseFactor,
-        int256[][] memory deltaCompute
+        address[] memory addressList,
+        uint256[] memory licenseFactor
     ) external
     {
         require(
@@ -560,58 +381,24 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             ,
             "You do not have the role to call this function"
         );
-
-        if(!SubscriptionBalance.isSubscribed(nftID))
-        {
-            subscribeNewNFT(
-                nftID,
-                referralAddress,
-                licenseAddress,
-                supportAddress,
-                platformAddress,
-                licenseFactor
-            );
-        }
-
-        subscribeToSubnetList(
-            subscriber,
-            balanceToAdd,
-            nftID,
-            subnetList,
-            deltaCompute
-        );
-    }
-
-    function subscribeNewNFT(
-        uint256 nftID,
-        address referralAddress,
-        address licenseAddress,
-        address supportAddress,
-        address platformAddress,
-        uint256[] memory licenseFactor
-    )
-    internal
-    {
-        require(
-            supportAddressDefault[supportAddress].active == true,
-            "The support address given is not valid"
+        require (
+            nftSubscription[nftID].createTime == 0,
+            "NFT already subscribed"
         );
 
-        require(
-            platformAddressMap[platformAddress].active == true,
-            "The platform address given is not valid"
-        );
+        validateAddressList(addressList);
+
+
+        address supportAddress = addressList[SUPPORT_ADDR_ID];
+        uint256[] memory supportFactor = getSupportFeesForNFT(supportAddress, nftID);
+
+        nftLicenseFactor[nftID] = licenseFactor;
+        nftSupportFactor[nftID] = supportFactor;
 
         nftSubscription[nftID] = NFTAttribute(
-            referralAddress,
-            licenseAddress,
-            supportAddress,
-            platformAddress,
-            licenseFactor,
-            getSupportFeesForNFT(supportAddress, nftID),
-            block.timestamp
+            block.timestamp,
+            addressList
         );
-
 
         SubscriptionBalance.subscribeNew(
             nftID
@@ -619,101 +406,37 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
 
         emit Subscribed(
             nftID,
-            referralAddress,
-            licenseAddress,
-            supportAddress,
-            platformAddress,
-             getSupportFeesForNFT(supportAddress, nftID),
+            addressList,
+            supportFactor,
             licenseFactor
         );
+
     }
 
-    function subscribeToSubnetList(
-        address subscriber,
-        uint256 balanceToAdd,
-        uint256 nftID,
-        uint256[] memory subnetList,
-        int256[][] memory deltaCompute
+    function validateAddressList(
+        address[] memory addressList
     )
-    public
+    internal
+    view
     {
 
-        if(balanceToAdd > 0)
-        {
-            XCT.transferFrom(subscriber, address(this), balanceToAdd);
-            SubscriptionBalance.addBalance(address(this), nftID, balanceToAdd);
-        }
-        else {
-            SubscriptionBalance.updateBalance(nftID);
-        }
-
-        for (uint256 i = 0; i < subnetList.length; i++)
-        {
-            subscribeSubnetInternal(
-                nftID,
-                subnetList[i],
-                deltaCompute[i]
-            );
-        }
-
-        uint256 totalBalance = SubscriptionBalance.totalPrevBalance(nftID);
-        if(totalBalance > 0)
-        {
-            require(
-                BalanceCalculator.dripRatePerSec(nftID) * MIN_TIME_FUNDS
-                    <= totalBalance,
-                    "The total balance amount is not enough"
-            );
-        }
-    }
-
-    function subscribeSubnetInternal(
-        uint256 nftID,
-        uint256 subnetID,
-        int256[] memory deltaCompute
-    ) internal {
         require(
-            RegistrationContract.totalSubnets() > subnetID,
-            "subnet ID donot exist in RegistrationContract"
+            addressList.length == ADDR_LIMIT,
+            "incorrect address list"
         );
-        (, , , bool subnetStatusListed, , , , , ) = RegistrationContract
-            .getSubnetAttributes(subnetID);
+
+        address supportAddress = addressList[SUPPORT_ADDR_ID];
+        address platformAddress = addressList[PLATFORM_ADDR_ID];
+
         require(
-            subnetStatusListed,
-            "RegistrationContract: subnet is delisted and hence cannot be subscribed"
+            supportAddressDefault[supportAddress].active == true,
+            "invalid support address"
         );
+
         require(
-            subscribedSubnetsOfNFT[nftID].length <= LIMIT_NFT_SUBNETS,
-            "Cannot subscribe as limit exceeds to max Subnet subscription allowed per NFT"
+            platformAddressMap[platformAddress].active == true,
+            "invalid platform address"
         );
-        require(
-            !userSubscription[nftID][subnetID].subscribed || (
-            deltaCompute.length >=  userSubscription[nftID][subnetID].computeRequired.length),
-            "The number of types of delta computes provided is less than the existing number of types of resources"
-        );
-
-        uint256[] memory computes = addDeltaComputes(
-            nftID,
-            subnetID,
-            deltaCompute
-        );
-        
-        userSubscription[nftID][subnetID].computeRequired = computes;
-
-        emit SubscribedSubnet(
-            nftID,
-            subnetID,
-            deltaCompute
-        );
-
-        if(userSubscription[nftID][subnetID].subscribed) {
-            return;
-        }
-
-        userSubscription[nftID][subnetID].subscribed = true;
-        userSubscription[nftID][subnetID].subnetArrayID = subscribedSubnetsOfNFT[nftID].length;
-        subscribedSubnetsOfNFT[nftID].push(subnetID);
-        activeSubnetsOfNFT[nftID].push(true);
     }
 
 
@@ -725,16 +448,16 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole(),
-            "The nftOwner address should be the function caller"
+            "No permissions to call this"
         );
         require(
-            nftSubscription[nftID].referralAddress == address(0),
+            nftSubscription[nftID].factorAddressList[REFERRAL_ADDR_ID] == address(0),
             "Already set"
         );
 
         SubscriptionBalance.updateBalance(nftID);
 
-        nftSubscription[nftID].referralAddress = referralAddress;
+        nftSubscription[nftID].factorAddressList[REFERRAL_ADDR_ID] = referralAddress;
         emit ReferralAdded(nftID, referralAddress);
     }
 
@@ -745,12 +468,12 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole(),
-            "The nftOwner address should be the function caller"
+            "No permissions to call this"
         );
 
         require(
             requestChangeMap[nftID].supportAddress != address(0),
-            "No change request to support address made"
+            "No support change requested"
         );
         require(
             requestChangeMap[nftID].SupportAddressApplyTime.add(
@@ -765,9 +488,8 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         address newSupportAddress = requestChangeMap[nftID].supportAddress;
         requestChangeMap[nftID].SupportAddressApplyTime = block.timestamp;
         nftSubscription[nftID]
-            .supportAddress = newSupportAddress;
-        nftSubscription[nftID]
-            .supportFactor = getSupportFeesForNFT(nftSubscription[nftID].supportAddress, nftID);
+            .factorAddressList[SUPPORT_ADDR_ID] = newSupportAddress;
+        nftSupportFactor[nftID] = getSupportFeesForNFT(newSupportAddress, nftID);
         requestChangeMap[nftID].supportAddress = address(0);
 
         emit NFTSupportAddressChanged (
@@ -784,7 +506,7 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         require(
             (nftOwner == _msgSender() && (ApplicationNFT.ownerOf(nftID) == nftOwner))
             || isBridgeRole(),
-            "The nftOwner address should be the function caller"
+            "No permissions to call this"
         );
         require(
             nftSubscription[nftID].createTime > 0,
@@ -792,13 +514,13 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
         );
         require(
             newSupportAddress != address(0),
-            "support address should be provided with a non zero address value"
+            "Empty support address given"
         );
         require(
             requestChangeMap[nftID].SupportAddressRequestTime.add(
                 CHANGE_REQUEST_DURATION.supportAddressNoticeDuration
             ) < block.timestamp,
-            "Cannot request before support address change notice time passed"
+            "Notice period not over yet"
         );
         
         requestChangeMap[nftID].SupportAddressRequestTime = block.timestamp;
@@ -820,9 +542,9 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
     public
     {
         require(
-            (caller == _msgSender() && (nftSubscription[nftID].licenseAddress == caller))
+            (caller == _msgSender() && (nftSubscription[nftID].factorAddressList[LICENSE_ADDR_ID] == caller))
             || isBridgeRole(),
-            "The nftOwner address should be the function caller"
+            "No permissions to call this"
         );
         require(
             nftSubscription[nftID].createTime > 0,
@@ -833,15 +555,13 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
             "license address should be provided with a non zero address value"
         );
 
-        nftSubscription[nftID].licenseAddress = newLicenseAddress;
+        nftSubscription[nftID].factorAddressList[LICENSE_ADDR_ID] = newLicenseAddress;
 
         emit LicenseAdded(nftID, newLicenseAddress);
     }
 
     function initialize(
         address _GlobalDAO,
-        uint256 _LIMIT_NFT_SUBNETS,
-        uint256 _MIN_TIME_FUNDS,
         address _globalSupportAddress,
         uint256[] memory _globalSupportFactor,
         IRegistration _RegistrationContract,
@@ -864,8 +584,6 @@ contract Subscription is AccessControlUpgradeable, PausableUpgradeable {
 
         GLOBAL_DAO_ADDRESS = _GlobalDAO;
 
-        LIMIT_NFT_SUBNETS = _LIMIT_NFT_SUBNETS;
-        MIN_TIME_FUNDS = _MIN_TIME_FUNDS;
         RegistrationContract = _RegistrationContract;
         ApplicationNFT = _ApplicationNFT;
         SubscriptionBalance = _SubscriptionBalance;

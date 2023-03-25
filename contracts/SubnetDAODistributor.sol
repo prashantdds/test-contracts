@@ -4,6 +4,7 @@ pragma solidity 0.8.2;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interfaces/IBalanceCalculator.sol";
+import "./interfaces/ISubscriptionBalance.sol";
 import "./interfaces/IRegistration.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
@@ -18,28 +19,20 @@ contract SubnetDAODistributor is PausableUpgradeable, TokensRecoverable {
     using SafeMathUpgradeable for uint256;
 
     IBalanceCalculator public SubscriptionBalanceCalculator;
+    ISubscriptionBalance public SubscriptionBalance;
     IERC20Upgradeable public XCTToken;
     IRegistration public Registration;
 
     // subnet id => revenue address => weight in UINT(1,2,3.. )
-    mapping(uint256 => mapping(address => uint256)) public weights;
+    mapping(uint256 => mapping(uint256 => uint256)) public weights;
 
     // subnet id => total weight in UINT(1,2,3.. )
     mapping(uint256 => uint256) public totalWeights;
 
-    // subnet id => total revenue for distribution, not yet assigned to any reveue address
-    mapping(uint256 => uint256) public revenueCollectedToDistribute;
-
-    // revenue address => revenue available for claim
-    mapping(address => uint256) public balanceOfAssignedRevenue;
-
     // subnet id => commited revenue for particular subnet id
     mapping(uint256 => uint256) public commitAssigned;
 
-    // subnet id => revenueAddresses
-    mapping(uint256 => address[]) public revenueAddresses;
-
-    event WeightAdded(uint256 subnetId, address revenueAddress, uint256 weight);
+    event WeightAdded(uint256 subnetID, uint256 clusterID, uint256 weight);
     event RevenueCollected(uint256 subnetId);
     event RevenuesAssignedToAll();
     event RevenueClaimedFor(address revenueAddress, uint256 revenueAmt);
@@ -47,20 +40,22 @@ contract SubnetDAODistributor is PausableUpgradeable, TokensRecoverable {
 
     function initialize(
         IERC20Upgradeable _XCTToken,
+        ISubscriptionBalance _SubscriptionBalance,
         IBalanceCalculator _SubscriptionBalanceCalculator,
         IRegistration _Registration
     ) public initializer {
         XCTToken = _XCTToken;
         Registration = _Registration;
         SubscriptionBalanceCalculator = _SubscriptionBalanceCalculator;
+        SubscriptionBalance = _SubscriptionBalance;
     }
 
-    function getWeightsFor(uint256 subnetId, address revenueAddress)
+    function getWeightsFor(uint256 subnetId, uint256 clusterId)
         external
         view
         returns (uint256)
     {
-        return weights[subnetId][revenueAddress];
+        return weights[subnetId][clusterId];
     }
 
     // BalanceCalculator can only call this function to commit based on calculation
@@ -70,99 +65,62 @@ contract SubnetDAODistributor is PausableUpgradeable, TokensRecoverable {
     {
         require(
             msg.sender == address(SubscriptionBalanceCalculator),
-            "SubscriptionBalanceCalculator can only call this function to commit revenue for subnet id"
+            "Only callable by calculator"
         );
         commitAssigned[subnetId] = commitAssigned[subnetId].add(revenue);
         return true;
     }
 
-    function addWeight(
-        uint256 subnetId,
-        address _revenueAddress,
-        uint256 _weight
-    ) external hasPermission(subnetId) {
-        // collect revenue every time new weight is added
-        if(revenueAddresses[subnetId].length>0)
-            collectAndAssignRevenues(subnetId);
+    function setClusterWeight(
+        uint256 subnetID,
+        uint256 clusterID,
+        uint256 weight
+    )
+    external
+    hasPermission(subnetID)
+    {
+        uint256 oldWeight = weights[subnetID][clusterID];
+        uint256 totalWeight = totalWeights[subnetID];
+        
+        if(totalWeight > 0)
+            assignRevenues(subnetID);
+    
+        weights[subnetID][clusterID] = weight;
+        totalWeights[subnetID] = totalWeights[subnetID].sub(oldWeight).add(weight);
 
-        // maintain revenueAddresses and totalWeights
-        if(weights[subnetId][_revenueAddress]==0){
-            revenueAddresses[subnetId].push(_revenueAddress);
-            totalWeights[subnetId] = totalWeights[subnetId].add(_weight);
+        emit WeightAdded(subnetID, clusterID, weight);
+    }
+
+
+    function assignRevenues(uint256 subnetID)
+    public {
+        uint256 totalWeight = totalWeights[subnetID];
+        uint256 totalClusters = Registration.getClusterCount(subnetID);
+        uint256 subnetRevenue = commitAssigned[subnetID];
+
+        if(subnetRevenue == 0)
+            return;
+        
+        if(totalClusters == 0)
+            return;
+
+        for(uint256 i = 0; i < totalClusters; i++)
+        {
+            if(Registration.isClusterListed(subnetID, i))
+            {
+                address walletAddress = Registration.getClusterWalletAddress(subnetID, i);
+                uint256 weight = weights[subnetID][i];
+                uint256 rev = weight.mul(subnetRevenue).div(totalWeight);
+                SubscriptionBalance.addRevBalance(walletAddress, rev);
+            }
         }
-        // when weights are updated, add new weight and remove old weight from totalWeight
-        else
-            totalWeights[subnetId] = totalWeights[subnetId].add(_weight).sub(weights[subnetId][_revenueAddress]);
-
-        // new weight assigned
-        weights[subnetId][_revenueAddress] = _weight;
-        emit WeightAdded(subnetId, _revenueAddress, _weight);
+        commitAssigned[subnetID] = 0;
     }
 
-    function resetWeights(uint256 subnetId) external hasPermission(subnetId) {
-        address[] memory empArr;
-        for (uint256 i = 0; i < revenueAddresses[subnetId].length; i++)
-            weights[subnetId][revenueAddresses[subnetId][i]] = 0;
-        revenueAddresses[subnetId] = empArr;
-        totalWeights[subnetId] = 0;
-        emit WeightReset(subnetId);
-    }
-
-    function collectRevenueToDistribute(uint256 subnetId) public {
-        SubscriptionBalanceCalculator.receiveRevenueForAddress(address(this));
-        uint256 currBalance = XCTToken.balanceOf(address(this));
-        // assign received revenue to subnet id as per the commit
+    modifier hasPermission(uint256 subnetID) {
         require(
-            commitAssigned[subnetId] <= currBalance,
-            "Commited is more than collected revenue within contract"
-        );
-        revenueCollectedToDistribute[subnetId] = revenueCollectedToDistribute[
-            subnetId
-        ].add(commitAssigned[subnetId]);
-        // reset commit
-        commitAssigned[subnetId] = 0;
-        emit RevenueCollected(subnetId);
-    }
-
-    function assignRevenues(uint256 subnetId) public {
-        for (uint256 i = 0; i < revenueAddresses[subnetId].length; i++) {
-            address revAddress = revenueAddresses[subnetId][i];
-            uint256 weight = weights[subnetId][revAddress];
-            uint256 totalWeight = totalWeights[subnetId];
-            uint256 revenueShare = weight
-                .mul(revenueCollectedToDistribute[subnetId])
-                .div(totalWeight);
-            balanceOfAssignedRevenue[revAddress] = balanceOfAssignedRevenue[
-                revAddress
-            ].add(revenueShare);
-        }
-        // reset as collected revenue is assigned to addresses based on weights
-        revenueCollectedToDistribute[subnetId] = 0;
-        emit RevenuesAssignedToAll();
-    }
-
-    function collectAndAssignRevenues(uint256 subnetId) public {
-        collectRevenueToDistribute(subnetId);
-        assignRevenues(subnetId);
-    }
-
-    function claimAllRevenueFor(address revAddress) public {
-        XCTToken.transfer(revAddress, balanceOfAssignedRevenue[revAddress]);
-        emit RevenueClaimedFor(
-            revAddress,
-            balanceOfAssignedRevenue[revAddress]
-        );
-        balanceOfAssignedRevenue[revAddress] = 0;
-    }
-
-    function claimAllRevenue() public {
-        claimAllRevenueFor(msg.sender);
-    }
-
-    modifier hasPermission(uint256 subnetId) {
-        require(
-            msg.sender == address(Registration) || Registration.hasPermissionToClusterList(subnetId, msg.sender),
-            "Registration: Only Registration contract or WHITELIST_ROLE or Local DAO can add/reset weights to whitelisted addresses"
+            msg.sender == address(Registration) || Registration.hasPermissionToClusterList(subnetID, msg.sender),
+            "No permission to change weights"
         );
         _;
     }

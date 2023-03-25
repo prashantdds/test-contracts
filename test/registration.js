@@ -182,12 +182,16 @@ const formatClusterAttributes = (clusterAttr) => {
         walletAddress: clusterAttr[0].toString(),
         ownerAddress: clusterAttr[1].toString(),
         operatorAddress: clusterAttr[2].toString(),
-        DNSIP: clusterAttr[3],
-        listed: clusterAttr[4],
-        nftIDLocked: clusterAttr[5].toNumber(),
-        clusterName: clusterAttr[6]
+        publicKey: clusterAttr[3],
+        DNSIP: clusterAttr[4],
+        listed: clusterAttr[5],
+        nftIDLocked: clusterAttr[6].toNumber(),
+        clusterName: clusterAttr[7]
     }
 }
+
+const bobArray = [3,90,20,244,156,57,237,234,225,127,203,179,183,142,240,2,76,127,172,131,75,113,184,97,91,117,208,166,152,28,244,173,73];
+
 
 async function initContracts() {
     helper.setNoPrint(true);
@@ -237,12 +241,8 @@ async function initContracts() {
 describe("testing Registration contract", async () => {
 
     before(async () => {
-        await helper.deployContracts();
-        await helper.callStackApprove();
-        await helper.callNftApprove();
-
+        addrList = await ethers.getSigners();
     })
-
 
     describe("Testing creation of subnet", async () => {
 
@@ -286,6 +286,7 @@ describe("testing Registration contract", async () => {
                 otherAttributes: [],
                 maxClusters: 1,
                 whitelistedClusters: [],
+                supportFeeRate: 0,
                 stackFeesReqd: ethers.utils.parseEther("0.01")
             }
 
@@ -303,6 +304,7 @@ describe("testing Registration contract", async () => {
                 otherAttributes: [],
                 maxClusters: 2,
                 whitelistedClusters: [],
+                supportFeeRate: 0,
                 stackFeesReqd: ethers.utils.parseEther("0.02")
             }
 
@@ -320,6 +322,7 @@ describe("testing Registration contract", async () => {
                 otherAttributes: [],
                 maxClusters: 10,
                 whitelistedClusters: [],
+                supportFeeRate: 0,
                 stackFeesReqd: ethers.utils.parseEther("0.09")
             }
 
@@ -333,6 +336,7 @@ describe("testing Registration contract", async () => {
                 expect(actual.unitPrices).to.eql(expected.unitPrices);
                 expect(actual.otherAttributes).to.eql(expected.otherAttributes);
                 expect(actual.maxClusters).to.equal(expected.maxClusters);
+                expect(actual.supportFeeRate).to.equal(expected.supportFeeRate);
                 expect(actual.stackFeesReqd).to.equal(expected.stackFeesReqd);
             }
 
@@ -349,6 +353,7 @@ describe("testing Registration contract", async () => {
                 subnet1.otherAttributes,
                 subnet1.maxClusters,
                 subnet1.whitelistedClusters,
+                subnet1.supportFeeRate,
                 subnet1.stackFeesReqd
             )).to.be.reverted;
 
@@ -376,6 +381,7 @@ describe("testing Registration contract", async () => {
                 subnet1.otherAttributes,
                 subnet1.maxClusters,
                 subnet1.whitelistedClusters,
+                subnet1.supportFeeRate,
                 subnet1.stackFeesReqd
             )).to.be.reverted;
 
@@ -397,6 +403,7 @@ describe("testing Registration contract", async () => {
                 subnet1.otherAttributes,
                 subnet1.maxClusters,
                 subnet1.whitelistedClusters,
+                subnet1.supportFeeRate,
                 subnet1.stackFeesReqd
                 );
             const subnet1ID = await getSubnetID(tr);
@@ -425,6 +432,7 @@ describe("testing Registration contract", async () => {
                 subnet2.otherAttributes,
                 subnet2.maxClusters,
                 subnet2.whitelistedClusters,
+                subnet2.supportFeeRate,
                 subnet2.stackFeesReqd
                 );
             const subnet2ID = await getSubnetID(tr);
@@ -453,6 +461,7 @@ describe("testing Registration contract", async () => {
                 subnet3.otherAttributes,
                 subnet3.maxClusters,
                 subnet3.whitelistedClusters,
+                subnet3.supportFeeRate,
                 subnet3.stackFeesReqd
                 );
             const subnet3ID = await getSubnetID(tr);
@@ -513,6 +522,7 @@ describe("testing Registration contract", async () => {
                 [],
                 3,
                 [],
+                5000,
                 signupFees);
             let subnetID = await getSubnetID(tr);
     
@@ -646,6 +656,7 @@ describe("testing Registration contract", async () => {
                     [],
                     testSize,
                     [whitelistedClusterOwner.address],
+                    5000,
                     signupFees
                     );
                 const subnetID = await getSubnetID(tr);
@@ -748,6 +759,7 @@ describe("testing Registration contract", async () => {
                 [],
                 testClusterLimit,
                 whitelistedAddresses,
+                5000,
                 signupFees
                 );
             
@@ -814,105 +826,57 @@ describe("testing Registration contract", async () => {
 
         })
 
-    it("A cluster cannot be whitelisted by anyone other than Global DAO or subnet DAO", async () => {
-        const subnetCreationFees = ethers.utils.parseEther("0.1");
-
-        
-        //set the paramters for the required stack fees for creating subnet
-        helper.setParameters(
-            {
-                ...helper.parameters.registration,
-                reqdStackFeesForSubnet: subnetCreationFees
-            }
-        )
-
-
-        //deploy the contracts
-        await initContracts();
-
-
-        // parameters
-        const signupFees = ethers.utils.parseEther("0.01");
-        const maxClusters = 5;
-        const subnetCreator = addrList[1];
-        const clusterCreatorList = [addrList[1], addrList[2], addrList[3], addrList[4], addrList[5]];
-        const invalidWhitelister = addrList[10];
-
-
-        //mint darkmatter nft and provide stack fees for the subnet creator
-        const nftID = await mintDarkMatterNFT(subnetCreator, Registration);
-        await getAmountIfLess(stack, subnetCreator, subnetCreationFees, Registration);
-
-
-        //create subnet
-        tr = await Registration.connect(subnetCreator).createSubnet(
-            nftID,
-            subnetCreator.address,
-            1,
-            true,
-            1,
-            true,
-            [ethers.utils.parseEther("0.0001"),
-            ethers.utils.parseEther("0.0002"),
-            ethers.utils.parseEther("0.0003"),
-            ethers.utils.parseEther("0.0004")],
-            [],
-            maxClusters,
-            [],
-            signupFees);
-        const subnetID = await getSubnetID(tr);
-
-
-        // check if whitelisted clusters are equal to zero
-        var w = 0;
-        while(true) {
-            try {
-                await Registration.whiteListedClusters(subnetID, w);
-                w++;
-            } catch(err) {
-                break;
-            }
-        }
-        expect(w).to.be.equal(0);
-
-
-        // create clusters
-        for(var c = 0; c < maxClusters; c++) {
-            const clusterCreator = clusterCreatorList[c];
-
-
-            //mint darkmatter nft and provide signup fees for the cluster creator
-            const clusterNFTID = await mintDarkMatterNFT(clusterCreator, Registration);
-            await getAmountIfLess(stack, clusterCreator, signupFees, Registration);
+        it("A cluster cannot be whitelisted by anyone other than Global DAO or subnet DAO", async () => {
+            const subnetCreationFees = ethers.utils.parseEther("0.1");
 
             
-
-            // add cluster to the subnet
-            tr = await Registration.connect(clusterCreator).
-            clusterSignUp(subnetID,
-                "127.0.0.1",
-                clusterCreator.address,
-                clusterCreator.address,
-                clusterNFTID,
-                "cluster"
-                );
-            const clusterID = await getClusterID(tr);
+            //set the paramters for the required stack fees for creating subnet
+            helper.setParameters(
+                {
+                    ...helper.parameters.registration,
+                    reqdStackFeesForSubnet: subnetCreationFees
+                }
+            )
 
 
-            //check if the cluster listed status is in waiting state
-            const clusterAttributes = formatClusterAttributes(await Registration.getClusterAttributes(subnetID, clusterID));
-            expect(clusterAttributes.ownerAddress.toString()).to.equal(clusterCreator.address);
-            expect(clusterAttributes.listed).to.equal(1);
-        }
+            //deploy the contracts
+            await initContracts();
 
 
-        // check if the invalid cluster whitelister cannot whitelist any clusters
-        for(var c = 0; c < maxClusters; c++)
-        {
-            await expect(Registration.connect(invalidWhitelister).addClusterToWhitelisted(subnetID, [clusterCreatorList[c].address])
-            ).to.be.revertedWith("Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses")
-            ;
+            // parameters
+            const signupFees = ethers.utils.parseEther("0.01");
+            const maxClusters = 5;
+            const subnetCreator = addrList[1];
+            const clusterCreatorList = [addrList[1], addrList[2], addrList[3], addrList[4], addrList[5]];
+            const invalidWhitelister = addrList[10];
 
+
+            //mint darkmatter nft and provide stack fees for the subnet creator
+            const nftID = await mintDarkMatterNFT(subnetCreator, Registration);
+            await getAmountIfLess(stack, subnetCreator, subnetCreationFees, Registration);
+
+
+            //create subnet
+            tr = await Registration.connect(subnetCreator).createSubnet(
+                nftID,
+                subnetCreator.address,
+                1,
+                true,
+                1,
+                true,
+                [ethers.utils.parseEther("0.0001"),
+                ethers.utils.parseEther("0.0002"),
+                ethers.utils.parseEther("0.0003"),
+                ethers.utils.parseEther("0.0004")],
+                [],
+                maxClusters,
+                [],
+                5000,
+                signupFees);
+            const subnetID = await getSubnetID(tr);
+
+
+            // check if whitelisted clusters are equal to zero
             var w = 0;
             while(true) {
                 try {
@@ -922,12 +886,61 @@ describe("testing Registration contract", async () => {
                     break;
                 }
             }
-    
             expect(w).to.be.equal(0);
-        }
 
-    })
-	
+
+            // create clusters
+            for(var c = 0; c < maxClusters; c++) {
+                const clusterCreator = clusterCreatorList[c];
+
+
+                //mint darkmatter nft and provide signup fees for the cluster creator
+                const clusterNFTID = await mintDarkMatterNFT(clusterCreator, Registration);
+                await getAmountIfLess(stack, clusterCreator, signupFees, Registration);
+
+                
+
+                // add cluster to the subnet
+                tr = await Registration.connect(clusterCreator).
+                clusterSignUp(subnetID,
+                    "127.0.0.1",
+                    clusterCreator.address,
+                    clusterCreator.address,
+                    clusterNFTID,
+                    "cluster"
+                    );
+                const clusterID = await getClusterID(tr);
+
+
+                //check if the cluster listed status is in waiting state
+                const clusterAttributes = formatClusterAttributes(await Registration.getClusterAttributes(subnetID, clusterID));
+                expect(clusterAttributes.ownerAddress.toString()).to.equal(clusterCreator.address);
+                expect(clusterAttributes.listed).to.equal(1);
+            }
+
+
+            // check if the invalid cluster whitelister cannot whitelist any clusters
+            for(var c = 0; c < maxClusters; c++)
+            {
+                await Registration.connect(invalidWhitelister).addClusterToWhitelisted(subnetID, c)
+                .to.be.revertedWith("Only WHITELIST_ROLE or Local DAO can edit whitelisted addresses")
+                ;
+
+                var w = 0;
+                while(true) {
+                    try {
+                        await Registration.whiteListedClusters(subnetID, w);
+                        w++;
+                    } catch(err) {
+                        break;
+                    }
+                }
+        
+                expect(w).to.be.equal(0);
+            }
+
+        })
+		
         it("Clusters can be whitelisted by the subnet DAO", async () => {
 
             const subnetCreationFees = ethers.utils.parseEther("0.1");
@@ -977,6 +990,7 @@ describe("testing Registration contract", async () => {
                 [],
                 maxClusters,
                 [],
+                5000,
                 signupFees
             );
             const subnetID = await getSubnetID(tr);
@@ -1250,6 +1264,7 @@ describe("testing Registration contract", async () => {
                 [],
                 maxClusters,
                 [],
+                5000,
                 signupFees);
             const subnetID = await getSubnetID(tr);
 
@@ -1397,6 +1412,7 @@ describe("testing Registration contract", async () => {
                 [],
                 clusterCreatorList.length,
                 [],
+                5000,
                 signupFees
                 );
             const subnetID = await getSubnetID(tr);
@@ -1618,6 +1634,7 @@ describe("testing Registration contract", async () => {
                     [],
                     clusterLimit,
                     [],
+                    5000,
                     signupFees
                     );
                 const subnetID = await getSubnetID(tr);
@@ -1716,6 +1733,7 @@ describe("testing Registration contract", async () => {
                 [],
                 clusterLimit,
                 [],
+                5000,
                 signupFees
                 );
             const subnetID = await getSubnetID(tr);
@@ -1839,6 +1857,7 @@ describe("testing Registration contract", async () => {
                 [],
                 clusterLimit,
                 [],
+                5000,
                 signupFees
                 );
             const subnetID = await getSubnetID(tr);
@@ -1956,6 +1975,7 @@ describe("testing Registration contract", async () => {
                 [],
                 1,
                 [],
+                5000,
                 signupFees
                 );
             const subnetID = await getSubnetID(tr);
@@ -2015,6 +2035,7 @@ describe("testing Registration contract", async () => {
                 [],
                 2,
                 [],
+                5000,
                 signupFees
                 );
             const sovereignSubnetID = await getSubnetID(tr);
@@ -2115,6 +2136,7 @@ describe("testing Registration contract", async () => {
                 [],
                 clusterCreatorList.length,
                 [],
+                5000,
                 signupFees
                 );
             const subnetID = await getSubnetID(tr);
@@ -2293,6 +2315,7 @@ describe("testing Registration contract", async () => {
                     [],
                     1,
                     [],
+                    5000,
                     signupFees
                 );
                 const subnetID = await getSubnetID(tr);
@@ -2435,6 +2458,7 @@ describe("testing Registration contract", async () => {
                 [],
                 1,
                 [],
+                5000,
                 signupFees1
                 );
             const subnet1ID = await getSubnetID(tr);
@@ -2460,6 +2484,7 @@ describe("testing Registration contract", async () => {
                 [],
                 1,
                 [],
+                5000,
                 signupFees2
                 );
             const subnet2ID = await getSubnetID(tr);
@@ -2621,6 +2646,7 @@ describe("testing Registration contract", async () => {
                 [],
                 1,
                 [],
+                5000,
                 signupFees1
                 );
             const subnet1ID = await getSubnetID(tr);
@@ -2646,6 +2672,7 @@ describe("testing Registration contract", async () => {
                 [],
                 2,
                 [],
+                5000,
                 signupFees2
                 );
             const subnet2ID = await getSubnetID(tr);
@@ -2790,6 +2817,1043 @@ describe("testing Registration contract", async () => {
         })
     })
 
+    describe("Function access test for Registration", async () => {
+
+        it("Function access test for Registration", async () => {
+            const reqdStackFeesForSubnet = ethers.utils.parseEther("0.1");
+            const globalDAO = addrList[0];
+
+            
+            //set the paramters for the required stack fees for creating subnet
+            helper.setParameters(
+                {
+					registration: {
+						...helper.parameters.registration,
+                        globalDAO: globalDAO.address,
+						reqdStackFeesForSubnet: reqdStackFeesForSubnet
+					}
+                }
+            )
+
+
+            //deploy the contracts
+            await initContracts();
+
+
+            // parameters
+            const emptyAddress = "0x0000000000000000000000000000000000000000";
+            
+	        const admin = addrList[0];
+            const subnetCreator = addrList[1];
+            const clusterCreator = addrList[2];
+            const dnsip = "test-dnsip";
+            const walletAddress = addrList[3];
+            const operatorAddress = addrList[4];
+	        const anotherAccount = addrList[5];
+            const subnetDAO = addrList[6];
+            const clusterName = "test-cluster";
+            const signupFees = ethers.utils.parseEther("0.01");
+    
+    
+            const initSnapshot = await takeSnapshot();
+	    
+            console.log("before new distributor: ");
+            const newDistributor = await helper.deploySubnetDAODistributor();
+            console.log("after new distributor: ", newDistributor);
+	    
+
+            await expect(Registration.connect(anotherAccount).set_SubnetDAODistributorContract(
+                newDistributor
+            )).to.be.reverted;
+	    
+            await Registration.connect(admin).set_SubnetDAODistributorContract(
+                newDistributor
+            );
+	    
+	        await initSnapshot.restore();
+	    
+
+            console.log("before deploy subscription contract");
+            const newSubscription = await helper.deploySubscription();
+	    
+	        console.log("new subscription: ", newSubscription);
+	    
+	        await expect(Registration.connect(anotherAccount).set_Subscription(
+                newSubscription
+            )).to.be.reverted;
+	    
+            await Registration.connect(admin).set_Subscription(
+                newSubscription
+            );
+	    
+	    
+	    
+	    
+	        await initSnapshot.restore();
+	    
+	    
+            await expect(Registration.connect(anotherAccount).changeSubnetFees(
+                ethers.utils.parseEther("0.001")
+            )).to.be.reverted;
+	    
+            await Registration.connect(admin).changeSubnetFees(
+                ethers.utils.parseEther("0.001")
+            );
+	    
+            await initSnapshot.restore();
+
+
+
+
+	    
+            await expect(Registration.connect(anotherAccount).change_DAORate(
+                ethers.utils.parseEther("0.00006")
+            )).to.be.reverted;
+	    
+            await Registration.connect(admin).change_DAORate(
+                ethers.utils.parseEther("0.00006")
+            );
+	    
+            await initSnapshot.restore();
+
+
+
+
+
+            {
+                let nftID = await mintDarkMatterNFT(subnetCreator, Registration);
+                await getAmountIfLess(stack, subnetCreator, reqdStackFeesForSubnet, Registration);
+        
+    
+                // create the subnet
+                tr = await Registration.connect(subnetCreator).createSubnet(
+                    nftID,
+                    subnetDAO.address,
+                    1,
+                    true,
+                    1,
+                    true,
+                    [
+                        ethers.utils.parseEther("0.0001"),
+                        ethers.utils.parseEther("0.0002"),
+                        ethers.utils.parseEther("0.0003"),
+                        ethers.utils.parseEther("0.0004")
+                    ],
+                    [],
+                    3,
+                    [],
+                    signupFees,
+                    "subnet1"
+                );
+                let subnetID = await getSubnetID(tr);
+
+                await expect(Registration.connect(anotherAccount).withdrawNFT(
+                    [nftID]
+                )).to.be.reverted;
+
+                await Registration.connect(admin).withdrawNFT(
+                    [nftID]
+                );
+
+                await initSnapshot.restore();
+            }
+
+
+
+            {
+                const newDarkMatterNFT = await helper.deployDarkNFT();
+                await expect(Registration.connect(anotherAccount).changeNFT(
+                    newDarkMatterNFT
+                )).to.be.reverted;
+
+                await Registration.connect(admin).changeNFT(
+                    newDarkMatterNFT
+                );
+
+                await initSnapshot.restore();
+            }
+
+
+            //mint dark matter NFT and the required stack fees for the subnet creator
+            let nftID = await mintDarkMatterNFT(subnetCreator, Registration);
+            await getAmountIfLess(stack, subnetCreator, reqdStackFeesForSubnet, Registration);
+    
+
+            // create the subnet
+            tr = await Registration.connect(subnetCreator).createSubnet(
+                nftID,
+                subnetDAO.address,
+                1,
+                true,
+                1,
+                true,
+                [
+                    ethers.utils.parseEther("0.0001"),
+                    ethers.utils.parseEther("0.0002"),
+                    ethers.utils.parseEther("0.0003"),
+                    ethers.utils.parseEther("0.0004")
+                ],
+                [],
+                3,
+                [],
+                signupFees,
+		        "subnet1"
+	    	);
+            let subnetID = await getSubnetID(tr);
+    
+
+            const subnetSnapshot = await takeSnapshot();
+
+            // set a dummy nftID that does not belong to the cluster creator
+            let clusterNFTID = nftID;
+
+
+            {
+                await expect(Registration.connect(anotherAccount).changeSubnetAttributes(
+                	subnetID,
+                    9,
+                    0,
+                    false,
+                    0,
+                    false,
+                    [],
+                    0,
+                    0,
+                    emptyAddress,
+                    "newSubnet"
+            )).to.be.reverted;
+
+                let subnetAttrRoleSub1 = await Subscription.getBytes32OfRole("SUBNET_ATTR_ROLE" + subnetID);
+                let hasSubnetAttrRoleSub1 = await Registration.hasRole(subnetAttrRoleSub1, subnetDAO.address);
+                expect(hasSubnetAttrRoleSub1).to.be.true;
+
+                await Registration.connect(subnetDAO).changeSubnetAttributes(
+                    subnetID,
+                    9,
+                    0,
+                    false,
+                    0,
+                    false,
+                    [],
+                    0,
+                    0,
+                    emptyAddress,
+                    "newSubnet"
+                );
+
+                await subnetSnapshot.restore();
+
+                await Registration.connect(admin).grantRole(subnetAttrRoleSub1, anotherAccount.address);
+
+                await Registration.connect(anotherAccount).changeSubnetAttributes(
+                    subnetID,
+                    9,
+                    0,
+                    false,
+                    0,
+                    false,
+                    [],
+                    0,
+                    0,
+                    emptyAddress,
+                    "newSubnet"
+                );
+
+                let globalSubnetAttrRole = await Registration.SUBNET_ATTR_ROLE();
+
+                await Registration.connect(admin).grantRole(globalSubnetAttrRole, anotherAccount.address);
+                
+                await Registration.connect(anotherAccount).changeSubnetAttributes(
+                    subnetID,
+                    9,
+                    0,
+                    false,
+                    0,
+                    false,
+                    [],
+                    0,
+                    0,
+                    emptyAddress,
+                    "newSubnet"
+                );
+
+                await subnetSnapshot.restore();
+            }
+
+
+
+
+
+            {
+
+                await expect(Registration.connect(anotherAccount).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                )).to.be.revertedWith('No permissions for whitelist');
+    
+                await Registration.connect(admin).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+    
+                await subnetSnapshot.restore();
+    
+                let subnetWhitelistRole = Subscription.getBytes32OfRole("WHITELIST_ROLE"+subnetID);
+                let hasRole = await Registration.hasRole(subnetWhitelistRole, subnetDAO.address);
+                expect(hasRole).to.be.true;
+    
+                await Registration.connect(subnetDAO).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+    
+                await subnetSnapshot.restore();
+    
+                await Registration.connect(admin).grantRole(subnetWhitelistRole, anotherAccount.address);
+    
+                await Registration.connect(anotherAccount).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+     
+                await subnetSnapshot.restore();
+
+                const whitelistRole = await Registration.WHITELIST_ROLE();
+    
+                await Registration.connect(admin).grantRole(whitelistRole, anotherAccount.address);
+                
+                await Registration.connect(anotherAccount).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+    
+
+                await subnetSnapshot.restore();
+            }
+
+
+            
+
+            {
+                await Registration.connect(admin).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+
+                await expect(Registration.connect(anotherAccount).removeClusterFromWhitelist(
+                    subnetID,
+                    clusterCreator.address,
+                    0
+                )).to.be.revertedWith('No permissions for whitelist');
+    
+                await Registration.connect(admin).removeClusterFromWhitelist(
+                    subnetID,
+                    clusterCreator.address,
+                    0
+                );
+    
+                await subnetSnapshot.restore();
+    
+                await Registration.connect(admin).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+
+                const subnetWhitelistRole = Subscription.getBytes32OfRole("WHITELIST_ROLE"+subnetID);
+                hasRole = await Registration.hasRole(subnetWhitelistRole, subnetDAO.address);
+                expect(hasRole).to.be.true;
+    
+                await Registration.connect(subnetDAO).removeClusterFromWhitelist(
+                    subnetID,
+                    clusterCreator.address,
+                    0
+                );
+    
+                await subnetSnapshot.restore();
+
+                await Registration.connect(admin).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+    
+                await Registration.connect(admin).grantRole(subnetWhitelistRole, anotherAccount.address);
+    
+                await Registration.connect(anotherAccount).removeClusterFromWhitelist(
+                    subnetID,
+                    clusterCreator.address,
+                    0
+                );
+     
+                await subnetSnapshot.restore();
+
+
+                await Registration.connect(admin).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+    
+                const whitelistRole = await Registration.WHITELIST_ROLE();
+    
+                await Registration.connect(admin).grantRole(whitelistRole, anotherAccount.address);
+                
+                await Registration.connect(anotherAccount).removeClusterFromWhitelist(
+                    subnetID,
+                    clusterCreator.address,
+                    0
+                );
+
+                await subnetSnapshot.restore();
+            }
+            
+
+
+            {
+                await Registration.connect(admin).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+
+                await expect(Registration.connect(anotherAccount).resetWhitelistClusters(
+                    subnetID
+                )).to.be.revertedWith('No permissions for whitelist');
+    
+                await Registration.connect(admin).resetWhitelistClusters(
+                    subnetID
+                );
+    
+                await subnetSnapshot.restore();
+    
+                await Registration.connect(admin).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+
+                const subnetWhitelistRole = Subscription.getBytes32OfRole("WHITELIST_ROLE"+subnetID);
+                hasRole = await Registration.hasRole(subnetWhitelistRole, subnetDAO.address);
+                expect(hasRole).to.be.true;
+    
+                await Registration.connect(subnetDAO).resetWhitelistClusters(
+                    subnetID
+                );
+    
+                await subnetSnapshot.restore();
+
+                await Registration.connect(admin).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+    
+                await Registration.connect(admin).grantRole(subnetWhitelistRole, anotherAccount.address);
+    
+                await Registration.connect(anotherAccount).resetWhitelistClusters(
+                    subnetID
+                );
+     
+                await subnetSnapshot.restore();
+
+
+                await Registration.connect(admin).addClusterToWhitelisted(
+                    subnetID,
+                    [clusterCreator.address]
+                );
+    
+                const whitelistRole = await Registration.WHITELIST_ROLE();
+    
+                await Registration.connect(admin).grantRole(whitelistRole, anotherAccount.address);
+                
+                await Registration.connect(anotherAccount).resetWhitelistClusters(
+                    subnetID
+                );
+
+                await subnetSnapshot.restore();
+            }
+
+
+
+
+            {
+                clusterNFTID = await mintDarkMatterNFT(clusterCreator, Registration);
+
+                // cluster creator gets the stack fees required for signing up. The fees is set by the subnet creator
+                await getAmountIfLess(stack, clusterCreator, signupFees, Registration);
+
+
+                tr = await Registration.connect(clusterCreator).clusterSignUp(
+                    subnetID,
+                    dnsip,
+                    walletAddress.address,
+                    operatorAddress.address,
+                    bobArray,
+                    clusterNFTID,
+                    clusterName
+                );
+
+                let clusterID = await getClusterID(tr);
+
+                const clusterSnapshot = await takeSnapshot();
+
+                await expect(Registration.connect(anotherAccount).approveListingCluster(
+                    subnetID,
+                    clusterID,
+                    100
+                )).to.be.revertedWith("No permissions to call this");
+
+
+                await Registration.connect(admin).approveListingCluster(
+                    subnetID,
+                    clusterID,
+                    100
+                );
+
+                await clusterSnapshot.restore();
+
+                let subnetClusterListRole = await Subscription.getBytes32OfRole("CLUSTER_LIST_ROLE"+subnetID);
+                let hasRole = await Registration.hasRole(subnetClusterListRole, subnetDAO.address);
+                expect(hasRole).to.be.true;
+
+                await Registration.connect(subnetDAO).approveListingCluster(
+                    subnetID,
+                    clusterID,
+                    100
+                );
+
+                await clusterSnapshot.restore();
+
+                await Registration.grantRole(subnetClusterListRole, anotherAccount.address);
+                hasRole = await Registration.hasRole(subnetClusterListRole, anotherAccount.address);
+                expect(hasRole).to.be.true;
+
+                await Registration.connect(anotherAccount).approveListingCluster(
+                    subnetID,
+                    clusterID,
+                    100
+                );
+
+                await clusterSnapshot.restore();
+
+                const clusterListRole = await Registration.CLUSTER_LIST_ROLE();
+
+                hasRole = await Registration.hasRole(clusterListRole, anotherAccount.address);
+                expect(hasRole).to.be.false;
+
+                await Registration.connect(admin).grantRole(clusterListRole, anotherAccount.address);
+                
+                hasRole = await Registration.hasRole(clusterListRole, anotherAccount.address);
+                expect(hasRole).to.be.true;
+                
+
+                await Registration.connect(anotherAccount).approveListingCluster(
+                    subnetID,
+                    clusterID,
+                    100
+                );
+
+                await subnetSnapshot.restore();
+            }
+
+
+
+    
+            {
+                clusterNFTID = await mintDarkMatterNFT(clusterCreator, Registration);
+
+                // cluster creator gets the stack fees required for signing up. The fees is set by the subnet creator
+                await getAmountIfLess(stack, clusterCreator, signupFees, Registration);
+
+
+                tr = await Registration.connect(clusterCreator).clusterSignUp(
+                    subnetID,
+                    dnsip,
+                    walletAddress.address,
+                    operatorAddress.address,
+                    bobArray,
+                    clusterNFTID,
+                    clusterName
+                );
+
+                let clusterID = await getClusterID(tr);
+
+                await Registration.connect(admin).approveListingCluster(
+                    subnetID,
+                    clusterID,
+                    100
+                );
+
+                const clusterSnapshot = await takeSnapshot();
+
+                await expect(Registration.connect(anotherAccount).delistCluster(
+                    subnetID,
+                    clusterID
+                )).to.be.revertedWith("No permissions to call this");
+
+
+                await Registration.connect(admin).delistCluster(
+                    subnetID,
+                    clusterID
+                );
+
+                await clusterSnapshot.restore();
+
+                let subnetClusterListRole = await Subscription.getBytes32OfRole("CLUSTER_LIST_ROLE"+subnetID);
+                let hasRole = await Registration.hasRole(subnetClusterListRole, subnetDAO.address);
+                expect(hasRole).to.be.true;
+
+                await Registration.connect(subnetDAO).delistCluster(
+                    subnetID,
+                    clusterID
+                );
+
+                await clusterSnapshot.restore();
+
+                await Registration.grantRole(subnetClusterListRole, anotherAccount.address);
+                hasRole = await Registration.hasRole(subnetClusterListRole, anotherAccount.address);
+                expect(hasRole).to.be.true;
+
+                await Registration.connect(anotherAccount).delistCluster(
+                    subnetID,
+                    clusterID
+                );
+
+                await clusterSnapshot.restore();
+
+                const clusterListRole = await Registration.CLUSTER_LIST_ROLE();
+
+                hasRole = await Registration.hasRole(clusterListRole, anotherAccount.address);
+                expect(hasRole).to.be.false;
+
+                await Registration.connect(admin).grantRole(clusterListRole, anotherAccount.address);
+                
+                hasRole = await Registration.hasRole(clusterListRole, anotherAccount.address);
+                expect(hasRole).to.be.true;
+                
+
+                await Registration.connect(anotherAccount).delistCluster(
+                    subnetID,
+                    clusterID
+                );
+
+                await subnetSnapshot.restore();
+            }
+
+
+
+            {
+                const newPrices = [
+                    ethers.utils.parseEther("0.0004"),
+                    ethers.utils.parseEther("0.0001"),
+                    ethers.utils.parseEther("0.0006"),
+                    ethers.utils.parseEther("0.0055")
+                ];
+
+                await expect(Registration.connect(anotherAccount).requestClusterPriceChange(
+                    subnetID,
+                    newPrices
+                )).to.be.revertedWith("No permissions to call this");
+
+                await Registration.connect(admin).requestClusterPriceChange(
+                    subnetID,
+                    newPrices
+                );
+
+
+                await subnetSnapshot.restore();
+
+                let subnetPriceRole = await Subscription.getBytes32OfRole("PRICE_ROLE" +subnetID);
+                let hasRole = await Registration.hasRole(subnetPriceRole, subnetDAO.address);
+                expect(hasRole).to.be.true;
+
+                await Registration.connect(subnetDAO).requestClusterPriceChange(
+                    subnetID,
+                    newPrices
+                );
+
+                await subnetSnapshot.restore();
+                hasRole = await Registration.hasRole(subnetPriceRole, anotherAccount.address);
+                expect(hasRole).to.be.false;
+
+                await Registration.connect(admin).grantRole(subnetPriceRole, anotherAccount.address);
+                hasRole = await Registration.hasRole(subnetPriceRole, anotherAccount.address);
+                expect(hasRole).to.be.true;
+                
+                await Registration.connect(anotherAccount).requestClusterPriceChange(
+                    subnetID,
+                    newPrices
+                );
+
+
+                await subnetSnapshot.restore();
+                
+                let priceRole = await Registration.PRICE_ROLE();
+                hasRole = await Registration.hasRole(priceRole, anotherAccount.address);
+                expect(hasRole).to.be.false;
+
+                await Registration.connect(admin).grantRole(priceRole, anotherAccount.address);
+                hasRole = await Registration.hasRole(priceRole, anotherAccount.address);
+                expect(hasRole).to.be.true;
+                
+                await Registration.connect(anotherAccount).requestClusterPriceChange(
+                    subnetID,
+                    newPrices
+                );
+                
+                await subnetSnapshot.restore();
+            }
+
+
+
+
+            {
+                const newCooldown = 60 * 60 * 24 * 10;
+
+                await expect(Registration.connect(anotherAccount).changeCoolDownTime(
+                    newCooldown
+                )).to.be.reverted;
+
+                await Registration.connect(admin).changeCoolDownTime(
+                    newCooldown
+                );
+
+
+                await subnetSnapshot.restore();
+                
+                let cooldownRole = await Registration.COOLDOWN_ROLE();
+                let hasRole = await Registration.hasRole(cooldownRole, anotherAccount.address);
+                expect(hasRole).to.be.false;
+
+                await Registration.connect(admin).grantRole(cooldownRole, anotherAccount.address);
+                hasRole = await Registration.hasRole(cooldownRole, anotherAccount.address);
+                expect(hasRole).to.be.true;   
+                
+
+                await Registration.connect(anotherAccount).changeCoolDownTime(
+                    newCooldown
+                );
+
+            }
+
+
+
+            {
+                clusterNFTID = await mintDarkMatterNFT(clusterCreator, Registration);
+
+                // cluster creator gets the stack fees required for signing up. The fees is set by the subnet creator
+                await getAmountIfLess(stack, clusterCreator, signupFees, Registration);
+
+
+                tr = await Registration.connect(clusterCreator).clusterSignUp(
+                    subnetID,
+                    dnsip,
+                    walletAddress.address,
+                    operatorAddress.address,
+                    bobArray,
+                    clusterNFTID,
+                    clusterName
+                );
+
+                let clusterID = await getClusterID(tr);
+
+                const slashAmount = signupFees.div(2);
+
+                const clusterSnapshot = await takeSnapshot();
+
+
+                await expect(Registration.connect(anotherAccount).withdrawStackFromClusterByDAO(
+                    subnetID,
+                    clusterID,
+                    slashAmount
+                )).to.be.reverted;
+
+                await Registration.connect(admin).withdrawStackFromClusterByDAO(
+                    subnetID,
+                    clusterID,
+                    slashAmount
+                );
+
+                await clusterSnapshot.restore();
+
+                let withdrawStackRole = await Registration.WITHDRAW_STACK_ROLE();
+                let hasRole = await Registration.hasRole(withdrawStackRole, anotherAccount.address);
+                expect(hasRole).to.be.false;
+
+                await Registration.connect(admin).grantRole(withdrawStackRole, anotherAccount.address);
+                hasRole = await Registration.hasRole(withdrawStackRole, anotherAccount.address);
+                expect(hasRole).to.be.true;
+
+                await Registration.connect(anotherAccount).withdrawStackFromClusterByDAO(
+                    subnetID,
+                    clusterID,
+                    slashAmount
+                );
+
+
+                await subnetSnapshot.restore();
+
+            }
+
+
+
+
+            {
+                const newDarkMatterNFT = await helper.deployDarkNFT();
+
+                await expect(Registration.connect(anotherAccount).addApprovedDarkMatterNFTTypes(
+                    newDarkMatterNFT,
+                    true
+                )).to.be.reverted;
+
+                await Registration.connect(admin).addApprovedDarkMatterNFTTypes(
+                    newDarkMatterNFT,
+                    true
+                );
+
+                await subnetSnapshot.restore();
+
+                await Registration.connect(globalDAO).addApprovedDarkMatterNFTTypes(
+                    newDarkMatterNFT,
+                    true
+                );
+
+
+                await subnetSnapshot.restore();
+
+            }
+
+
+
+
+            {
+                clusterNFTID = await mintDarkMatterNFT(clusterCreator, Registration);
+
+                // cluster creator gets the stack fees required for signing up. The fees is set by the subnet creator
+                await getAmountIfLess(stack, clusterCreator, signupFees, Registration);
+
+
+                tr = await Registration.connect(clusterCreator).clusterSignUp(
+                    subnetID,
+                    dnsip,
+                    walletAddress.address,
+                    operatorAddress.address,
+                    bobArray,
+                    clusterNFTID,
+                    clusterName
+                );
+
+                let clusterID = await getClusterID(tr);
+
+                const newClusterName = "newClusterName";
+                const newDNSIP = "new DNS";
+
+                const clusterSnapshot = await takeSnapshot();
+
+                await expect(Registration.connect(anotherAccount).changeClusterName(
+                    subnetID,
+                    clusterID,
+                    newClusterName
+                )).to.be.revertedWith("No permissions to call this");
+
+                await Registration.connect(admin).changeClusterName(
+                    subnetID,
+                    clusterID,
+                    newClusterName
+                );
+                
+                await clusterSnapshot.restore();
+                
+                await Registration.connect(clusterCreator).changeClusterName(
+                    subnetID,
+                    clusterID,
+                    newClusterName
+                );
+                
+                await clusterSnapshot.restore();
+
+
+                
+
+                await expect(Registration.connect(anotherAccount).changeDNSIP(
+                    subnetID,
+                    clusterID,
+                    newDNSIP
+                )).to.be.revertedWith("No permissions to call this");
+
+                await Registration.connect(admin).changeDNSIP(
+                    subnetID,
+                    clusterID,
+                    newDNSIP
+                );
+                
+                await clusterSnapshot.restore();
+                
+                await Registration.connect(clusterCreator).changeDNSIP(
+                    subnetID,
+                    clusterID,
+                    newDNSIP
+                );
+                
+                await clusterSnapshot.restore();
+            
+
+
+
+
+                const newClusterOwner = addrList[15];
+                const newWallet = addrList[16];
+                const newOperator = addrList[17];
+
+                await expect(Registration.connect(anotherAccount).transferClusterOwnership(
+                    subnetID,
+                    clusterID,
+                    newClusterOwner.address,
+                    newWallet.address,
+                    newOperator.address
+                )).to.be.revertedWith("No permissions to call this");
+
+                await Registration.connect(admin).transferClusterOwnership(
+                    subnetID,
+                    clusterID,
+                    newClusterOwner.address,
+                    newWallet.address,
+                    newOperator.address
+                );
+                
+                await clusterSnapshot.restore();
+                
+                await Registration.connect(clusterCreator).transferClusterOwnership(
+                    subnetID,
+                    clusterID,
+                    newClusterOwner.address,
+                    newWallet.address,
+                    newOperator.address
+                );
+                
+                await clusterSnapshot.restore();
+
+
+
+
+                await Registration.connect(subnetDAO).changeSubnetAttributes(
+                	subnetID,
+                    4,
+                    0,
+                    false,
+                    0,
+                    false,
+                    [],
+                    0,
+                    0,
+                    emptyAddress,
+                    "newSubnet"
+                );
+
+                const delistedSnapshot = await takeSnapshot();
+                
+                await expect(Registration.connect(anotherAccount).withdrawClusterForDelistedSubnet(
+                    subnetID,
+                    clusterID
+                )).to.be.reverted;
+
+                await Registration.connect(admin).withdrawClusterForDelistedSubnet(
+                    subnetID,
+                    clusterID
+                );
+
+                await delistedSnapshot.restore();
+
+                await Registration.connect(clusterCreator).withdrawClusterForDelistedSubnet(
+                    subnetID,
+                    clusterID
+                );
+
+                await clusterSnapshot.restore();
+
+
+            }
+
+            //cluster creator tries to sign up without the dark matter NFT and enough fees
+            await expect(Registration.connect(clusterCreator).clusterSignUp(
+                subnetID,
+                dnsip,
+                walletAddress,
+                operatorAddress,
+		        bobArray,
+                clusterNFTID,
+                clusterName
+            )
+            ).to.be.reverted;
+
+
+            //cluster creator receives a dark matter NFT and approves Registration to withdraw it
+            clusterNFTID = await mintDarkMatterNFT(clusterCreator, Registration);
+
+
+            // cluster creator tries to create a cluster without enough stack fees, which fails
+            await expect(Registration.connect(clusterCreator).clusterSignUp(
+                subnetID,
+                dnsip,
+                walletAddress,
+                operatorAddress,
+		        bobArray,
+                clusterNFTID,
+                clusterName
+            )
+            ).to.be.reverted;
+
+        
+            // cluster creator gets the stack fees required for signing up. The fees is set by the subnet creator
+            await getAmountIfLess(stack, clusterCreator, signupFees, Registration);
+            
+
+            // see that the cluster creator has the NFT
+            let ownerAddress = await darkMatterNFT.ownerOf(clusterNFTID);
+            expect(ownerAddress).to.equal(clusterCreator.address);
+
+
+            // cluster creator will signup to the subnet
+            let beforeSupply = await stack.balanceOf(clusterCreator.address);
+            tr = await Registration.connect(clusterCreator).clusterSignUp(
+                subnetID,
+                dnsip,
+                walletAddress.address,
+                operatorAddress.address,
+		        bobArray,
+                clusterNFTID,
+                clusterName
+            );
+            let clusterID = await getClusterID(tr);
+            let afterSupply = await stack.balanceOf(clusterCreator.address);
+
+
+            // the NFT is now transferred from the cluster creator to the Registration contract
+            ownerAddress = await darkMatterNFT.ownerOf(clusterNFTID);
+            expect(ownerAddress).to.equal(Registration.address);
+
+
+            // the amount of stack deducted from cluster creator is equal to the signup fees
+            let deducted = beforeSupply.sub(afterSupply);
+            expect(deducted.eq(signupFees)).to.be.true;
+
+
+            // get the cluster attributes
+            const clusterAttributes = await Registration.getClusterAttributes(subnetID, clusterID);
+    
+
+            // verify if the cluster attributes are the same as the parameters provided
+            expect(clusterAttributes[0].toString()).to.equal(walletAddress.address);
+            expect(clusterAttributes[1].toString()).to.equal(clusterCreator.address);
+            expect(clusterAttributes[2].toString()).to.equal(operatorAddress.address);
+            expect(clusterAttributes[3]).to.eql(bobArray);
+            expect(clusterAttributes[4].toString()).to.equal(dnsip);
+            expect(clusterAttributes[5]).to.equal(1);
+            expect(clusterAttributes[6].toNumber()).to.equal(clusterNFTID);
+            expect(clusterAttributes[7]).to.equal(clusterName);
+        })
+    
+    })
+
+
+
+
+	
 
 
 })
