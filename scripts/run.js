@@ -152,23 +152,38 @@ const signupCluster = async (
 }
 
 const setupUrsula = async () => {
-    const addrList = await ethers.getSigners()
+    const provider = new ethers.providers.JsonRpcProvider(
+        "https://test-contracts-production.up.railway.app"
+    )
+
+    const cluster1 = new ethers.Wallet(
+        "540f8aa51ab241b53bd0bac13bfb9c3816306c49e57e33c0f5a0fadc20634711",
+        provider
+    )
+
+    const account0 = new ethers.Wallet(
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+        provider
+    )
+    const account1 = new ethers.Wallet(
+        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+        provider
+    )
+    const account2 = new ethers.Wallet(
+        "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+        provider
+    )
+    const account5 = new ethers.Wallet(
+        "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba",
+        provider
+    )
+
+    const addrList = [account0, account1, account2, 0, 0, account5, 0, 0]
     const deployer = addrList[0]
 
-    console.log("deployer: ", addrList[1])
-
     const stack = await helper.getStack()
     const darkMatter = await helper.getNFTToken()
     const Registration = await helper.getRegistration()
-
-    const stack = await helper.getStack()
-    const darkMatter = await helper.getNFTToken()
-    const Registration = await helper.getRegistration()
-
-    const provider = new ethers.providers.JsonRpcProvider(
-        "https://smart-contracts-production.up.railway.app:8545/"
-    )
-    const cluster1 = new ethers.Wallet(process.env.BOB_PRIVATE_KEY, provider)
 
     const subnetList = [addrList[1], addrList[2]]
     const clusterList = [[cluster1], [cluster1]]

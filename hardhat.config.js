@@ -64,7 +64,7 @@ module.exports = {
             },
         },
         railway: {
-            url: "https://smart-contracts-production.up.railway.app/",
+            url: "https://test-contracts-production.up.railway.app/",
             accounts: [`${process.env.PKEY}`],
         },
     },
